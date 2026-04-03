@@ -709,6 +709,50 @@ async def get_stats(request: Request):
 async def root():
     return {"message": "Iran Observatory API", "status": "running"}
 
+# Sitemap for SEO
+@api_router.get("/sitemap.xml")
+async def sitemap():
+    from fastapi.responses import Response
+    
+    base_url = "https://iranobservatory.org"
+    
+    # Get all published articles
+    articles = await db.articles.find({"status": "published"}).to_list(1000)
+    
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    # Main pages
+    pages = [
+        {"loc": "/", "priority": "1.0", "changefreq": "daily"},
+        {"loc": "/articles", "priority": "0.9", "changefreq": "daily"},
+        {"loc": "/studies", "priority": "0.9", "changefreq": "weekly"},
+    ]
+    
+    for page in pages:
+        xml_content += f'''  <url>
+    <loc>{base_url}{page["loc"]}</loc>
+    <changefreq>{page["changefreq"]}</changefreq>
+    <priority>{page["priority"]}</priority>
+  </url>\n'''
+    
+    # Article pages
+    for article in articles:
+        article_id = str(article["_id"])
+        lastmod = article.get("updated_at") or article.get("created_at")
+        lastmod_str = lastmod.strftime("%Y-%m-%d") if lastmod else ""
+        
+        xml_content += f'''  <url>
+    <loc>{base_url}/article/{article_id}</loc>
+    <lastmod>{lastmod_str}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>\n'''
+    
+    xml_content += '</urlset>'
+    
+    return Response(content=xml_content, media_type="application/xml")
+
 # Include the router
 app.include_router(api_router)
 

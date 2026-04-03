@@ -1,6 +1,7 @@
 import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { Header } from "./components/Header";
@@ -54,14 +55,16 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <LanguageProvider>
-        <AuthProvider>
-          <AppContent />
-          <Toaster position="top-right" />
-        </AuthProvider>
-      </LanguageProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <LanguageProvider>
+          <AuthProvider>
+            <AppContent />
+            <Toaster position="top-right" />
+          </AuthProvider>
+        </LanguageProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   );
 }
 

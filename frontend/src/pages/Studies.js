@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, ArrowRight, BookOpen } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import SEO from '../components/SEO';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -27,8 +28,26 @@ export default function Studies() {
     fetchStudies();
   }, [language]);
 
+  const seoTitles = {
+    en: 'Studies & Analysis',
+    fr: 'Études & Analyses',
+    fa: 'مطالعات و تحلیل‌ها'
+  };
+
+  const seoDescriptions = {
+    en: 'In-depth studies and analyses on Iran from Iran Observatory. Independent research on Iran\'s political, economic and social dynamics.',
+    fr: 'Études et analyses approfondies sur l\'Iran. Recherche indépendante sur les dynamiques politiques, économiques et sociales de l\'Iran.',
+    fa: 'مطالعات و تحلیل‌های عمیق درباره ایران از رصدخانه ایران. پژوهش مستقل درباره پویایی‌های سیاسی، اقتصادی و اجتماعی ایران.'
+  };
+
   return (
     <div className="min-h-screen bg-white" data-testid="studies-page">
+      <SEO 
+        title={seoTitles[language] || seoTitles.en}
+        description={seoDescriptions[language] || seoDescriptions.en}
+        url="/studies"
+        language={language}
+      />
       {/* Header */}
       <div className="bg-[#1E3A5F] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

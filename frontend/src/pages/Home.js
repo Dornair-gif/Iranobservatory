@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ArrowRight, ExternalLink, BookOpen, FileText, Radio } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
+import SEO from '../components/SEO';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
@@ -42,8 +43,20 @@ export default function Home() {
   const sideArticles = allArticles.slice(1, 3);
   const gridArticles = allArticles.slice(3, 9);
 
+  const seoDescriptions = {
+    en: "Independent platform offering fact-based insights into Iran's political, economic and social dynamics. Iran's future matters, far beyond its borders.",
+    fr: "Plateforme indépendante offrant des analyses factuelles sur les dynamiques politiques, économiques et sociales de l'Iran.",
+    fa: "پلتفرم مستقل ارائه‌دهنده تحلیل‌های مبتنی بر واقعیت درباره پویایی‌های سیاسی، اقتصادی و اجتماعی ایران."
+  };
+
   return (
     <div className="min-h-screen bg-white" data-testid="home-page">
+      <SEO 
+        title={null}
+        description={seoDescriptions[language] || seoDescriptions.en}
+        url="/"
+        language={language}
+      />
       {/* Hero Section - Iran Observatory Brand Colors */}
       <section className="relative bg-[#1E3A5F] text-white overflow-hidden">
         <div 

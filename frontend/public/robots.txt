@@ -1,0 +1,18 @@
+# Iran Observatory - Robots.txt
+# https://iranobservatory.org
+
+User-agent: *
+Allow: /
+Allow: /articles
+Allow: /studies
+Allow: /article/*
+
+Disallow: /admin
+Disallow: /login
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://iranobservatory.org/sitemap.xml
+
+# Crawl-delay for politeness
+Crawl-delay: 1

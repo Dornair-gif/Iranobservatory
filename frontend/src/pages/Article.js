@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
 import { Button } from '../components/ui/button';
+import SEO from '../components/SEO';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -83,6 +84,16 @@ export default function Article() {
 
   return (
     <div className="min-h-screen bg-white" data-testid="article-page">
+      <SEO 
+        title={title}
+        description={summary}
+        image={article.image_url}
+        url={`/article/${article.id}`}
+        type="article"
+        article={article}
+        language={language}
+      />
+      
       {/* Back navigation */}
       <div className="border-b border-zinc-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
+import SEO from '../components/SEO';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -28,8 +29,26 @@ export default function Articles() {
     fetchArticles();
   }, [language]);
 
+  const seoTitles = {
+    en: 'All Articles',
+    fr: 'Tous les Articles',
+    fa: 'همه مقالات'
+  };
+
+  const seoDescriptions = {
+    en: 'Browse all news articles from Iran Observatory. Independent insights into Iran\'s political, economic and social dynamics.',
+    fr: 'Parcourez tous les articles d\'actualité de l\'Observatoire de l\'Iran. Analyses indépendantes des dynamiques politiques, économiques et sociales de l\'Iran.',
+    fa: 'مرور تمام مقالات خبری از رصدخانه ایران. تحلیل‌های مستقل از پویایی‌های سیاسی، اقتصادی و اجتماعی ایران.'
+  };
+
   return (
     <div className="min-h-screen bg-white" data-testid="articles-page">
+      <SEO 
+        title={seoTitles[language] || seoTitles.en}
+        description={seoDescriptions[language] || seoDescriptions.en}
+        url="/articles"
+        language={language}
+      />
       {/* Header */}
       <div className="bg-[#1E3A5F] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
