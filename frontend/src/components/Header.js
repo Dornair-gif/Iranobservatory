@@ -31,19 +31,19 @@ export function Header() {
   ];
 
   return (
-    <header className="glass-header sticky top-0 z-50" data-testid="main-header">
+    <header className="glass-header sticky top-0 z-50 overflow-hidden" data-testid="main-header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-28 sm:h-32">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link 
             to="/" 
-            className="flex items-center gap-3 group"
+            className="flex items-center gap-3 group -my-4"
             data-testid="logo-link"
           >
             <img 
               src={LOGO_URL} 
               alt="Iran Observatory"
-              className="h-24 sm:h-28 w-auto"
+              className="h-36 sm:h-40 w-auto"
             />
           </Link>
 
