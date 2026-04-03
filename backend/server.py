@@ -192,18 +192,17 @@ async def get_me(request: Request):
 @api_router.get("/rss/feeds", response_model=List[RSSFeedResponse])
 async def get_rss_feeds(request: Request):
     await get_current_user(request)
-    feeds = await db.rss_feeds.find({}, {"_id": 0, "id": {"$toString": "$_id"}}).to_list(100)
+    feeds = await db.rss_feeds.find({}).to_list(100)
     result = []
     for feed in feeds:
-        feed_data = await db.rss_feeds.find_one({"_id": ObjectId(feed["id"])})
         result.append({
-            "id": str(feed_data["_id"]),
-            "name": feed_data["name"],
-            "url": feed_data["url"],
-            "category": feed_data.get("category", "general"),
-            "language": feed_data.get("language", "en"),
-            "active": feed_data.get("active", True),
-            "last_fetched": feed_data.get("last_fetched").isoformat() if feed_data.get("last_fetched") else None
+            "id": str(feed["_id"]),
+            "name": feed["name"],
+            "url": feed["url"],
+            "category": feed.get("category", "general"),
+            "language": feed.get("language", "en"),
+            "active": feed.get("active", True),
+            "last_fetched": feed.get("last_fetched").isoformat() if feed.get("last_fetched") else None
         })
     return result
 
@@ -531,7 +530,16 @@ async def get_articles(status: Optional[str] = None, content_type: Optional[str]
     if content_type:
         query["content_type"] = content_type
     
-    articles = await db.articles.find(query).sort("created_at", -1).to_list(limit)
+    # Use projection for public API to exclude full content and improve performance
+    projection = {
+        "title_en": 1, "title_fr": 1, "title_fa": 1,
+        "summary_en": 1, "summary_fr": 1, "summary_fa": 1,
+        "image_url": 1, "source_url": 1, "tags": 1,
+        "category": 1, "content_type": 1, "status": 1,
+        "created_at": 1, "updated_at": 1, "published_at": 1
+    }
+    
+    articles = await db.articles.find(query, projection).sort("created_at", -1).to_list(limit)
     result = []
     for article in articles:
         result.append({
@@ -539,9 +547,9 @@ async def get_articles(status: Optional[str] = None, content_type: Optional[str]
             "title_en": article.get("title_en", ""),
             "title_fr": article.get("title_fr", ""),
             "title_fa": article.get("title_fa", ""),
-            "content_en": article.get("content_en", ""),
-            "content_fr": article.get("content_fr", ""),
-            "content_fa": article.get("content_fa", ""),
+            "content_en": "",  # Not included in list view for performance
+            "content_fr": "",
+            "content_fa": "",
             "summary_en": article.get("summary_en", ""),
             "summary_fr": article.get("summary_fr", ""),
             "summary_fa": article.get("summary_fa", ""),
@@ -714,10 +722,14 @@ async def root():
 async def sitemap():
     from fastapi.responses import Response
     
-    base_url = "https://iranobservatory.org"
+    # Use environment variable for base URL
+    base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org').rstrip('/')
     
-    # Get all published articles
-    articles = await db.articles.find({"status": "published"}).to_list(1000)
+    # Get all published articles with projection (only needed fields)
+    articles = await db.articles.find(
+        {"status": "published"}, 
+        {"_id": 1, "updated_at": 1, "created_at": 1}
+    ).limit(1000).to_list(1000)
     
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
