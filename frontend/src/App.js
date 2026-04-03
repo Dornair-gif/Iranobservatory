@@ -7,6 +7,8 @@ import { Header } from "./components/Header";
 import { Toaster } from "./components/ui/sonner";
 import Home from "./pages/Home";
 import Article from "./pages/Article";
+import Articles from "./pages/Articles";
+import Studies from "./pages/Studies";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 
@@ -25,6 +27,18 @@ function AppContent() {
           <>
             <Header />
             <Article />
+          </>
+        } />
+        <Route path="/articles" element={
+          <>
+            <Header />
+            <Articles />
+          </>
+        } />
+        <Route path="/studies" element={
+          <>
+            <Header />
+            <Studies />
           </>
         } />
         <Route path="/" element={

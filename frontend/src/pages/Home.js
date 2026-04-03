@@ -151,64 +151,22 @@ export default function Home() {
                 ))}
               </div>
             )}
+
+            {/* View All Articles Link */}
+            {allArticles.length > 6 && (
+              <div className="text-center mt-8">
+                <Link 
+                  to="/articles" 
+                  className="inline-flex items-center gap-2 px-6 py-3 border border-[#1E3A5F] text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:bg-[#1E3A5F] hover:text-white transition-colors"
+                >
+                  {language === 'fr' ? 'Voir tous les articles' : language === 'fa' ? 'مشاهده همه مقالات' : 'View All Articles'}
+                  <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+                </Link>
+              </div>
+            )}
           </>
         )}
       </main>
-
-      {/* Studies & Analysis Section */}
-      {studies.length > 0 && (
-        <section className="bg-[#f8fafc] border-t border-zinc-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="flex items-center justify-between mb-8 border-b border-zinc-200 pb-4">
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-[#1E3A5F]" strokeWidth={1.5} />
-                <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-[#1E3A5F]">
-                  {language === 'fr' ? 'Études & Analyses' : language === 'fa' ? 'مطالعات و تحلیل‌ها' : 'Studies & Analysis'}
-                </h2>
-              </div>
-              <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-mono uppercase tracking-wider">
-                {language === 'fr' ? 'Recherche' : language === 'fa' ? 'پژوهش' : 'Research'}
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {studies.map((study, index) => (
-                <Link 
-                  key={study.id}
-                  to={`/article/${study.id}`}
-                  className="bg-white border border-zinc-200 p-6 hover:shadow-lg transition-shadow group"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`px-2 py-1 text-xs font-mono uppercase tracking-wider ${
-                      study.content_type === 'study' 
-                        ? 'bg-indigo-100 text-indigo-700' 
-                        : 'bg-purple-100 text-purple-700'
-                    }`}>
-                      {study.content_type === 'study' 
-                        ? (language === 'fr' ? 'Étude' : language === 'fa' ? 'مطالعه' : 'Study')
-                        : (language === 'fr' ? 'Analyse' : language === 'fa' ? 'تحلیل' : 'Analysis')
-                      }
-                    </span>
-                    <span className="text-xs text-zinc-400 font-mono">
-                      {new Date(study.published_at || study.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <h3 className="font-heading font-bold text-lg mb-2 group-hover:text-[#1E3A5F] transition-colors">
-                    {study[`title_${language}`] || study.title_en || study.title_fr}
-                  </h3>
-                  <p className="text-sm text-zinc-600 line-clamp-3">
-                    {study[`summary_${language}`] || study.summary_en || study.summary_fr}
-                  </p>
-                  <div className="flex items-center gap-1 mt-4 text-xs font-mono uppercase tracking-wider text-[#3DB883]">
-                    {t('readMore')}
-                    <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Live News Feed - Extended */}
       <section className="bg-[#1E3A5F]">
@@ -238,7 +196,7 @@ export default function Home() {
           <div className="bg-white/5 backdrop-blur border border-white/10 p-6 sm:p-8">
             <iframe 
               src="https://rss.app/embed/v1/wall/cPvRWpMkf81Tx8nr"
-              style={{ width: '100%', height: '600px', border: 'none' }}
+              style={{ width: '100%', height: '900px', border: 'none' }}
               title="Iran Observatory Live News Feed"
               data-testid="rss-widget"
             />
@@ -253,6 +211,74 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Studies & Analysis Carousel Section */}
+      {studies.length > 0 && (
+        <section className="bg-[#f8fafc] border-t border-zinc-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-[#1E3A5F]" strokeWidth={1.5} />
+                <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-[#1E3A5F]">
+                  {language === 'fr' ? 'Études & Analyses' : language === 'fa' ? 'مطالعات و تحلیل‌ها' : 'Studies & Analysis'}
+                </h2>
+              </div>
+              <Link 
+                to="/studies" 
+                className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 text-xs font-mono uppercase tracking-wider hover:bg-purple-200 transition-colors"
+              >
+                {language === 'fr' ? 'Voir tout' : language === 'fa' ? 'مشاهده همه' : 'View All'}
+                <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+              </Link>
+            </div>
+            
+            {/* Carousel */}
+            <div className="relative">
+              <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {studies.map((study, index) => (
+                  <Link 
+                    key={study.id}
+                    to={`/article/${study.id}`}
+                    className="flex-shrink-0 w-80 sm:w-96 bg-white border border-zinc-200 p-6 hover:shadow-lg transition-shadow group snap-start"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className={`px-2 py-1 text-xs font-mono uppercase tracking-wider ${
+                        study.content_type === 'study' 
+                          ? 'bg-indigo-100 text-indigo-700' 
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {study.content_type === 'study' 
+                          ? (language === 'fr' ? 'Étude' : language === 'fa' ? 'مطالعه' : 'Study')
+                          : (language === 'fr' ? 'Analyse' : language === 'fa' ? 'تحلیل' : 'Analysis')
+                        }
+                      </span>
+                      <span className="text-xs text-zinc-400 font-mono">
+                        {new Date(study.published_at || study.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h3 className="font-heading font-bold text-lg mb-2 group-hover:text-[#1E3A5F] transition-colors line-clamp-2">
+                      {study[`title_${language}`] || study.title_en || study.title_fr}
+                    </h3>
+                    <p className="text-sm text-zinc-600 line-clamp-3">
+                      {study[`summary_${language}`] || study.summary_en || study.summary_fr}
+                    </p>
+                    <div className="flex items-center gap-1 mt-4 text-xs font-mono uppercase tracking-wider text-[#3DB883]">
+                      {t('readMore')}
+                      <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              {/* Scroll hint gradient */}
+              <div className="absolute right-0 top-0 bottom-4 w-20 bg-gradient-to-l from-[#f8fafc] to-transparent pointer-events-none" />
+            </div>
+            
+            <p className="text-center text-zinc-500 text-sm mt-4">
+              {language === 'fr' ? '← Glissez pour voir plus →' : language === 'fa' ? '← برای دیدن بیشتر بکشید →' : '← Swipe to see more →'}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-[#1E3A5F] text-white">
