@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ArrowRight, ExternalLink, BookOpen, FileText, Radio } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 
@@ -11,25 +11,36 @@ const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live
 export default function Home() {
   const { t, language, setLanguage } = useLanguage();
   const [articles, setArticles] = useState([]);
+  const [studies, setStudies] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchArticles = async () => {
+    const fetchContent = async () => {
       try {
-        const response = await axios.get(`${API}/articles?status=published&lang=${language}`);
-        setArticles(response.data);
+        // Fetch all published articles
+        const articlesRes = await axios.get(`${API}/articles?status=published&lang=${language}`);
+        const allArticles = articlesRes.data;
+        
+        // Separate news from studies/analyses
+        const newsArticles = allArticles.filter(a => !a.content_type || a.content_type === 'news');
+        const studiesAndAnalyses = allArticles.filter(a => a.content_type === 'study' || a.content_type === 'analysis');
+        
+        setArticles(newsArticles);
+        setStudies(studiesAndAnalyses);
       } catch (e) {
-        console.error('Failed to fetch articles:', e);
+        console.error('Failed to fetch content:', e);
       } finally {
         setLoading(false);
       }
     };
-    fetchArticles();
+    fetchContent();
   }, [language]);
 
-  const featuredArticle = articles[0];
-  const sideArticles = articles.slice(1, 3);
-  const gridArticles = articles.slice(3, 9);
+  // Include all articles for the main grid
+  const allArticles = [...articles];
+  const featuredArticle = allArticles[0];
+  const sideArticles = allArticles.slice(1, 3);
+  const gridArticles = allArticles.slice(3, 9);
 
   return (
     <div className="min-h-screen bg-white" data-testid="home-page">
@@ -144,28 +155,101 @@ export default function Home() {
         )}
       </main>
 
-      {/* RSS Widget Preview */}
-      <section className="bg-zinc-50 border-t border-zinc-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-heading font-bold text-xl tracking-tight text-[#1E3A5F]">
-              Social Feed
-            </h2>
+      {/* Studies & Analysis Section */}
+      {studies.length > 0 && (
+        <section className="bg-[#f8fafc] border-t border-zinc-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="flex items-center justify-between mb-8 border-b border-zinc-200 pb-4">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-[#1E3A5F]" strokeWidth={1.5} />
+                <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-[#1E3A5F]">
+                  {language === 'fr' ? 'Études & Analyses' : language === 'fa' ? 'مطالعات و تحلیل‌ها' : 'Studies & Analysis'}
+                </h2>
+              </div>
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-mono uppercase tracking-wider">
+                {language === 'fr' ? 'Recherche' : language === 'fa' ? 'پژوهش' : 'Research'}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {studies.map((study, index) => (
+                <Link 
+                  key={study.id}
+                  to={`/article/${study.id}`}
+                  className="bg-white border border-zinc-200 p-6 hover:shadow-lg transition-shadow group"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`px-2 py-1 text-xs font-mono uppercase tracking-wider ${
+                      study.content_type === 'study' 
+                        ? 'bg-indigo-100 text-indigo-700' 
+                        : 'bg-purple-100 text-purple-700'
+                    }`}>
+                      {study.content_type === 'study' 
+                        ? (language === 'fr' ? 'Étude' : language === 'fa' ? 'مطالعه' : 'Study')
+                        : (language === 'fr' ? 'Analyse' : language === 'fa' ? 'تحلیل' : 'Analysis')
+                      }
+                    </span>
+                    <span className="text-xs text-zinc-400 font-mono">
+                      {new Date(study.published_at || study.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <h3 className="font-heading font-bold text-lg mb-2 group-hover:text-[#1E3A5F] transition-colors">
+                    {study[`title_${language}`] || study.title_en || study.title_fr}
+                  </h3>
+                  <p className="text-sm text-zinc-600 line-clamp-3">
+                    {study[`summary_${language}`] || study.summary_en || study.summary_fr}
+                  </p>
+                  <div className="flex items-center gap-1 mt-4 text-xs font-mono uppercase tracking-wider text-[#3DB883]">
+                    {t('readMore')}
+                    <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Live News Feed - Extended */}
+      <section className="bg-[#1E3A5F]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <Radio className="w-8 h-8 text-[#3DB883]" strokeWidth={1.5} />
+              <div>
+                <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-white">
+                  {language === 'fr' ? 'Fil d\'Actualités en Direct' : language === 'fa' ? 'اخبار زنده' : 'Live News Feed'}
+                </h2>
+                <p className="text-zinc-400 text-sm mt-1">
+                  {language === 'fr' ? 'Suivez nos dernières publications sur les réseaux sociaux' : 
+                   language === 'fa' ? 'آخرین پست‌های ما در شبکه‌های اجتماعی' : 
+                   'Follow our latest posts from social media'}
+                </p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse-live" />
-              <span className="font-mono text-xs uppercase tracking-wider text-[#3DB883]">
+              <span className="w-3 h-3 bg-[#3DB883] rounded-full animate-pulse-live" />
+              <span className="font-mono text-sm uppercase tracking-widest text-[#3DB883]">
                 {t('live')}
               </span>
             </div>
           </div>
           
-          <div className="bg-white border border-zinc-200 p-4 sm:p-6">
+          <div className="bg-white/5 backdrop-blur border border-white/10 p-6 sm:p-8">
             <iframe 
               src="https://rss.app/embed/v1/wall/cPvRWpMkf81Tx8nr"
-              style={{ width: '100%', height: '400px', border: 'none' }}
-              title="Iran Observatory Social Feed"
+              style={{ width: '100%', height: '600px', border: 'none' }}
+              title="Iran Observatory Live News Feed"
               data-testid="rss-widget"
             />
+          </div>
+          
+          <div className="mt-6 text-center">
+            <p className="text-zinc-400 text-sm">
+              {language === 'fr' ? 'Contenu agrégé depuis X, Instagram et LinkedIn' : 
+               language === 'fa' ? 'محتوا از X، اینستاگرام و لینکدین جمع‌آوری شده است' : 
+               'Content aggregated from X, Instagram, and LinkedIn'}
+            </p>
           </div>
         </div>
       </section>
