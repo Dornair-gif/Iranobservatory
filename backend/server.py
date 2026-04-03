@@ -107,7 +107,8 @@ class ArticleBase(BaseModel):
     image_url: Optional[str] = None
     source_url: Optional[str] = None
     tags: List[str] = []
-    category: str = "news"
+    category: str = "news"  # news, analysis, study
+    content_type: str = "news"  # news, analysis, study
 
 class ArticleCreate(ArticleBase):
     pass
@@ -119,6 +120,7 @@ class ArticleResponse(ArticleBase):
     model_config = ConfigDict(extra="ignore")
     id: str
     status: str
+    content_type: str = "news"
     created_at: str
     updated_at: str
     published_at: Optional[str] = None
@@ -127,10 +129,12 @@ class RSSFeedBase(BaseModel):
     name: str
     url: str
     category: str = "general"
+    language: str = "en"
 
 class RSSFeedResponse(RSSFeedBase):
     id: str
     active: bool
+    language: str = "en"
     last_fetched: Optional[str] = None
 
 class RSSItemResponse(BaseModel):
@@ -197,6 +201,7 @@ async def get_rss_feeds(request: Request):
             "name": feed_data["name"],
             "url": feed_data["url"],
             "category": feed_data.get("category", "general"),
+            "language": feed_data.get("language", "en"),
             "active": feed_data.get("active", True),
             "last_fetched": feed_data.get("last_fetched").isoformat() if feed_data.get("last_fetched") else None
         })
@@ -209,6 +214,7 @@ async def create_rss_feed(data: RSSFeedBase, request: Request):
         "name": data.name,
         "url": data.url,
         "category": data.category,
+        "language": data.language,
         "active": True,
         "last_fetched": None,
         "created_at": datetime.now(timezone.utc)
@@ -219,9 +225,32 @@ async def create_rss_feed(data: RSSFeedBase, request: Request):
         "name": data.name,
         "url": data.url,
         "category": data.category,
+        "language": data.language,
         "active": True,
         "last_fetched": None
     }
+
+@api_router.put("/rss/feeds/{feed_id}")
+async def update_rss_feed(feed_id: str, data: RSSFeedBase, request: Request):
+    """Update RSS feed name, URL, category, or language"""
+    await get_current_user(request)
+    
+    update_doc = {
+        "name": data.name,
+        "url": data.url,
+        "category": data.category,
+        "language": data.language
+    }
+    
+    result = await db.rss_feeds.update_one(
+        {"_id": ObjectId(feed_id)},
+        {"$set": update_doc}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    
+    return {"message": "Feed updated"}
 
 @api_router.delete("/rss/feeds/{feed_id}")
 async def delete_rss_feed(feed_id: str, request: Request):
@@ -443,13 +472,64 @@ Output ONLY the translated text."""
         raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
 
 # Article Endpoints
+@api_router.post("/articles", response_model=ArticleResponse)
+async def create_article(data: ArticleCreate, request: Request):
+    """Create a new article manually (for studies, analysis, etc.)"""
+    await get_current_user(request)
+    
+    article_doc = {
+        "title_en": data.title_en,
+        "title_fr": data.title_fr,
+        "title_fa": data.title_fa,
+        "content_en": data.content_en,
+        "content_fr": data.content_fr,
+        "content_fa": data.content_fa,
+        "summary_en": data.summary_en,
+        "summary_fr": data.summary_fr,
+        "summary_fa": data.summary_fa,
+        "image_url": data.image_url,
+        "source_url": data.source_url,
+        "tags": data.tags,
+        "category": data.category,
+        "content_type": data.content_type,
+        "status": "draft",
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    result = await db.articles.insert_one(article_doc)
+    
+    return {
+        "id": str(result.inserted_id),
+        "title_en": data.title_en,
+        "title_fr": data.title_fr,
+        "title_fa": data.title_fa,
+        "content_en": data.content_en,
+        "content_fr": data.content_fr,
+        "content_fa": data.content_fa,
+        "summary_en": data.summary_en,
+        "summary_fr": data.summary_fr,
+        "summary_fa": data.summary_fa,
+        "image_url": data.image_url,
+        "source_url": data.source_url,
+        "tags": data.tags,
+        "category": data.category,
+        "content_type": data.content_type,
+        "status": "draft",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "published_at": None
+    }
+
 @api_router.get("/articles", response_model=List[ArticleResponse])
-async def get_articles(status: Optional[str] = None, lang: str = "en", limit: int = 50):
+async def get_articles(status: Optional[str] = None, content_type: Optional[str] = None, lang: str = "en", limit: int = 50):
     query = {}
     if status:
         query["status"] = status
     else:
         query["status"] = "published"
+    if content_type:
+        query["content_type"] = content_type
     
     articles = await db.articles.find(query).sort("created_at", -1).to_list(limit)
     result = []
@@ -469,6 +549,7 @@ async def get_articles(status: Optional[str] = None, lang: str = "en", limit: in
             "source_url": article.get("source_url"),
             "tags": article.get("tags", []),
             "category": article.get("category", "news"),
+            "content_type": article.get("content_type", "news"),
             "status": article.get("status", "draft"),
             "created_at": article.get("created_at").isoformat() if article.get("created_at") else "",
             "updated_at": article.get("updated_at").isoformat() if article.get("updated_at") else "",
@@ -477,11 +558,13 @@ async def get_articles(status: Optional[str] = None, lang: str = "en", limit: in
     return result
 
 @api_router.get("/articles/admin", response_model=List[ArticleResponse])
-async def get_admin_articles(request: Request, status: Optional[str] = None):
+async def get_admin_articles(request: Request, status: Optional[str] = None, content_type: Optional[str] = None):
     await get_current_user(request)
     query = {}
     if status:
         query["status"] = status
+    if content_type:
+        query["content_type"] = content_type
     
     articles = await db.articles.find(query).sort("created_at", -1).to_list(100)
     result = []
@@ -501,6 +584,7 @@ async def get_admin_articles(request: Request, status: Optional[str] = None):
             "source_url": article.get("source_url"),
             "tags": article.get("tags", []),
             "category": article.get("category", "news"),
+            "content_type": article.get("content_type", "news"),
             "status": article.get("status", "draft"),
             "created_at": article.get("created_at").isoformat() if article.get("created_at") else "",
             "updated_at": article.get("updated_at").isoformat() if article.get("updated_at") else "",
@@ -529,6 +613,7 @@ async def get_article(article_id: str):
         "source_url": article.get("source_url"),
         "tags": article.get("tags", []),
         "category": article.get("category", "news"),
+        "content_type": article.get("content_type", "news"),
         "status": article.get("status", "draft"),
         "created_at": article.get("created_at").isoformat() if article.get("created_at") else "",
         "updated_at": article.get("updated_at").isoformat() if article.get("updated_at") else "",
@@ -553,6 +638,7 @@ async def update_article(article_id: str, data: ArticleUpdate, request: Request)
         "source_url": data.source_url,
         "tags": data.tags,
         "category": data.category,
+        "content_type": data.content_type,
         "updated_at": datetime.now(timezone.utc)
     }
     
@@ -665,18 +751,30 @@ async def seed_admin():
         )
         logger.info("Admin password updated")
     
-    # Seed default RSS feed if none exists
+    # Seed default RSS feeds if none exists
     feeds_count = await db.rss_feeds.count_documents({})
     if feeds_count == 0:
+        # English social feed
         await db.rss_feeds.insert_one({
-            "name": "Iran Observatory Social",
+            "name": "Iran Observatory - English",
             "url": "https://rss.app/feeds/cPvRWpMkf81Tx8nr.xml",
             "category": "social",
+            "language": "en",
             "active": True,
             "last_fetched": None,
             "created_at": datetime.now(timezone.utc)
         })
-        logger.info("Default RSS feed created")
+        # French social feed
+        await db.rss_feeds.insert_one({
+            "name": "Observatoire de l'Iran - Français",
+            "url": "https://rss.app/feeds/0aYtpxYInp9pe8Vz.xml",
+            "category": "social",
+            "language": "fr",
+            "active": True,
+            "last_fetched": None,
+            "created_at": datetime.now(timezone.utc)
+        })
+        logger.info("Default RSS feeds created (EN + FR)")
     
     # Write test credentials
     Path("/app/memory").mkdir(exist_ok=True)

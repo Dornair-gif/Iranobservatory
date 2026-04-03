@@ -24,11 +24,23 @@ import {
 } from '../components/ui/select';
 import {
   FileText, Rss, Sparkles, BarChart3, Plus, Trash2, RefreshCw, 
-  Eye, Edit, Send, Loader2, Check, X, ExternalLink
+  Eye, Edit, Send, Loader2, Check, X, ExternalLink, BookOpen, PenTool
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const CONTENT_TYPES = [
+  { value: 'news', label: 'News', labelFr: 'Actualités' },
+  { value: 'analysis', label: 'Analysis', labelFr: 'Analyse' },
+  { value: 'study', label: 'Study', labelFr: 'Étude' }
+];
+
+const LANGUAGES = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+  { value: 'fa', label: 'فارسی' }
+];
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -44,9 +56,17 @@ export default function Admin() {
   // Modals
   const [editArticle, setEditArticle] = useState(null);
   const [showAddFeed, setShowAddFeed] = useState(false);
-  const [newFeed, setNewFeed] = useState({ name: '', url: '', category: 'general' });
+  const [editFeed, setEditFeed] = useState(null);
+  const [newFeed, setNewFeed] = useState({ name: '', url: '', category: 'general', language: 'en' });
   const [selectedRssItem, setSelectedRssItem] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [showCreateArticle, setShowCreateArticle] = useState(false);
+  const [newArticle, setNewArticle] = useState({
+    title_en: '', title_fr: '', title_fa: '',
+    content_en: '', content_fr: '', content_fa: '',
+    summary_en: '', summary_fr: '', summary_fa: '',
+    image_url: '', source_url: '', tags: [], category: 'politics', content_type: 'analysis'
+  });
 
   const axiosConfig = { withCredentials: true };
 
@@ -115,10 +135,27 @@ export default function Admin() {
       await axios.post(`${API}/rss/feeds`, newFeed, axiosConfig);
       toast.success('Feed added successfully');
       setShowAddFeed(false);
-      setNewFeed({ name: '', url: '', category: 'general' });
+      setNewFeed({ name: '', url: '', category: 'general', language: 'en' });
       fetchFeeds();
     } catch (e) {
       toast.error('Failed to add feed');
+    }
+  };
+
+  const handleUpdateFeed = async () => {
+    if (!editFeed || !editFeed.name || !editFeed.url) return;
+    try {
+      await axios.put(`${API}/rss/feeds/${editFeed.id}`, {
+        name: editFeed.name,
+        url: editFeed.url,
+        category: editFeed.category,
+        language: editFeed.language
+      }, axiosConfig);
+      toast.success('Feed updated successfully');
+      setEditFeed(null);
+      fetchFeeds();
+    } catch (e) {
+      toast.error('Failed to update feed');
     }
   };
 
@@ -185,6 +222,28 @@ export default function Admin() {
       fetchStats();
     } catch (e) {
       toast.error('Failed to delete article');
+    }
+  };
+
+  const handleCreateArticle = async () => {
+    if (!newArticle.title_en && !newArticle.title_fr) {
+      toast.error('Please add at least one title');
+      return;
+    }
+    try {
+      await axios.post(`${API}/articles`, newArticle, axiosConfig);
+      toast.success('Article created as draft');
+      setShowCreateArticle(false);
+      setNewArticle({
+        title_en: '', title_fr: '', title_fa: '',
+        content_en: '', content_fr: '', content_fa: '',
+        summary_en: '', summary_fr: '', summary_fa: '',
+        image_url: '', source_url: '', tags: [], category: 'politics', content_type: 'analysis'
+      });
+      fetchArticles();
+      fetchStats();
+    } catch (e) {
+      toast.error('Failed to create article');
     }
   };
 
@@ -356,6 +415,17 @@ export default function Admin() {
 
           {/* Articles Tab */}
           <TabsContent value="articles" className="space-y-4">
+            <div className="flex justify-end">
+              <Button 
+                className="bg-[#1E3A5F] hover:bg-[#2A4A73] text-white rounded-none uppercase tracking-widest text-xs font-bold"
+                onClick={() => setShowCreateArticle(true)}
+                data-testid="create-article-btn"
+              >
+                <Plus className="w-4 h-4 me-2" strokeWidth={1.5} />
+                New Study/Analysis
+              </Button>
+            </div>
+
             <div className="bg-white border border-zinc-200">
               <div className="border-b border-zinc-200 p-4 flex items-center justify-between">
                 <h3 className="font-heading font-bold">{t('articles')}</h3>
@@ -364,14 +434,21 @@ export default function Admin() {
                 {articles.map(article => (
                   <div key={article.id} className="p-4 flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium truncate">{article.title_en || 'Untitled'}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium truncate">{article.title_en || article.title_fr || 'Untitled'}</p>
                         <span className={`px-2 py-0.5 text-xs font-mono uppercase tracking-wider ${
                           article.status === 'published' 
                             ? 'bg-green-100 text-green-700' 
                             : 'bg-amber-100 text-amber-700'
                         }`}>
                           {article.status}
+                        </span>
+                        <span className={`px-2 py-0.5 text-xs font-mono uppercase tracking-wider ${
+                          article.content_type === 'news' ? 'bg-blue-100 text-blue-700' :
+                          article.content_type === 'analysis' ? 'bg-purple-100 text-purple-700' :
+                          'bg-indigo-100 text-indigo-700'
+                        }`}>
+                          {article.content_type || 'news'}
                         </span>
                       </div>
                       <p className="text-xs text-zinc-500 font-mono mt-1">
@@ -421,7 +498,7 @@ export default function Admin() {
           <TabsContent value="rss" className="space-y-4">
             <div className="flex justify-end">
               <Button 
-                className="btn-primary rounded-none"
+                className="bg-[#1E3A5F] hover:bg-[#2A4A73] text-white rounded-none uppercase tracking-widest text-xs font-bold"
                 onClick={() => setShowAddFeed(true)}
                 data-testid="add-feed-btn"
               >
@@ -435,7 +512,12 @@ export default function Admin() {
                 {feeds.map(feed => (
                   <div key={feed.id} className="p-4 flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{feed.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{feed.name}</p>
+                        <span className="px-2 py-0.5 text-xs font-mono uppercase tracking-wider bg-zinc-100 text-zinc-600">
+                          {feed.language || 'en'}
+                        </span>
+                      </div>
                       <p className="text-xs text-zinc-500 font-mono truncate">{feed.url}</p>
                       {feed.last_fetched && (
                         <p className="text-xs text-zinc-400 mt-1">
@@ -444,6 +526,15 @@ export default function Admin() {
                       )}
                     </div>
                     <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-none"
+                        onClick={() => setEditFeed(feed)}
+                        data-testid={`edit-feed-${feed.id}`}
+                      >
+                        <Edit className="w-3 h-3" strokeWidth={1.5} />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -488,7 +579,7 @@ export default function Admin() {
                       key={item.id} 
                       className={`p-4 cursor-pointer transition-colors ${
                         selectedRssItem?.id === item.id 
-                          ? 'bg-red-50 border-l-4 border-red-700' 
+                          ? 'bg-[#e8f5f0] border-l-4 border-[#3DB883]' 
                           : 'hover:bg-zinc-50'
                       }`}
                       onClick={() => setSelectedRssItem(item)}
@@ -601,32 +692,218 @@ export default function Admin() {
               <Input
                 value={newFeed.url}
                 onChange={(e) => setNewFeed({ ...newFeed, url: e.target.value })}
-                placeholder="https://example.com/rss.xml"
+                placeholder="https://rss.app/feeds/xxx.xml"
                 className="rounded-none"
                 data-testid="feed-url-input"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="font-mono text-xs uppercase tracking-wider">Category</Label>
-              <Select value={newFeed.category} onValueChange={(v) => setNewFeed({ ...newFeed, category: v })}>
-                <SelectTrigger className="rounded-none" data-testid="feed-category-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-none">
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="social">Social</SelectItem>
-                  <SelectItem value="news">News</SelectItem>
-                  <SelectItem value="politics">Politics</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-mono text-xs uppercase tracking-wider">Language</Label>
+                <Select value={newFeed.language} onValueChange={(v) => setNewFeed({ ...newFeed, language: v })}>
+                  <SelectTrigger className="rounded-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    {LANGUAGES.map(lang => (
+                      <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-mono text-xs uppercase tracking-wider">Category</Label>
+                <Select value={newFeed.category} onValueChange={(v) => setNewFeed({ ...newFeed, category: v })}>
+                  <SelectTrigger className="rounded-none" data-testid="feed-category-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="social">Social</SelectItem>
+                    <SelectItem value="news">News</SelectItem>
+                    <SelectItem value="politics">Politics</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-none" onClick={() => setShowAddFeed(false)}>
               {t('cancel')}
             </Button>
-            <Button className="btn-primary rounded-none" onClick={handleAddFeed} data-testid="save-feed-btn">
+            <Button className="bg-[#1E3A5F] hover:bg-[#2A4A73] text-white rounded-none" onClick={handleAddFeed} data-testid="save-feed-btn">
               {t('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Feed Dialog */}
+      <Dialog open={!!editFeed} onOpenChange={() => setEditFeed(null)}>
+        <DialogContent className="rounded-none border-zinc-200">
+          <DialogHeader>
+            <DialogTitle className="font-heading font-bold">Edit Feed</DialogTitle>
+          </DialogHeader>
+          {editFeed && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="font-mono text-xs uppercase tracking-wider">Name</Label>
+                <Input
+                  value={editFeed.name}
+                  onChange={(e) => setEditFeed({ ...editFeed, name: e.target.value })}
+                  className="rounded-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-mono text-xs uppercase tracking-wider">URL</Label>
+                <Input
+                  value={editFeed.url}
+                  onChange={(e) => setEditFeed({ ...editFeed, url: e.target.value })}
+                  className="rounded-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-mono text-xs uppercase tracking-wider">Language</Label>
+                  <Select value={editFeed.language || 'en'} onValueChange={(v) => setEditFeed({ ...editFeed, language: v })}>
+                    <SelectTrigger className="rounded-none">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none">
+                      {LANGUAGES.map(lang => (
+                        <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-mono text-xs uppercase tracking-wider">Category</Label>
+                  <Select value={editFeed.category || 'general'} onValueChange={(v) => setEditFeed({ ...editFeed, category: v })}>
+                    <SelectTrigger className="rounded-none">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none">
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="social">Social</SelectItem>
+                      <SelectItem value="news">News</SelectItem>
+                      <SelectItem value="politics">Politics</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" className="rounded-none" onClick={() => setEditFeed(null)}>
+              {t('cancel')}
+            </Button>
+            <Button className="bg-[#1E3A5F] hover:bg-[#2A4A73] text-white rounded-none" onClick={handleUpdateFeed}>
+              {t('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Article Dialog (for Studies/Analysis) */}
+      <Dialog open={showCreateArticle} onOpenChange={setShowCreateArticle}>
+        <DialogContent className="rounded-none border-zinc-200 max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-heading font-bold flex items-center gap-2">
+              <BookOpen className="w-5 h-5" strokeWidth={1.5} />
+              Create Study / Analysis
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-mono text-xs uppercase tracking-wider">Content Type</Label>
+                <Select value={newArticle.content_type} onValueChange={(v) => setNewArticle({ ...newArticle, content_type: v })}>
+                  <SelectTrigger className="rounded-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    {CONTENT_TYPES.map(type => (
+                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-mono text-xs uppercase tracking-wider">{t('category')}</Label>
+                <Select value={newArticle.category} onValueChange={(v) => setNewArticle({ ...newArticle, category: v })}>
+                  <SelectTrigger className="rounded-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    <SelectItem value="politics">Politics</SelectItem>
+                    <SelectItem value="economy">Economy</SelectItem>
+                    <SelectItem value="society">Society</SelectItem>
+                    <SelectItem value="human-rights">Human Rights</SelectItem>
+                    <SelectItem value="international">International</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Tabs defaultValue="en" className="space-y-4">
+              <TabsList className="rounded-none">
+                <TabsTrigger value="en" className="rounded-none font-mono text-xs">English</TabsTrigger>
+                <TabsTrigger value="fr" className="rounded-none font-mono text-xs">Français</TabsTrigger>
+                <TabsTrigger value="fa" className="rounded-none font-mono text-xs">فارسی</TabsTrigger>
+              </TabsList>
+
+              {['en', 'fr', 'fa'].map(lang => (
+                <TabsContent key={lang} value={lang} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="font-mono text-xs uppercase tracking-wider">{t('title')}</Label>
+                    <Input
+                      value={newArticle[`title_${lang}`] || ''}
+                      onChange={(e) => setNewArticle({ ...newArticle, [`title_${lang}`]: e.target.value })}
+                      className="rounded-none"
+                      dir={lang === 'fa' ? 'rtl' : 'ltr'}
+                      placeholder={lang === 'en' ? 'Article title...' : lang === 'fr' ? 'Titre de l\'article...' : 'عنوان مقاله...'}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-mono text-xs uppercase tracking-wider">{t('summary')}</Label>
+                    <Textarea
+                      value={newArticle[`summary_${lang}`] || ''}
+                      onChange={(e) => setNewArticle({ ...newArticle, [`summary_${lang}`]: e.target.value })}
+                      className="rounded-none"
+                      rows={2}
+                      dir={lang === 'fa' ? 'rtl' : 'ltr'}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-mono text-xs uppercase tracking-wider">{t('content')}</Label>
+                    <Textarea
+                      value={newArticle[`content_${lang}`] || ''}
+                      onChange={(e) => setNewArticle({ ...newArticle, [`content_${lang}`]: e.target.value })}
+                      className="rounded-none"
+                      rows={10}
+                      dir={lang === 'fa' ? 'rtl' : 'ltr'}
+                    />
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+
+            <div className="space-y-2">
+              <Label className="font-mono text-xs uppercase tracking-wider">Image URL</Label>
+              <Input
+                value={newArticle.image_url || ''}
+                onChange={(e) => setNewArticle({ ...newArticle, image_url: e.target.value })}
+                className="rounded-none"
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="rounded-none" onClick={() => setShowCreateArticle(false)}>
+              {t('cancel')}
+            </Button>
+            <Button className="bg-[#1E3A5F] hover:bg-[#2A4A73] text-white rounded-none" onClick={handleCreateArticle}>
+              Create as Draft
             </Button>
           </DialogFooter>
         </DialogContent>

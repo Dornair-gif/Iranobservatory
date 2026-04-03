@@ -11,7 +11,7 @@ import {
 } from '../components/ui/dropdown-menu';
 import { Button } from '../components/ui/button';
 
-const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png";
 
 export function Header() {
   const { user, logout } = useAuth();
