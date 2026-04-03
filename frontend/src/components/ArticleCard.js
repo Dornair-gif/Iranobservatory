@@ -33,10 +33,10 @@ export function ArticleCard({ article, featured = false }) {
             alt={title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1E3A5F]/80 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-2 py-1 bg-red-700 text-xs font-mono uppercase tracking-wider">
+              <span className="px-2 py-1 bg-[#3DB883] text-xs font-mono uppercase tracking-wider">
                 {article.category || 'News'}
               </span>
               <span className="text-xs font-mono opacity-80">{timeAgo}</span>
@@ -70,13 +70,13 @@ export function ArticleCard({ article, featured = false }) {
       )}
       
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-mono uppercase tracking-wider text-red-700">
+        <span className="text-xs font-mono uppercase tracking-wider text-[#3DB883]">
           {article.category || 'News'}
         </span>
         <span className="text-xs font-mono text-zinc-400">{timeAgo}</span>
       </div>
       
-      <h3 className="font-heading font-bold text-lg tracking-tight leading-tight mb-2 group-hover:text-red-700 transition-colors flex-grow">
+      <h3 className="font-heading font-bold text-lg tracking-tight leading-tight mb-2 group-hover:text-[#1E3A5F] transition-colors flex-grow">
         {title}
       </h3>
       
@@ -84,7 +84,7 @@ export function ArticleCard({ article, featured = false }) {
         {summary}
       </p>
       
-      <div className="flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-zinc-500 group-hover:text-red-700 transition-colors mt-auto">
+      <div className="flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-zinc-500 group-hover:text-[#3DB883] transition-colors mt-auto">
         {t('readMore')}
         <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
       </div>

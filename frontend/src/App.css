@@ -65,12 +65,12 @@
 }
 
 .prose a {
-  color: #b91c1c;
+  color: #1E3A5F;
   text-decoration: underline;
 }
 
 .prose a:hover {
-  color: #7f1d1d;
+  color: #3DB883;
 }
 
 .prose ul, .prose ol {
@@ -104,9 +104,9 @@
   padding-right: 1em;
 }
 
-/* Button styles */
+/* Button styles - Iran Observatory Brand */
 .btn-primary {
-  background-color: #b91c1c;
+  background-color: #1E3A5F;
   color: white;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -117,7 +117,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #991b1b;
+  background-color: #2A4A73;
 }
 
 .btn-primary:disabled {
@@ -127,8 +127,8 @@
 
 .btn-secondary {
   background-color: transparent;
-  border: 1px solid #18181b;
-  color: #18181b;
+  border: 1px solid #1E3A5F;
+  color: #1E3A5F;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 0.75rem;
@@ -138,8 +138,23 @@
 }
 
 .btn-secondary:hover {
-  background-color: #18181b;
+  background-color: #1E3A5F;
   color: white;
+}
+
+.btn-accent {
+  background-color: #3DB883;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  transition: background-color 150ms ease-in-out;
+}
+
+.btn-accent:hover {
+  background-color: #2D9E6E;
 }
 
 /* Glass header effect */
@@ -225,14 +240,14 @@
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid #b91c1c;
+  outline: 2px solid #3DB883;
   outline-offset: 2px;
 }
 
 /* Selection */
 ::selection {
-  background-color: #fecaca;
-  color: #7f1d1d;
+  background-color: #d4edda;
+  color: #1E3A5F;
 }
 
 /* Print styles */

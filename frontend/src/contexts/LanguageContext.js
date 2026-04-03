@@ -5,7 +5,8 @@ const LanguageContext = createContext(null);
 const translations = {
   en: {
     siteName: "Iran Observatory",
-    tagline: "Real-time monitoring of Iran events",
+    tagline: "Independent insights into Iran's political, economic and social dynamics",
+    motto: "Iran's future matters, far beyond its borders",
     latestNews: "Latest News",
     breakingNews: "Breaking News",
     live: "LIVE",
@@ -43,11 +44,14 @@ const translations = {
     selectItem: "Select an RSS item to generate an article",
     noArticles: "No articles yet",
     allRights: "All rights reserved",
-    language: "Language"
+    language: "Language",
+    independent: "Independent Platform",
+    factBased: "Fact-Based Insights"
   },
   fr: {
-    siteName: "Observatoire d'Iran",
-    tagline: "Surveillance en temps réel des événements en Iran",
+    siteName: "Observatoire de l'Iran",
+    tagline: "Analyses indépendantes des dynamiques politiques, économiques et sociales de l'Iran",
+    motto: "L'avenir de l'Iran compte, bien au-delà de ses frontières",
     latestNews: "Dernières Actualités",
     breakingNews: "Info Flash",
     live: "EN DIRECT",
@@ -85,11 +89,14 @@ const translations = {
     selectItem: "Sélectionnez un élément RSS pour générer un article",
     noArticles: "Aucun article pour le moment",
     allRights: "Tous droits réservés",
-    language: "Langue"
+    language: "Langue",
+    independent: "Plateforme Indépendante",
+    factBased: "Analyses Factuelles"
   },
   fa: {
     siteName: "رصدخانه ایران",
-    tagline: "پایش لحظه‌ای رویدادهای ایران",
+    tagline: "تحلیل‌های مستقل از پویایی‌های سیاسی، اقتصادی و اجتماعی ایران",
+    motto: "آینده ایران اهمیت دارد، فراتر از مرزهایش",
     latestNews: "آخرین اخبار",
     breakingNews: "خبر فوری",
     live: "زنده",
@@ -127,7 +134,9 @@ const translations = {
     selectItem: "یک مورد RSS را برای تولید مقاله انتخاب کنید",
     noArticles: "هنوز مقاله‌ای وجود ندارد",
     allRights: "تمامی حقوق محفوظ است",
-    language: "زبان"
+    language: "زبان",
+    independent: "پلتفرم مستقل",
+    factBased: "تحلیل‌های مبتنی بر واقعیت"
   }
 };
 

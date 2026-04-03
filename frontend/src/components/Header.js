@@ -11,6 +11,8 @@ import {
 } from '../components/ui/dropdown-menu';
 import { Button } from '../components/ui/button';
 
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
+
 export function Header() {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
@@ -38,25 +40,19 @@ export function Header() {
             className="flex items-center gap-3 group"
             data-testid="logo-link"
           >
-            <div className="w-10 h-10 bg-red-700 flex items-center justify-center">
-              <span className="text-white font-heading font-black text-lg">IO</span>
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-heading font-black text-lg tracking-tighter text-zinc-900">
-                {t('siteName')}
-              </h1>
-              <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
-                {t('tagline')}
-              </p>
-            </div>
+            <img 
+              src={LOGO_URL} 
+              alt="Iran Observatory"
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             {/* Live indicator */}
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse-live" />
-              <span className="font-mono text-xs uppercase tracking-widest text-red-700">
+              <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse-live" />
+              <span className="font-mono text-xs uppercase tracking-widest text-[#3DB883]">
                 {t('live')}
               </span>
             </div>
@@ -146,8 +142,8 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-200 py-4 space-y-4">
             <div className="flex items-center gap-2 px-2">
-              <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse-live" />
-              <span className="font-mono text-xs uppercase tracking-widest text-red-700">
+              <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse-live" />
+              <span className="font-mono text-xs uppercase tracking-widest text-[#3DB883]">
                 {t('live')}
               </span>
             </div>
@@ -162,7 +158,7 @@ export function Header() {
                   }}
                   className={`px-3 py-2 font-mono text-xs uppercase tracking-wider border ${
                     language === lang.code 
-                      ? 'bg-zinc-900 text-white border-zinc-900' 
+                      ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]' 
                       : 'border-zinc-200'
                   }`}
                   data-testid={`mobile-lang-${lang.code}`}
@@ -194,7 +190,7 @@ export function Header() {
             ) : (
               <Link
                 to="/login"
-                className="block mx-2 text-center px-3 py-2 font-mono text-xs uppercase tracking-wider bg-zinc-900 text-white"
+                className="block mx-2 text-center px-3 py-2 font-mono text-xs uppercase tracking-wider bg-[#1E3A5F] text-white"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t('login')}

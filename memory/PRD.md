@@ -1,7 +1,14 @@
-# Iran Observatory / Observatoire d'Iran - PRD
+# Iran Observatory / Observatoire de l'Iran - PRD
 
 ## Original Problem Statement
 Build a best-in-class website for Iran Observatory with real-time monitoring of Iran events, highly automated content generation, and integration with existing social media feeds (X, Instagram, LinkedIn).
+
+## Brand Identity
+- **Tagline EN**: "Independent insights into Iran's political, economic and social dynamics"
+- **Tagline FR**: "Analyses indépendantes des dynamiques politiques, économiques et sociales de l'Iran"
+- **Motto**: "Iran's future matters, far beyond its borders"
+- **Colors**: Navy Blue (#1E3A5F), Emerald Green (#3DB883)
+- **Editorial Stance**: Independent, fact-based, critical of Islamic Republic but impartial
 
 ## User Personas
 - **Admin/Editor**: Manages content, reviews AI-generated drafts, publishes articles
@@ -13,10 +20,13 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 3. Multi-language support (FR/EN/FA) with localized translations
 4. Admin panel with JWT authentication
 5. Professional news + modern aesthetic design
+6. Independent editorial voice - critical but impartial
 
 ## What's Been Implemented (January 2026)
 - ✅ Full-stack application (React + FastAPI + MongoDB)
+- ✅ Official Iran Observatory branding (logo, colors, taglines)
 - ✅ AI content generation with GPT-5.2 via Emergent LLM Key
+- ✅ Editorial stance embedded in AI system prompts
 - ✅ RSS feed management (add, fetch, delete feeds)
 - ✅ Multi-language support with RTL for Persian
 - ✅ JWT-based admin authentication
@@ -32,10 +42,11 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - **Auth**: JWT with httpOnly cookies
 - **Database**: MongoDB
 
-## Prioritized Backlog
+## Admin Credentials
+- Email: admin@iranobservatory.org
+- Password: IranObs2024!
 
-### P0 (Critical)
-- All implemented ✅
+## Prioritized Backlog
 
 ### P1 (High Priority)
 - Scheduled RSS feed auto-fetching
@@ -53,7 +64,3 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - AI-powered article categorization
 - Reader comments system
 - Dark mode toggle
-
-## Admin Credentials
-- Email: admin@iranobservatory.org
-- Password: IranObs2024!

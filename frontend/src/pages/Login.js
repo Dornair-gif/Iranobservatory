@@ -7,6 +7,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
+
 function formatApiErrorDetail(detail) {
   if (detail == null) return "Something went wrong. Please try again.";
   if (typeof detail === "string") return detail;
@@ -58,14 +60,13 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-red-700 flex items-center justify-center">
-              <span className="text-white font-heading font-black text-xl">IO</span>
-            </div>
+          <div className="inline-block mb-4">
+            <img 
+              src={LOGO_URL} 
+              alt="Iran Observatory"
+              className="h-16 w-auto mx-auto"
+            />
           </div>
-          <h1 className="font-heading font-black text-2xl tracking-tighter">
-            {t('siteName')}
-          </h1>
           <p className="text-sm text-zinc-500 mt-1">{t('admin')} {t('login')}</p>
         </div>
 
@@ -89,7 +90,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="rounded-none border-zinc-200 focus:border-red-700 focus:ring-red-700"
+                className="rounded-none border-zinc-200 focus:border-[#3DB883] focus:ring-[#3DB883]"
                 placeholder="admin@example.com"
                 data-testid="email-input"
               />
@@ -105,7 +106,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="rounded-none border-zinc-200 focus:border-red-700 focus:ring-red-700"
+                className="rounded-none border-zinc-200 focus:border-[#3DB883] focus:ring-[#3DB883]"
                 placeholder="••••••••"
                 data-testid="password-input"
               />
@@ -114,7 +115,7 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary flex items-center justify-center gap-2"
+              className="w-full bg-[#1E3A5F] hover:bg-[#2A4A73] text-white rounded-none uppercase tracking-widest text-xs font-bold py-3 flex items-center justify-center gap-2"
               data-testid="login-submit-btn"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -31,30 +31,36 @@ code {
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
+    --foreground: 210 45% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
+    --card-foreground: 210 45% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
-    --primary: 0 65% 45%;
+    --popover-foreground: 210 45% 20%;
+    --primary: 210 55% 25%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 10%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 225 73% 33%;
+    --secondary: 210 10% 96%;
+    --secondary-foreground: 210 45% 20%;
+    --muted: 210 10% 96%;
+    --muted-foreground: 210 10% 46%;
+    --accent: 155 55% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 0 65% 45%;
-    --chart-1: 0 65% 45%;
-    --chart-2: 225 73% 33%;
+    --border: 210 15% 90%;
+    --input: 210 15% 90%;
+    --ring: 155 55% 45%;
+    --chart-1: 210 55% 25%;
+    --chart-2: 155 55% 45%;
     --chart-3: 45 93% 47%;
-    --chart-4: 240 4% 46%;
-    --chart-5: 240 6% 10%;
+    --chart-4: 210 10% 46%;
+    --chart-5: 210 45% 20%;
     --radius: 0;
+    
+    /* Iran Observatory Brand Colors */
+    --io-navy: #1E3A5F;
+    --io-navy-light: #2A4A73;
+    --io-green: #3DB883;
+    --io-green-dark: #2D9E6E;
   }
 }
 

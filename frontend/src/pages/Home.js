@@ -6,9 +6,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
 
 export default function Home() {
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,10 +33,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white" data-testid="home-page">
-      {/* Hero Section */}
-      <section className="relative bg-zinc-900 text-white overflow-hidden">
+      {/* Hero Section - Iran Observatory Brand Colors */}
+      <section className="relative bg-[#1E3A5F] text-white overflow-hidden">
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-30"
+          className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ 
             backgroundImage: `url('https://images.pexels.com/photos/31468386/pexels-photo-31468386.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940')` 
           }}
@@ -43,21 +44,24 @@ export default function Home() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="max-w-3xl">
             <div className="flex items-center gap-3 mb-6 animate-fade-up">
-              <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse-live" />
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-red-400">
-                {t('live')} • {t('breakingNews')}
+              <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse-live" />
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#3DB883]">
+                {t('live')} • {t('independent')}
               </span>
             </div>
-            <h1 className="font-heading font-black text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-none mb-6 animate-fade-up-delay-1">
+            <h1 className="font-heading font-black text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-none mb-4 animate-fade-up-delay-1">
               {t('siteName')}
             </h1>
-            <p className="text-lg sm:text-xl text-zinc-300 mb-8 animate-fade-up-delay-2">
+            <p className="text-lg sm:text-xl text-zinc-200 mb-4 animate-fade-up-delay-2">
               {t('tagline')}
+            </p>
+            <p className="text-base text-[#3DB883] font-medium mb-8 animate-fade-up-delay-2 italic">
+              "{t('motto')}"
             </p>
             <div className="flex flex-wrap gap-4 animate-fade-up-delay-3">
               <a 
                 href="#latest" 
-                className="btn-primary inline-flex items-center gap-2"
+                className="bg-[#3DB883] text-white uppercase tracking-widest text-xs font-bold px-6 py-3 hover:bg-[#2D9E6E] transition-colors inline-flex items-center gap-2"
                 data-testid="explore-news-btn"
               >
                 {t('latestNews')}
@@ -66,13 +70,15 @@ export default function Home() {
             </div>
           </div>
         </div>
+        {/* Decorative green line */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#3DB883]" />
       </section>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" id="latest">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-8 border-b border-zinc-200 pb-4">
-          <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter">
+          <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-[#1E3A5F]">
             {t('latestNews')}
           </h2>
           <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
@@ -142,12 +148,12 @@ export default function Home() {
       <section className="bg-zinc-50 border-t border-zinc-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-heading font-bold text-xl tracking-tight">
+            <h2 className="font-heading font-bold text-xl tracking-tight text-[#1E3A5F]">
               Social Feed
             </h2>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse-live" />
-              <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
+              <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse-live" />
+              <span className="font-mono text-xs uppercase tracking-wider text-[#3DB883]">
                 {t('live')}
               </span>
             </div>
@@ -165,43 +171,45 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-zinc-900 text-white">
+      <footer className="bg-[#1E3A5F] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-red-700 flex items-center justify-center">
-                  <span className="text-white font-heading font-black text-lg">IO</span>
-                </div>
-                <h3 className="font-heading font-black text-lg tracking-tighter">
-                  {t('siteName')}
-                </h3>
+              <div className="mb-4">
+                <img 
+                  src={LOGO_URL} 
+                  alt="Iran Observatory"
+                  className="h-12 w-auto"
+                />
               </div>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-zinc-300 mb-2">
                 {t('tagline')}
+              </p>
+              <p className="text-xs text-[#3DB883] italic">
+                {t('motto')}
               </p>
             </div>
             
             <div>
-              <h4 className="font-mono text-xs uppercase tracking-wider text-zinc-500 mb-4">
+              <h4 className="font-mono text-xs uppercase tracking-wider text-[#3DB883] mb-4">
                 {t('language')}
               </h4>
               <div className="space-y-2">
                 <button 
-                  onClick={() => {}} 
-                  className="block text-sm text-zinc-300 hover:text-white transition-colors"
+                  onClick={() => setLanguage('en')} 
+                  className={`block text-sm transition-colors ${language === 'en' ? 'text-[#3DB883]' : 'text-zinc-300 hover:text-white'}`}
                 >
                   English
                 </button>
                 <button 
-                  onClick={() => {}} 
-                  className="block text-sm text-zinc-300 hover:text-white transition-colors"
+                  onClick={() => setLanguage('fr')} 
+                  className={`block text-sm transition-colors ${language === 'fr' ? 'text-[#3DB883]' : 'text-zinc-300 hover:text-white'}`}
                 >
                   Français
                 </button>
                 <button 
-                  onClick={() => {}} 
-                  className="block text-sm text-zinc-300 hover:text-white transition-colors"
+                  onClick={() => setLanguage('fa')} 
+                  className={`block text-sm transition-colors ${language === 'fa' ? 'text-[#3DB883]' : 'text-zinc-300 hover:text-white'}`}
                 >
                   فارسی
                 </button>
@@ -209,19 +217,17 @@ export default function Home() {
             </div>
             
             <div>
-              <h4 className="font-mono text-xs uppercase tracking-wider text-zinc-500 mb-4">
-                Connect
+              <h4 className="font-mono text-xs uppercase tracking-wider text-[#3DB883] mb-4">
+                {t('independent')}
               </h4>
-              <div className="flex gap-4">
-                <a href="#" className="text-zinc-400 hover:text-white transition-colors">
-                  <ExternalLink className="w-5 h-5" strokeWidth={1.5} />
-                </a>
-              </div>
+              <p className="text-sm text-zinc-300">
+                {t('factBased')}
+              </p>
             </div>
           </div>
           
-          <div className="border-t border-zinc-800 mt-8 pt-8 text-center">
-            <p className="text-xs text-zinc-500 font-mono">
+          <div className="border-t border-[#2A4A73] mt-8 pt-8 text-center">
+            <p className="text-xs text-zinc-400 font-mono">
               © {new Date().getFullYear()} {t('siteName')}. {t('allRights')}.
             </p>
           </div>

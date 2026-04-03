@@ -101,7 +101,7 @@ export default function Article() {
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
-          <span className="px-3 py-1 bg-red-700 text-white text-xs font-mono uppercase tracking-wider">
+          <span className="px-3 py-1 bg-[#3DB883] text-white text-xs font-mono uppercase tracking-wider">
             {article.category || 'News'}
           </span>
           <span className="font-mono text-xs text-zinc-500 flex items-center gap-1">
@@ -112,7 +112,7 @@ export default function Article() {
 
         {/* Title */}
         <h1 
-          className="font-heading font-black text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-tight mb-6"
+          className="font-heading font-black text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-tight mb-6 text-[#1E3A5F]"
           data-testid="article-title"
         >
           {title}
