@@ -334,7 +334,7 @@ async def generate_article(data: AIGenerateRequest, request: Request):
         
         api_key = os.environ.get("EMERGENT_LLM_KEY")
         
-        # Generate article content
+        # Generate article content with fact-checking and enrichment
         chat = LlmChat(
             api_key=api_key,
             session_id=f"article-gen-{uuid.uuid4()}",
@@ -347,11 +347,29 @@ EDITORIAL STANCE:
 - We focus on facts, verified information, and balanced analysis
 - We serve readers who believe "Iran's future matters, far beyond its borders"
 
+FACT-CHECKING & VERIFICATION PROTOCOL:
+1. Cross-reference information with known facts about Iran
+2. If claims seem extraordinary or unverified, note them as "reportedly" or "according to sources"
+3. Add historical context when relevant (previous similar events, patterns)
+4. Include background information about key figures, organizations, or locations mentioned
+5. Mention the original source of the information
+6. If information cannot be fully verified, clearly state this
+7. Avoid amplifying unverified rumors or propaganda from any side
+8. Compare with known facts about Iran's government, economy, and society
+
+ENRICHMENT GUIDELINES:
+- Add relevant context about Iran's political structure when discussing government actions
+- Include economic context (sanctions impact, currency situation, etc.) when relevant
+- Reference recent related events to provide continuity for readers
+- Explain terminology that international readers might not understand
+- Add geographical context for locations in Iran
+- Provide background on mentioned organizations (IRGC, Basij, etc.)
+
 WRITING STYLE:
 - Objective, factual, and well-researched articles
 - Avoid sensationalism and propaganda
 - Professional tone like Reuters, Le Monde, or The Economist
-- Provide context and background when relevant
+- Use precise language and avoid vague claims
 - Be critical but fair in analysis
 
 Output in the requested language only, with proper localization and cultural adaptation."""
@@ -373,19 +391,23 @@ Write ONLY the headline, nothing else. Make it professional and engaging."""
             title_msg = UserMessage(text=title_prompt)
             title_response = await chat.send_message(title_msg)
             
-            # Generate content
+            # Generate content with fact-checking and enrichment
             content_prompt = f"""Write a professional news article in {lang_names.get(lang, lang)} based on:
 
 Title: {rss_item['title']}
 Summary: {rss_item.get('summary', '')}
 Source: {rss_item.get('link', '')}
 
-Requirements:
-- 3-4 paragraphs
-- Objective tone
-- Include context about Iran if relevant
-- Professional journalistic style
-- Write ONLY in {lang_names.get(lang, lang)}
+REQUIREMENTS:
+1. Write 4-5 paragraphs with rich context
+2. Start with the key news, then provide background and context
+3. Cross-reference with known facts about Iran - add relevant historical or political context
+4. If any claims seem unverified, note them as "reportedly" or "according to sources"
+5. Include background on any mentioned organizations, figures, or locations
+6. Add economic or political context where relevant
+7. Mention the source of the information
+8. Professional journalistic style like Reuters or Le Monde
+9. Write ONLY in {lang_names.get(lang, lang)}
 
 Write the article body only, no title."""
             
