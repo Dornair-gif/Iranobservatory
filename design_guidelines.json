@@ -1,0 +1,128 @@
+{
+  "project_name": "Iran Observatory / Observatoire d'Iran",
+  "domain": "News Portal & Dashboard",
+  "theme": "Light",
+  "archetype": "Archetype 4 (Swiss & High-Contrast)",
+  "core_philosophy": "Objective, Truthful, Authoritative, Minimalist. The design acts as a transparent vessel for complex geopolitical data. High-contrast typography and strict grid systems evoke premium editorial standards.",
+  "typography": {
+    "rules": {
+      "headings": {
+        "font_family": "Cabinet Grotesk, sans-serif",
+        "weight": "font-black or font-light (radical contrast)",
+        "tracking": "tracking-tighter",
+        "usage": "Use for all major section headers, breaking news titles, and dashboard widget titles."
+      },
+      "body": {
+        "font_family": "IBM Plex Sans, sans-serif",
+        "weight": "font-normal",
+        "tracking": "tracking-normal",
+        "usage": "Use for all article content, UI labels, and standard text."
+      },
+      "monospace": {
+        "font_family": "IBM Plex Mono, monospace",
+        "usage": "Use for timestamps, data metrics, status tags, and language switchers."
+      }
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-tight",
+      "h3": "text-xl sm:text-2xl tracking-tight",
+      "body": "text-base leading-relaxed",
+      "small_labels": "text-xs uppercase tracking-[0.2em] font-semibold"
+    },
+    "multi_language": {
+      "persian_support": "Persian (FA) requires Right-to-Left (RTL) layout. Use standard logical CSS properties in Tailwind (e.g., ms-4 instead of ml-4, pe-4 instead of pr-4), or ensure the UI flips correctly when dir='rtl' is applied to the HTML tag. Select a compatible Persian web font (e.g., Vazirmatn) as fallback for FA text."
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "primary": "#FFFFFF",
+        "secondary": "#F4F4F5",
+        "tertiary": "#E4E4E7"
+      },
+      "text": {
+        "primary": "#09090B",
+        "secondary": "#52525B",
+        "muted": "#A1A1AA"
+      },
+      "accent": {
+        "primary": "#D32F2F",
+        "primary_hover": "#B71C1C",
+        "secondary": "#002FA7",
+        "warning": "#F59E0B"
+      },
+      "borders": {
+        "default": "#E4E4E7",
+        "focus": "#D32F2F"
+      }
+    },
+    "usage_rules": {
+      "backgrounds": "95% of the UI should be stark white or tinted grey. No full-screen gradients. Color is used ONLY for function (e.g., Red for breaking news or Live status, Blue for links/primary actions).",
+      "contrast": "Text must meet APCA standards. Hover states must explicitly set text color (e.g., hover:bg-zinc-900 hover:text-white).",
+      "borders": "Expose the skeleton. Use visible 1px borders (border-zinc-200) for grid structures and cards."
+    }
+  },
+  "spacing_and_layout": {
+    "general": "Follow generous spacing for public-facing articles (p-8 to p-12). For the admin dashboard, use tight density (p-4).",
+    "grids": {
+      "public_news_landing": "MODE A: The 'Tetris' Grid. Asymmetrical layouts for articles. The hero article spans 8 columns, side stories span 4.",
+      "admin_dashboard": "MODE B: The 'Control Room' Grid. Strict 3 or 4 column grid for AI content generation queues, RSS feeds, and stats."
+    },
+    "alignment": "Mobile-first. Ensure all containers have padding. Left-align dense text and article bodies for readability. RTL languages must naturally right-align."
+  },
+  "components": {
+    "cards": {
+      "style": "Flat background, 1px solid border (border-zinc-200), NO shadow by default. Sharp corners (rounded-none or max rounded-sm).",
+      "hover": "Subtle translate-y-[-2px] and shadow-sm. Border color darkens to zinc-400."
+    },
+    "buttons": {
+      "primary": "bg-red-700 text-white rounded-none uppercase tracking-widest text-xs font-bold hover:bg-red-800 transition-colors",
+      "secondary": "bg-transparent border border-zinc-900 text-zinc-900 rounded-none uppercase tracking-widest text-xs font-bold hover:bg-zinc-900 hover:text-white transition-colors"
+    },
+    "navigation": {
+      "style": "Glassmorphism for sticky header (backdrop-blur-xl bg-white/80 border-b border-zinc-200). Must include language switcher (FR/EN/FA).",
+      "behavior": "Sticky top-0 z-50."
+    },
+    "status_indicators": {
+      "live": "Include a pulsing red dot (animate-pulse bg-red-600) for real-time monitoring feeds."
+    },
+    "shadcn_customization": "Override default Shadcn radii to 0px (rounded-none) to fit the brutalist/Swiss editorial aesthetic. Remove soft box-shadows."
+  },
+  "motion_and_interactions": {
+    "micro_interactions": "Use fast, crisp transitions (e.g., transition-all duration-150 ease-in-out).",
+    "page_load": "Staggered fade-up for news feeds and article lists.",
+    "marquee": "Use a slow-moving editorial ribbon for breaking news or trending topics (e.g., react-fast-marquee with serif text and wide gaps)."
+  },
+  "icons_and_assets": {
+    "library": "lucide-react",
+    "style": "Use stroke-width 1.5, sharp and minimalist."
+  },
+  "accessibility_and_testing": {
+    "testing_attributes": "All interactive and key informational elements MUST include `data-testid` attribute (e.g., data-testid='lang-switch-fa', data-testid='publish-draft-btn').",
+    "contrast": "Ensure minimum 4.5:1 for normal text.",
+    "motion": "Respect prefers-reduced-motion."
+  },
+  "image_urls": {
+    "hero_background": {
+      "url": "https://images.pexels.com/photos/31468386/pexels-photo-31468386.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Panoramic view of Tehran skyline at dusk. Use with heavy gradient overlay (bg-black/50) for the main landing page header if full-width is used.",
+      "category": "hero"
+    },
+    "news_placeholder": {
+      "url": "https://images.unsplash.com/photo-1767208212251-7b9b0bde15db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHw0fHx0ZWhyYW4lMjBza3lsaW5lfGVufDB8fHx8MTc3NTIwMjc0NHww&ixlib=rb-4.1.0&q=85",
+      "description": "Milad tower in Tehran. Use as a placeholder for news articles lacking an image.",
+      "category": "content_placeholder"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Implement a strict Swiss Grid aesthetic. The UI must feel like a premium printed newspaper adapted for a high-tech monitoring dashboard.",
+    "Use Cabinet Grotesk for headings and IBM Plex Sans for body text.",
+    "Ensure RTL (Right-to-Left) layout support is properly architected for the Persian (FA) translation.",
+    "The admin workflow (AI drafting, review, publish) must use dense, highly organized table/list layouts (Control Room Grid).",
+    "The public-facing news feed must use asymmetrical bento grids (Tetris Grid) to differentiate article importance.",
+    "Override default Shadcn styles: use 0px border radius (rounded-none) and remove soft drop-shadows to maintain the brutalist editorial look.",
+    "Include 'data-testid' on ALL interactive elements.",
+    "Do not use placeholder image services; use the provided 'image_urls'."
+  ]
+}
