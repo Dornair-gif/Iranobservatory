@@ -22,7 +22,7 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 5. Professional news + modern aesthetic design
 6. Independent editorial voice - critical but impartial
 
-## What's Been Implemented (January 2026)
+## What's Been Implemented
 - ✅ Full-stack application (React + FastAPI + MongoDB)
 - ✅ Official Iran Observatory branding (logo, colors, taglines)
 - ✅ AI content generation with GPT-5.2 via Emergent LLM Key
@@ -34,6 +34,9 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - ✅ Swiss/brutalist editorial design aesthetic
 - ✅ Real-time social feed widget integration
 - ✅ Responsive design for mobile
+- ✅ SEO: Dynamic sitemaps, robots.txt, react-helmet-async meta tags
+- ✅ Cross-fact-checking & contextual enrichment in AI prompts
+- ✅ RSS image extraction: AI-generated articles use original RSS source images (April 2026)
 
 ## Technology Stack
 - **Frontend**: React 19, Tailwind CSS, Shadcn UI
@@ -48,16 +51,20 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 
 ## Prioritized Backlog
 
+### P0 (Completed)
+- ✅ RSS image sync: Articles use original RSS source images instead of generic placeholder
+
 ### P1 (High Priority)
+- Favicon: en attente d'un logo carré fourni par l'utilisateur
 - Scheduled RSS feed auto-fetching
 - Email notifications for new draft articles
 - Article image upload functionality
 
 ### P2 (Medium Priority)
+- Persian social media feed (utilisateur a dit "plus tard")
 - Newsletter subscription system
 - Premium content gating (subscription)
 - Article analytics dashboard
-- SEO optimization (meta tags, sitemap)
 
 ### P3 (Nice to Have)
 - Direct social media API integration (bypass RSS)

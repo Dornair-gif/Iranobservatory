@@ -277,12 +277,51 @@ async def fetch_rss_feed(feed_id: str, request: Request):
         for entry in parsed.entries[:20]:
             existing = await db.rss_items.find_one({"link": entry.get("link", "")})
             if not existing:
+                # Extract image from RSS entry
+                image_url = None
+                
+                # Try media_content (common in RSS)
+                if hasattr(entry, 'media_content') and entry.media_content:
+                    for media in entry.media_content:
+                        if media.get('type', '').startswith('image') or media.get('medium') == 'image':
+                            image_url = media.get('url')
+                            break
+                
+                # Try media_thumbnail
+                if not image_url and hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
+                    image_url = entry.media_thumbnail[0].get('url')
+                
+                # Try enclosures
+                if not image_url and hasattr(entry, 'enclosures') and entry.enclosures:
+                    for enc in entry.enclosures:
+                        if enc.get('type', '').startswith('image'):
+                            image_url = enc.get('href') or enc.get('url')
+                            break
+                
+                # Try to extract from content/summary HTML
+                if not image_url:
+                    import re
+                    content_html = entry.get('content', [{}])[0].get('value', '') if entry.get('content') else ''
+                    summary_html = entry.get('summary', '')
+                    html_to_search = content_html or summary_html
+                    img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html_to_search)
+                    if img_match:
+                        image_url = img_match.group(1)
+                
+                # Try links with image type
+                if not image_url and hasattr(entry, 'links'):
+                    for link in entry.links:
+                        if link.get('type', '').startswith('image'):
+                            image_url = link.get('href')
+                            break
+                
                 item_doc = {
                     "feed_id": feed_id,
                     "feed_name": feed["name"],
                     "title": entry.get("title", ""),
                     "link": entry.get("link", ""),
                     "summary": entry.get("summary", entry.get("description", "")),
+                    "image_url": image_url,
                     "published": entry.get("published", ""),
                     "processed": False,
                     "created_at": datetime.now(timezone.utc)
@@ -432,7 +471,7 @@ Write ONLY the summary, nothing else."""
         article_doc = {
             **generated,
             "source_url": rss_item.get("link", ""),
-            "image_url": "https://images.unsplash.com/photo-1767208212251-7b9b0bde15db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHw0fHx0ZWhyYW4lMjBza3lsaW5lfGVufDB8fHx8MTc3NTIwMjc0NHww&ixlib=rb-4.1.0&q=85",
+            "image_url": rss_item.get("image_url") or "https://images.unsplash.com/photo-1767208212251-7b9b0bde15db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHw0fHx0ZWhyYW4lMjBza3lsaW5lfGVufDB8fHx8MTc3NTIwMjc0NHww&ixlib=rb-4.1.0&q=85",
             "tags": [],
             "category": "news",
             "status": "draft",
