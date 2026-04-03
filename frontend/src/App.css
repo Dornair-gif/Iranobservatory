@@ -1,34 +1,249 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Global App Styles - Iran Observatory */
+
+.App {
+  min-height: 100vh;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Typography utilities */
+.font-heading {
+  font-family: 'Cabinet Grotesk', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.font-body {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.App-link {
-    color: #61dafb;
+.font-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Prose styling for article content */
+.prose {
+  color: #27272a;
+  max-width: 65ch;
+}
+
+.prose p {
+  margin-bottom: 1.25em;
+  line-height: 1.75;
+}
+
+.prose h2 {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.5em;
+  margin-top: 2em;
+  margin-bottom: 1em;
+  line-height: 1.3;
+}
+
+.prose h3 {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 1.25em;
+  margin-top: 1.6em;
+  margin-bottom: 0.6em;
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+.prose a {
+  color: #b91c1c;
+  text-decoration: underline;
+}
+
+.prose a:hover {
+  color: #7f1d1d;
+}
+
+.prose ul, .prose ol {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+  padding-left: 1.625em;
+}
+
+.prose li {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose blockquote {
+  font-style: italic;
+  border-left: 3px solid #d4d4d8;
+  padding-left: 1em;
+  margin: 1.6em 0;
+  color: #52525b;
+}
+
+/* RTL support */
+[dir="rtl"] .prose {
+  text-align: right;
+}
+
+[dir="rtl"] .prose blockquote {
+  border-left: none;
+  border-right: 3px solid #d4d4d8;
+  padding-left: 0;
+  padding-right: 1em;
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: #b91c1c;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  transition: background-color 150ms ease-in-out;
+}
+
+.btn-primary:hover {
+  background-color: #991b1b;
+}
+
+.btn-primary:disabled {
+  background-color: #a1a1aa;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid #18181b;
+  color: #18181b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  transition: all 150ms ease-in-out;
+}
+
+.btn-secondary:hover {
+  background-color: #18181b;
+  color: white;
+}
+
+/* Glass header effect */
+.glass-header {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid #e4e4e7;
+}
+
+/* Article card hover effect */
+.article-card {
+  transition: all 150ms ease-in-out;
+}
+
+.article-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* Live indicator pulse */
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-live {
+  animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Fade up animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out forwards;
+}
+
+.animate-fade-up-delay-1 {
+  animation: fade-up 0.5s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.5s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-up-delay-3 {
+  animation: fade-up 0.5s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f4f4f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a1a1aa;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background-color: #fecaca;
+  color: #7f1d1d;
+}
+
+/* Print styles */
+@media print {
+  .glass-header,
+  .btn-primary,
+  .btn-secondary {
+    display: none;
+  }
+  
+  .prose {
+    max-width: 100%;
+  }
 }
