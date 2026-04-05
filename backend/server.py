@@ -260,62 +260,54 @@ async def delete_rss_feed(feed_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Feed not found")
     return {"message": "Feed deleted"}
 
-@api_router.post("/rss/feeds/{feed_id}/fetch")
-async def fetch_rss_feed(feed_id: str, request: Request):
-    await get_current_user(request)
-    feed = await db.rss_feeds.find_one({"_id": ObjectId(feed_id)})
-    if not feed:
-        raise HTTPException(status_code=404, detail="Feed not found")
-    
+import re
+
+# Shared function to fetch a single feed (used by API endpoint and background task)
+async def _fetch_single_feed(feed: dict) -> int:
+    """Fetch RSS items for a single feed. Returns number of new items added."""
+    feed_id = str(feed["_id"])
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(feed["url"], timeout=30) as resp:
                 content = await resp.text()
-        
+
         parsed = feedparser.parse(content)
         items_added = 0
-        
+
         for entry in parsed.entries[:20]:
             existing = await db.rss_items.find_one({"link": entry.get("link", "")})
             if not existing:
-                # Extract image from RSS entry
                 image_url = None
-                
-                # Try media_content (common in RSS)
+
                 if hasattr(entry, 'media_content') and entry.media_content:
                     for media in entry.media_content:
                         if media.get('type', '').startswith('image') or media.get('medium') == 'image':
                             image_url = media.get('url')
                             break
-                
-                # Try media_thumbnail
+
                 if not image_url and hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
                     image_url = entry.media_thumbnail[0].get('url')
-                
-                # Try enclosures
+
                 if not image_url and hasattr(entry, 'enclosures') and entry.enclosures:
                     for enc in entry.enclosures:
                         if enc.get('type', '').startswith('image'):
                             image_url = enc.get('href') or enc.get('url')
                             break
-                
-                # Try to extract from content/summary HTML
+
                 if not image_url:
-                    import re
                     content_html = entry.get('content', [{}])[0].get('value', '') if entry.get('content') else ''
                     summary_html = entry.get('summary', '')
                     html_to_search = content_html or summary_html
                     img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html_to_search)
                     if img_match:
                         image_url = img_match.group(1)
-                
-                # Try links with image type
+
                 if not image_url and hasattr(entry, 'links'):
                     for link in entry.links:
                         if link.get('type', '').startswith('image'):
                             image_url = link.get('href')
                             break
-                
+
                 item_doc = {
                     "feed_id": feed_id,
                     "feed_name": feed["name"],
@@ -329,15 +321,43 @@ async def fetch_rss_feed(feed_id: str, request: Request):
                 }
                 await db.rss_items.insert_one(item_doc)
                 items_added += 1
-        
+
         await db.rss_feeds.update_one(
             {"_id": ObjectId(feed_id)},
             {"$set": {"last_fetched": datetime.now(timezone.utc)}}
         )
-        
-        return {"message": f"Fetched {items_added} new items"}
+        return items_added
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch feed: {str(e)}")
+        logger.error(f"Failed to fetch feed {feed.get('name', feed_id)}: {e}")
+        return 0
+
+
+# Background auto-fetch task
+async def auto_fetch_all_feeds():
+    """Background task that fetches all active RSS feeds every 30 minutes."""
+    while True:
+        try:
+            await asyncio.sleep(1800)  # 30 minutes
+            feeds = await db.rss_feeds.find({"active": True}).to_list(50)
+            total_new = 0
+            for feed in feeds:
+                count = await _fetch_single_feed(feed)
+                total_new += count
+            if total_new > 0:
+                logger.info(f"Auto-fetch: {total_new} new RSS items across {len(feeds)} feeds")
+        except Exception as e:
+            logger.error(f"Auto-fetch error: {e}")
+
+
+@api_router.post("/rss/feeds/{feed_id}/fetch")
+async def fetch_rss_feed(feed_id: str, request: Request):
+    await get_current_user(request)
+    feed = await db.rss_feeds.find_one({"_id": ObjectId(feed_id)})
+    if not feed:
+        raise HTTPException(status_code=404, detail="Feed not found")
+
+    items_added = await _fetch_single_feed(feed)
+    return {"message": f"Fetched {items_added} new items"}
 
 @api_router.get("/rss/items", response_model=List[RSSItemResponse])
 async def get_rss_items(request: Request, processed: Optional[bool] = None):
@@ -914,6 +934,13 @@ async def startup():
     await db.articles.create_index("created_at")
     await db.rss_items.create_index("link", unique=True)
     await db.rss_items.create_index("processed")
+    # Start background auto-fetch task
+    asyncio.create_task(auto_fetch_all_feeds())
+    # Also do an immediate fetch on startup
+    feeds = await db.rss_feeds.find({"active": True}).to_list(50)
+    for feed in feeds:
+        await _fetch_single_feed(feed)
+    logger.info("Initial RSS fetch completed")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
