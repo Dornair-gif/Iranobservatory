@@ -58,11 +58,12 @@ export default function Home() {
         language={language}
       />
       {/* Hero Section - Iran Observatory Brand Colors */}
-      <section className="relative bg-[#1E3A5F] text-white overflow-hidden">
+      <section className="relative bg-[#0a1628] text-white overflow-hidden">
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-20"
+          className="absolute inset-0 bg-cover bg-center"
           style={{ 
-            backgroundImage: `url('https://images.pexels.com/photos/31468386/pexels-photo-31468386.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940')` 
+            backgroundImage: `url('/hero-azadi.jpg')`,
+            opacity: 0.55
           }}
         />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
