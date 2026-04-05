@@ -5,8 +5,7 @@ import { ArrowLeft, FileText } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '../config/api';
 
 export default function Articles() {
   const { t, language } = useLanguage();

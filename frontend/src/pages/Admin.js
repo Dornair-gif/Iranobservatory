@@ -27,8 +27,7 @@ import {
   Eye, Edit, Send, Loader2, Check, X, ExternalLink, BookOpen, PenTool
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '../config/api';
 
 const CONTENT_TYPES = [
   { value: 'news', label: 'News', labelFr: 'Actualités' },

@@ -5,8 +5,8 @@ import { ArrowRight, ExternalLink, BookOpen, FileText, Radio } from 'lucide-reac
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
+import { API } from '../config/api';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
 
 export default function Home() {

@@ -7,8 +7,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
 import { Button } from '../components/ui/button';
 import SEO from '../components/SEO';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '../config/api';
 
 export default function Article() {
   const { id } = useParams();

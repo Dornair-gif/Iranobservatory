@@ -4,8 +4,7 @@ import axios from 'axios';
 import { ArrowLeft, ArrowRight, BookOpen } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import SEO from '../components/SEO';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API } from '../config/api';
 
 export default function Studies() {
   const { t, language } = useLanguage();
