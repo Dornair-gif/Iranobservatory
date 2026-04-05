@@ -62,7 +62,7 @@ export default function Home() {
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{ 
-            backgroundImage: `url('/hero-tehran-aerial.jpg')`,
+            backgroundImage: `url('/hero-azadi-night.jpg')`,
             opacity: 0.55
           }}
         />
