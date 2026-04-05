@@ -65,7 +65,7 @@ export default function Admin() {
     title_en: '', title_fr: '', title_fa: '',
     content_en: '', content_fr: '', content_fa: '',
     summary_en: '', summary_fr: '', summary_fa: '',
-    image_url: '', source_url: '', tags: [], category: 'politics', content_type: 'analysis'
+    image_url: '', source_url: '', tags: [], category: 'politics', content_type: 'news'
   });
 
   const axiosConfig = { withCredentials: true };
@@ -238,7 +238,7 @@ export default function Admin() {
         title_en: '', title_fr: '', title_fa: '',
         content_en: '', content_fr: '', content_fa: '',
         summary_en: '', summary_fr: '', summary_fa: '',
-        image_url: '', source_url: '', tags: [], category: 'politics', content_type: 'analysis'
+        image_url: '', source_url: '', tags: [], category: 'politics', content_type: 'news'
       });
       fetchArticles();
       fetchStats();
@@ -422,7 +422,7 @@ export default function Admin() {
                 data-testid="create-article-btn"
               >
                 <Plus className="w-4 h-4 me-2" strokeWidth={1.5} />
-                New Study/Analysis
+                New Article
               </Button>
             </div>
 
@@ -809,8 +809,8 @@ export default function Admin() {
         <DialogContent className="rounded-none border-zinc-200 max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading font-bold flex items-center gap-2">
-              <BookOpen className="w-5 h-5" strokeWidth={1.5} />
-              Create Study / Analysis
+              <PenTool className="w-5 h-5" strokeWidth={1.5} />
+              Create Article
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">

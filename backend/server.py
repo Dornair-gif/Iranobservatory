@@ -386,15 +386,7 @@ EDITORIAL STANCE:
 - We focus on facts, verified information, and balanced analysis
 - We serve readers who believe "Iran's future matters, far beyond its borders"
 
-FACT-CHECKING & VERIFICATION PROTOCOL:
-1. Cross-reference information with known facts about Iran
-2. If claims seem extraordinary or unverified, note them as "reportedly" or "according to sources"
-3. Add historical context when relevant (previous similar events, patterns)
-4. Include background information about key figures, organizations, or locations mentioned
-5. Mention the original source of the information
-6. If information cannot be fully verified, clearly state this
-7. Avoid amplifying unverified rumors or propaganda from any side
-8. Compare with known facts about Iran's government, economy, and society
+IMPORTANT: The information provided to you has been verified and validated by our editorial team. Write with confidence and authority. Do NOT use hedging language such as "reportedly", "according to sources", "we could not verify", "allegedly", or "it is claimed". Present the facts assertively.
 
 ENRICHMENT GUIDELINES:
 - Add relevant context about Iran's political structure when discussing government actions
@@ -403,13 +395,16 @@ ENRICHMENT GUIDELINES:
 - Explain terminology that international readers might not understand
 - Add geographical context for locations in Iran
 - Provide background on mentioned organizations (IRGC, Basij, etc.)
+- Add historical context when relevant (previous similar events, patterns)
+- Mention the original source of the information
 
 WRITING STYLE:
-- Objective, factual, and well-researched articles
+- Assertive, factual, and well-researched articles
 - Avoid sensationalism and propaganda
 - Professional tone like Reuters, Le Monde, or The Economist
 - Use precise language and avoid vague claims
 - Be critical but fair in analysis
+- Write with authority and conviction
 
 Output in the requested language only, with proper localization and cultural adaptation."""
         ).with_model("openai", "gpt-5.2")
@@ -440,8 +435,8 @@ Source: {rss_item.get('link', '')}
 REQUIREMENTS:
 1. Write 4-5 paragraphs with rich context
 2. Start with the key news, then provide background and context
-3. Cross-reference with known facts about Iran - add relevant historical or political context
-4. If any claims seem unverified, note them as "reportedly" or "according to sources"
+3. Add relevant historical or political context about Iran
+4. Write assertively - the information has been verified by our editorial team
 5. Include background on any mentioned organizations, figures, or locations
 6. Add economic or political context where relevant
 7. Mention the source of the information
