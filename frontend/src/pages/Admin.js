@@ -60,11 +60,12 @@ export default function Admin() {
   const [selectedRssItem, setSelectedRssItem] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [showCreateArticle, setShowCreateArticle] = useState(false);
+  const [subscribers, setSubscribers] = useState([]);
   const [newArticle, setNewArticle] = useState({
     title_en: '', title_fr: '', title_fa: '',
     content_en: '', content_fr: '', content_fa: '',
     summary_en: '', summary_fr: '', summary_fa: '',
-    image_url: '', source_url: '', tags: [], category: 'politics', content_type: 'news'
+    image_url: '', source_url: '', pdf_url: '', tags: [], category: 'politics', content_type: 'news'
   });
 
   const axiosConfig = { withCredentials: true };
@@ -75,6 +76,7 @@ export default function Admin() {
       fetchArticles();
       fetchFeeds();
       fetchRssItems();
+      fetchSubscribers();
     }
   }, [user]);
 
@@ -135,6 +137,51 @@ export default function Admin() {
       toast.error('Failed to evaluate items');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubscribers = async () => {
+    try {
+      const response = await axios.get(`${API}/subscribers`, axiosConfig);
+      setSubscribers(response.data);
+    } catch (e) {
+      console.error('Failed to fetch subscribers:', e);
+    }
+  };
+
+  const handlePdfUpload = async (e, target) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Only PDF files allowed');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await axios.post(`${API}/upload/pdf`, formData, {
+        ...axiosConfig,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const pdfUrl = response.data.pdf_url;
+      if (target === 'new') {
+        setNewArticle(prev => ({ ...prev, pdf_url: pdfUrl }));
+      } else if (target === 'edit') {
+        setEditArticle(prev => ({ ...prev, pdf_url: pdfUrl }));
+      }
+      toast.success(`PDF uploaded: ${file.name}`);
+    } catch (err) {
+      toast.error('Failed to upload PDF');
+    }
+  };
+
+  const handleDeleteSubscriber = async (subId) => {
+    try {
+      await axios.delete(`${API}/subscribers/${subId}`, axiosConfig);
+      setSubscribers(prev => prev.filter(s => s.id !== subId));
+      toast.success('Subscriber removed');
+    } catch (e) {
+      toast.error('Failed to delete subscriber');
     }
   };
 
@@ -371,6 +418,14 @@ export default function Admin() {
             >
               <Sparkles className="w-4 h-4 me-2" strokeWidth={1.5} />
               {t('aiGenerate')}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="subscribers" 
+              className="rounded-none data-[state=active]:bg-zinc-900 data-[state=active]:text-white font-mono text-xs uppercase tracking-wider"
+              data-testid="tab-subscribers"
+            >
+              <FileText className="w-4 h-4 me-2" strokeWidth={1.5} />
+              Subscribers
             </TabsTrigger>
           </TabsList>
 
@@ -718,6 +773,46 @@ export default function Admin() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Subscribers Tab */}
+          <TabsContent value="subscribers" className="space-y-4">
+            <div className="bg-white border border-zinc-200">
+              <div className="border-b border-zinc-200 p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-heading font-bold">Email Subscribers</h3>
+                  <p className="text-xs text-zinc-500 mt-1">Users who provided their email to download PDFs</p>
+                </div>
+                <span className="font-mono text-sm text-zinc-500">{subscribers.length} contacts</span>
+              </div>
+              <div className="divide-y divide-zinc-100 max-h-[600px] overflow-y-auto">
+                {subscribers.map(sub => (
+                  <div key={sub.id} className="p-4 flex items-center justify-between" data-testid={`subscriber-${sub.id}`}>
+                    <div>
+                      <p className="font-medium text-sm">{sub.email}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        {sub.newsletter && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-mono uppercase">Newsletter</span>
+                        )}
+                        <span className="text-[10px] font-mono text-zinc-400">{sub.downloads_count} downloads</span>
+                        <span className="text-[10px] font-mono text-zinc-400">{new Date(sub.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-zinc-400 hover:text-red-500"
+                      onClick={() => handleDeleteSubscriber(sub.id)}
+                    >
+                      <Trash2 className="w-3 h-3" strokeWidth={1.5} />
+                    </Button>
+                  </div>
+                ))}
+                {subscribers.length === 0 && (
+                  <p className="p-8 text-center text-zinc-500 text-sm">No subscribers yet. Emails will appear here when users download PDFs.</p>
+                )}
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -948,6 +1043,27 @@ export default function Admin() {
                 placeholder="https://..."
               />
             </div>
+
+            <div className="space-y-2">
+              <Label className="font-mono text-xs uppercase tracking-wider">PDF Attachment</Label>
+              {newArticle.pdf_url ? (
+                <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200">
+                  <Check className="w-4 h-4 text-green-600" />
+                  <span className="text-sm text-green-700 flex-1">PDF uploaded</span>
+                  <Button size="sm" variant="ghost" className="text-red-500 h-6" onClick={() => setNewArticle({ ...newArticle, pdf_url: '' })}>
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => handlePdfUpload(e, 'new')}
+                  className="rounded-none"
+                  data-testid="pdf-upload-new"
+                />
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-none" onClick={() => setShowCreateArticle(false)}>
@@ -1036,6 +1152,27 @@ export default function Admin() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-mono text-xs uppercase tracking-wider">PDF Attachment</Label>
+                {editArticle.pdf_url ? (
+                  <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200">
+                    <Check className="w-4 h-4 text-green-600" />
+                    <a href={editArticle.pdf_url} target="_blank" rel="noopener noreferrer" className="text-sm text-green-700 flex-1 underline">PDF attached</a>
+                    <Button size="sm" variant="ghost" className="text-red-500 h-6" onClick={() => setEditArticle({ ...editArticle, pdf_url: '' })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => handlePdfUpload(e, 'edit')}
+                    className="rounded-none"
+                    data-testid="pdf-upload-edit"
+                  />
+                )}
               </div>
             </div>
           )}

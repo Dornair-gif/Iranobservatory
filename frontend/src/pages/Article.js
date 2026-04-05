@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, ExternalLink, Calendar, Tag, Share2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar, Tag, Share2, FileDown, Mail, Check } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
 
@@ -15,6 +16,10 @@ export default function Article() {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadEmail, setDownloadEmail] = useState('');
+  const [newsletter, setNewsletter] = useState(false);
+  const [downloadGranted, setDownloadGranted] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -154,6 +159,100 @@ export default function Article() {
             <p key={index}>{paragraph}</p>
           ))}
         </div>
+
+        {/* PDF Download Section */}
+        {article.pdf_url && (
+          <div className="mt-10 p-6 sm:p-8 bg-[#f0f5fa] border border-[#1E3A5F]/10" data-testid="pdf-download-section">
+            <div className="flex items-start gap-4">
+              <FileDown className="w-8 h-8 text-[#1E3A5F] flex-shrink-0 mt-1" strokeWidth={1.5} />
+              <div className="flex-1">
+                <h3 className="font-heading font-bold text-lg text-[#1E3A5F] mb-1">
+                  {language === 'fr' ? 'Télécharger le document PDF' : language === 'fa' ? 'دانلود فایل PDF' : 'Download PDF Document'}
+                </h3>
+                <p className="text-sm text-zinc-600 mb-4">
+                  {language === 'fr' 
+                    ? 'Entrez votre email pour accéder au document complet'
+                    : language === 'fa' ? 'برای دسترسی به سند کامل، ایمیل خود را وارد کنید'
+                    : 'Enter your email to access the full document'}
+                </p>
+                {downloadGranted ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <Check className="w-5 h-5" />
+                      <span className="text-sm font-medium">
+                        {language === 'fr' ? 'Accès accordé !' : 'Access granted!'}
+                      </span>
+                    </div>
+                    <a
+                      href={article.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2A4A73] transition-colors"
+                      data-testid="pdf-download-link"
+                    >
+                      <FileDown className="w-4 h-4" strokeWidth={1.5} />
+                      {language === 'fr' ? 'Télécharger le PDF' : language === 'fa' ? 'دانلود PDF' : 'Download PDF'}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          type="email"
+                          value={downloadEmail}
+                          onChange={(e) => { setDownloadEmail(e.target.value); setEmailError(''); }}
+                          placeholder={language === 'fr' ? 'votre@email.com' : 'your@email.com'}
+                          className="rounded-none"
+                          data-testid="pdf-email-input"
+                        />
+                        {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
+                      </div>
+                      <Button
+                        className="bg-[#1E3A5F] hover:bg-[#2A4A73] text-white rounded-none px-6"
+                        onClick={async () => {
+                          if (!downloadEmail || !downloadEmail.includes('@')) {
+                            setEmailError(language === 'fr' ? 'Email invalide' : 'Invalid email');
+                            return;
+                          }
+                          try {
+                            await axios.post(`${API}/subscribers`, {
+                              email: downloadEmail,
+                              newsletter,
+                              article_id: article.id
+                            });
+                            setDownloadGranted(true);
+                          } catch (err) {
+                            setEmailError(language === 'fr' ? 'Une erreur est survenue' : 'Something went wrong');
+                          }
+                        }}
+                        data-testid="pdf-submit-email"
+                      >
+                        <Mail className="w-4 h-4 me-2" strokeWidth={1.5} />
+                        {language === 'fr' ? 'Accéder' : 'Access'}
+                      </Button>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newsletter}
+                        onChange={(e) => setNewsletter(e.target.checked)}
+                        className="rounded border-zinc-300"
+                        data-testid="newsletter-checkbox"
+                      />
+                      <span className="text-xs text-zinc-500">
+                        {language === 'fr' 
+                          ? 'Recevoir nos derniers articles et analyses par email'
+                          : language === 'fa' ? 'دریافت آخرین مقالات و تحلیل‌ها از طریق ایمیل'
+                          : 'Receive our latest articles and analyses by email'}
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tags */}
         {article.tags && article.tags.length > 0 && (

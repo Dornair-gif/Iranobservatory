@@ -1,7 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File
+from fastapi.responses import FileResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -106,6 +107,7 @@ class ArticleBase(BaseModel):
     summary_fa: str = ""
     image_url: Optional[str] = None
     source_url: Optional[str] = None
+    pdf_url: Optional[str] = None
     tags: List[str] = []
     category: str = "news"  # news, analysis, study
     content_type: str = "news"  # news, analysis, study
@@ -121,6 +123,7 @@ class ArticleResponse(ArticleBase):
     id: str
     status: str
     content_type: str = "news"
+    pdf_url: Optional[str] = None
     created_at: str
     updated_at: str
     published_at: Optional[str] = None
@@ -752,6 +755,7 @@ async def get_articles(status: Optional[str] = None, content_type: Optional[str]
             "summary_fa": article.get("summary_fa", ""),
             "image_url": article.get("image_url"),
             "source_url": article.get("source_url"),
+            "pdf_url": article.get("pdf_url"),
             "tags": article.get("tags", []),
             "category": article.get("category", "news"),
             "content_type": article.get("content_type", "news"),
@@ -787,6 +791,7 @@ async def get_admin_articles(request: Request, status: Optional[str] = None, con
             "summary_fa": article.get("summary_fa", ""),
             "image_url": article.get("image_url"),
             "source_url": article.get("source_url"),
+            "pdf_url": article.get("pdf_url"),
             "tags": article.get("tags", []),
             "category": article.get("category", "news"),
             "content_type": article.get("content_type", "news"),
@@ -816,6 +821,7 @@ async def get_article(article_id: str):
         "summary_fa": article.get("summary_fa", ""),
         "image_url": article.get("image_url"),
         "source_url": article.get("source_url"),
+        "pdf_url": article.get("pdf_url"),
         "tags": article.get("tags", []),
         "category": article.get("category", "news"),
         "content_type": article.get("content_type", "news"),
@@ -841,6 +847,7 @@ async def update_article(article_id: str, data: ArticleUpdate, request: Request)
         "summary_fa": data.summary_fa,
         "image_url": data.image_url,
         "source_url": data.source_url,
+        "pdf_url": data.pdf_url,
         "tags": data.tags,
         "category": data.category,
         "content_type": data.content_type,
@@ -889,6 +896,96 @@ async def delete_article(article_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Article not found")
     
     return {"message": "Article deleted"}
+
+# PDF Upload endpoint
+UPLOAD_DIR = Path("/app/backend/uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+@api_router.post("/upload/pdf")
+async def upload_pdf(request: Request, file: UploadFile = File(...)):
+    await get_current_user(request)
+    
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    file_id = str(uuid.uuid4())
+    safe_name = f"{file_id}.pdf"
+    file_path = UPLOAD_DIR / safe_name
+    
+    content = await file.read()
+    if len(content) > 50 * 1024 * 1024:  # 50MB limit
+        raise HTTPException(status_code=400, detail="File too large (max 50MB)")
+    
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    backend_url = os.environ.get("BACKEND_URL", "")
+    pdf_url = f"{backend_url}/api/files/{safe_name}"
+    
+    return {"pdf_url": pdf_url, "filename": file.filename}
+
+@api_router.get("/files/{filename}")
+async def serve_file(filename: str):
+    file_path = UPLOAD_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, media_type="application/pdf", filename=filename)
+
+# Subscriber / Email collection endpoints
+@api_router.post("/subscribers")
+async def subscribe(request: Request):
+    body = await request.json()
+    email = body.get("email", "").strip().lower()
+    newsletter = body.get("newsletter", False)
+    article_id = body.get("article_id")
+    
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Valid email required")
+    
+    existing = await db.subscribers.find_one({"email": email})
+    if existing:
+        # Update newsletter preference if needed
+        if newsletter and not existing.get("newsletter"):
+            await db.subscribers.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {"newsletter": True}}
+            )
+        # Log the download
+        if article_id:
+            await db.subscribers.update_one(
+                {"_id": existing["_id"]},
+                {"$push": {"downloads": {"article_id": article_id, "date": datetime.now(timezone.utc).isoformat()}}}
+            )
+        return {"message": "Access granted", "already_subscribed": True}
+    
+    subscriber = {
+        "email": email,
+        "newsletter": newsletter,
+        "downloads": [{"article_id": article_id, "date": datetime.now(timezone.utc).isoformat()}] if article_id else [],
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.subscribers.insert_one(subscriber)
+    return {"message": "Subscribed successfully"}
+
+@api_router.get("/subscribers")
+async def get_subscribers(request: Request):
+    await get_current_user(request)
+    subs = await db.subscribers.find({}).sort("created_at", -1).to_list(500)
+    return [{
+        "id": str(s["_id"]),
+        "email": s["email"],
+        "newsletter": s.get("newsletter", False),
+        "downloads_count": len(s.get("downloads", [])),
+        "created_at": s.get("created_at").isoformat() if s.get("created_at") else ""
+    } for s in subs]
+
+@api_router.delete("/subscribers/{sub_id}")
+async def delete_subscriber(sub_id: str, request: Request):
+    await get_current_user(request)
+    result = await db.subscribers.delete_one({"_id": ObjectId(sub_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+    return {"message": "Subscriber deleted"}
 
 # Stats endpoint
 @api_router.get("/stats")

@@ -60,6 +60,7 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - Assertive AI prompt + manual article creation
 - Magazine-format Articles & Studies pages with pagination
 - Navigation links (Articles, Studies) in header
+- PDF upload on articles + email collection for downloads + Subscribers admin tab
 
 ### P1 (High Priority)
 - Favicon: en attente d'un logo carré fourni par l'utilisateur
