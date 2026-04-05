@@ -49,6 +49,22 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
+            {/* Nav Links */}
+            <Link 
+              to="/articles" 
+              className="font-mono text-xs uppercase tracking-wider text-zinc-700 hover:text-[#1E3A5F] transition-colors"
+              data-testid="nav-articles"
+            >
+              {language === 'fr' ? 'Articles' : language === 'fa' ? 'مقالات' : 'Articles'}
+            </Link>
+            <Link 
+              to="/studies" 
+              className="font-mono text-xs uppercase tracking-wider text-zinc-700 hover:text-[#1E3A5F] transition-colors"
+              data-testid="nav-studies"
+            >
+              {language === 'fr' ? 'Etudes' : language === 'fa' ? 'مطالعات' : 'Studies'}
+            </Link>
+
             {/* Live indicator */}
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse-live" />
@@ -141,6 +157,25 @@ export function Header() {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-200 py-4 space-y-4">
+            <div className="flex flex-col gap-1 px-2">
+              <Link
+                to="/articles"
+                className="block px-3 py-2 font-mono text-xs uppercase tracking-wider text-zinc-700 hover:bg-zinc-50"
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-articles"
+              >
+                {language === 'fr' ? 'Articles' : language === 'fa' ? 'مقالات' : 'Articles'}
+              </Link>
+              <Link
+                to="/studies"
+                className="block px-3 py-2 font-mono text-xs uppercase tracking-wider text-zinc-700 hover:bg-zinc-50"
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-studies"
+              >
+                {language === 'fr' ? 'Etudes' : language === 'fa' ? 'مطالعات' : 'Studies'}
+              </Link>
+            </div>
+
             <div className="flex items-center gap-2 px-2">
               <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse-live" />
               <span className="font-mono text-xs uppercase tracking-widest text-[#3DB883]">

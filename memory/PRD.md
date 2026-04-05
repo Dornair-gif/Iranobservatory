@@ -52,8 +52,14 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 ## Prioritized Backlog
 
 ### P0 (Completed)
-- ✅ RSS image sync: Articles use original RSS source images instead of generic placeholder
-- ✅ Favicon: Custom radar icon deployed (favicon.ico, PNG 16/32/180/192/512, apple-touch-icon)
+- RSS image sync: Articles use original RSS source images
+- Favicon: Custom radar icon deployed
+- AI-powered RSS filtering + reject mechanism
+- Auto-fetch RSS every 30min + startup evaluation
+- Production login fix (secure cookies + token fallback)
+- Assertive AI prompt + manual article creation
+- Magazine-format Articles & Studies pages with pagination
+- Navigation links (Articles, Studies) in header
 
 ### P1 (High Priority)
 - Favicon: en attente d'un logo carré fourni par l'utilisateur

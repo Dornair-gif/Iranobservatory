@@ -37,11 +37,11 @@ export default function Home() {
     fetchContent();
   }, [language]);
 
-  // Include all articles for the main grid
+  // Include max 6 articles for homepage
   const allArticles = [...articles];
   const featuredArticle = allArticles[0];
   const sideArticles = allArticles.slice(1, 3);
-  const gridArticles = allArticles.slice(3, 9);
+  const gridArticles = allArticles.slice(3, 6);
 
   const seoDescriptions = {
     en: "Independent platform offering fact-based insights into Iran's political, economic and social dynamics. Iran's future matters, far beyond its borders.",
@@ -167,17 +167,16 @@ export default function Home() {
             )}
 
             {/* View All Articles Link */}
-            {allArticles.length > 6 && (
-              <div className="text-center mt-8">
-                <Link 
-                  to="/articles" 
-                  className="inline-flex items-center gap-2 px-6 py-3 border border-[#1E3A5F] text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:bg-[#1E3A5F] hover:text-white transition-colors"
-                >
-                  {language === 'fr' ? 'Voir tous les articles' : language === 'fa' ? 'مشاهده همه مقالات' : 'View All Articles'}
-                  <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-                </Link>
-              </div>
-            )}
+            <div className="text-center mt-8">
+              <Link 
+                to="/articles" 
+                className="inline-flex items-center gap-2 px-6 py-3 border border-[#1E3A5F] text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:bg-[#1E3A5F] hover:text-white transition-colors"
+                data-testid="view-all-articles-link"
+              >
+                {language === 'fr' ? 'Voir tous les articles' : language === 'fa' ? 'مشاهده همه مقالات' : 'View All Articles'}
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+              </Link>
+            </div>
           </>
         )}
       </main>
