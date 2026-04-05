@@ -145,6 +145,8 @@ class RSSItemResponse(BaseModel):
     published: Optional[str] = None
     feed_name: str
     processed: bool
+    suggestion_status: str = "pending"
+    ai_reason: Optional[str] = None
 
 class AIGenerateRequest(BaseModel):
     rss_item_id: str
@@ -332,6 +334,83 @@ async def _fetch_single_feed(feed: dict) -> int:
         return 0
 
 
+# AI-powered RSS item evaluation - filters for analysis-worthy items
+async def _evaluate_rss_items(items: list):
+    """Use AI to evaluate which RSS items have potential for in-depth analysis."""
+    if not items:
+        return
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"rss-eval-{uuid.uuid4()}",
+            system_message="""You are an editorial assistant for Iran Observatory. Your job is to evaluate news items and identify which ones have potential for in-depth journalistic analysis.
+
+SELECT items that:
+- Have geopolitical significance (sanctions, diplomacy, military, international relations)
+- Reveal patterns or trends in Iranian politics, economy, or society
+- Involve key figures, organizations, or institutions
+- Have human rights implications
+- Could benefit from contextual analysis and background explanation
+- Are significant enough to warrant a full article (not just a tweet-level update)
+
+REJECT items that:
+- Are purely repetitive breaking news with no analytical angle
+- Are too short or vague to develop into a full article
+- Are just hashtag collections or social media noise
+- Are duplicates or very similar to other items in the batch
+
+For each item, respond with ONLY a JSON array. Each element: {"id": "item_id", "status": "suggested" or "rejected", "reason": "brief 10-word reason"}
+No other text, just the JSON array."""
+        ).with_model("openai", "gpt-5.2")
+
+        # Build batch prompt
+        items_text = ""
+        for item in items:
+            items_text += f'\n- ID: {str(item["_id"])}\n  Title: {item["title"][:200]}\n  Summary: {item.get("summary", "")[:300]}\n'
+
+        prompt = f"Evaluate these {len(items)} news items about Iran. Which ones deserve a full analytical article?\n{items_text}"
+
+        msg = UserMessage(text=prompt)
+        response = await chat.send_message(msg)
+
+        # Parse AI response
+        import json
+        # Extract JSON from response
+        response_clean = response.strip()
+        if response_clean.startswith("```"):
+            response_clean = response_clean.split("```")[1]
+            if response_clean.startswith("json"):
+                response_clean = response_clean[4:]
+        evaluations = json.loads(response_clean)
+
+        for ev in evaluations:
+            item_id = ev.get("id")
+            status = ev.get("status", "rejected")
+            reason = ev.get("reason", "")
+            if item_id:
+                await db.rss_items.update_one(
+                    {"_id": ObjectId(item_id)},
+                    {"$set": {"suggestion_status": status, "ai_reason": reason}}
+                )
+
+        suggested_count = sum(1 for ev in evaluations if ev.get("status") == "suggested")
+        logger.info(f"AI evaluation: {suggested_count}/{len(items)} items suggested for articles")
+
+    except Exception as e:
+        logger.error(f"AI evaluation error: {e}")
+        # Fallback: mark all as suggested so nothing is lost
+        for item in items:
+            await db.rss_items.update_one(
+                {"_id": item["_id"]},
+                {"$set": {"suggestion_status": "suggested", "ai_reason": "Auto-suggested (evaluation unavailable)"}}
+            )
+
+
 # Background auto-fetch task
 async def auto_fetch_all_feeds():
     """Background task that fetches all active RSS feeds every 30 minutes."""
@@ -345,6 +424,12 @@ async def auto_fetch_all_feeds():
                 total_new += count
             if total_new > 0:
                 logger.info(f"Auto-fetch: {total_new} new RSS items across {len(feeds)} feeds")
+                # Evaluate new items with AI
+                pending_items = await db.rss_items.find(
+                    {"suggestion_status": {"$exists": False}, "processed": False}
+                ).to_list(50)
+                if pending_items:
+                    await _evaluate_rss_items(pending_items)
         except Exception as e:
             logger.error(f"Auto-fetch error: {e}")
 
@@ -360,11 +445,16 @@ async def fetch_rss_feed(feed_id: str, request: Request):
     return {"message": f"Fetched {items_added} new items"}
 
 @api_router.get("/rss/items", response_model=List[RSSItemResponse])
-async def get_rss_items(request: Request, processed: Optional[bool] = None):
+async def get_rss_items(request: Request, processed: Optional[bool] = None, status: Optional[str] = None):
     await get_current_user(request)
     query = {}
     if processed is not None:
         query["processed"] = processed
+    if status:
+        query["suggestion_status"] = status
+    else:
+        # By default, exclude rejected items
+        query["suggestion_status"] = {"$ne": "rejected"}
     
     items = await db.rss_items.find(query).sort("created_at", -1).to_list(100)
     result = []
@@ -376,9 +466,39 @@ async def get_rss_items(request: Request, processed: Optional[bool] = None):
             "summary": item.get("summary", ""),
             "published": item.get("published"),
             "feed_name": item.get("feed_name", ""),
-            "processed": item.get("processed", False)
+            "processed": item.get("processed", False),
+            "suggestion_status": item.get("suggestion_status", "pending"),
+            "ai_reason": item.get("ai_reason")
         })
     return result
+
+@api_router.post("/rss/items/{item_id}/reject")
+async def reject_rss_item(item_id: str, request: Request):
+    await get_current_user(request)
+    result = await db.rss_items.update_one(
+        {"_id": ObjectId(item_id)},
+        {"$set": {"suggestion_status": "rejected"}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"message": "Item rejected"}
+
+@api_router.post("/rss/items/evaluate")
+async def evaluate_pending_items(request: Request):
+    """Manually trigger AI evaluation of pending RSS items."""
+    await get_current_user(request)
+    pending_items = await db.rss_items.find(
+        {"suggestion_status": {"$in": ["pending", None]}, "processed": False}
+    ).to_list(50)
+    if not pending_items:
+        return {"message": "No pending items to evaluate"}
+    # Also include items without suggestion_status field
+    no_status = await db.rss_items.find(
+        {"suggestion_status": {"$exists": False}, "processed": False}
+    ).to_list(50)
+    all_items = {str(i["_id"]): i for i in pending_items + no_status}
+    await _evaluate_rss_items(list(all_items.values()))
+    return {"message": f"Evaluated {len(all_items)} items"}
 
 # AI Content Generation
 @api_router.post("/ai/generate")
@@ -778,7 +898,7 @@ async def get_stats(request: Request):
     total_articles = await db.articles.count_documents({})
     published = await db.articles.count_documents({"status": "published"})
     drafts = await db.articles.count_documents({"status": "draft"})
-    rss_items = await db.rss_items.count_documents({"processed": False})
+    rss_items = await db.rss_items.count_documents({"processed": False, "suggestion_status": "suggested"})
     feeds = await db.rss_feeds.count_documents({})
     
     return {
@@ -941,6 +1061,13 @@ async def startup():
     for feed in feeds:
         await _fetch_single_feed(feed)
     logger.info("Initial RSS fetch completed")
+    # Evaluate any unevaluated items
+    pending_items = await db.rss_items.find(
+        {"suggestion_status": {"$exists": False}, "processed": False}
+    ).to_list(50)
+    if pending_items:
+        asyncio.create_task(_evaluate_rss_items(pending_items))
+        logger.info(f"Evaluating {len(pending_items)} RSS items with AI")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

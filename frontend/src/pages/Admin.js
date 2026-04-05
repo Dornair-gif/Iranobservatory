@@ -107,10 +107,34 @@ export default function Admin() {
 
   const fetchRssItems = async () => {
     try {
-      const response = await axios.get(`${API}/rss/items?processed=false`, axiosConfig);
+      const response = await axios.get(`${API}/rss/items?processed=false&status=suggested`, axiosConfig);
       setRssItems(response.data);
     } catch (e) {
       console.error('Failed to fetch RSS items:', e);
+    }
+  };
+
+  const handleRejectItem = async (itemId) => {
+    try {
+      await axios.post(`${API}/rss/items/${itemId}/reject`, {}, axiosConfig);
+      toast.success('Item dismissed');
+      setRssItems(prev => prev.filter(i => i.id !== itemId));
+      if (selectedRssItem?.id === itemId) setSelectedRssItem(null);
+    } catch (e) {
+      toast.error('Failed to reject item');
+    }
+  };
+
+  const handleEvaluateItems = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API}/rss/items/evaluate`, {}, axiosConfig);
+      toast.success(response.data.message);
+      fetchRssItems();
+    } catch (e) {
+      toast.error('Failed to evaluate items');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -565,12 +589,24 @@ export default function Admin() {
 
           {/* AI Generate Tab */}
           <TabsContent value="generate" className="space-y-4">
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                className="rounded-none uppercase tracking-widest text-xs font-bold"
+                onClick={handleEvaluateItems}
+                disabled={loading}
+                data-testid="evaluate-items-btn"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : <Sparkles className="w-4 h-4 me-2" strokeWidth={1.5} />}
+                Re-evaluate Items
+              </Button>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* RSS Items List */}
               <div className="bg-white border border-zinc-200">
                 <div className="border-b border-zinc-200 p-4">
-                  <h3 className="font-heading font-bold">{t('pendingItems')}</h3>
-                  <p className="text-xs text-zinc-500 mt-1">{t('selectItem')}</p>
+                  <h3 className="font-heading font-bold">AI Suggestions</h3>
+                  <p className="text-xs text-zinc-500 mt-1">Items selected by AI for their analytical potential</p>
                 </div>
                 <div className="divide-y divide-zinc-100 max-h-[500px] overflow-y-auto">
                   {rssItems.map(item => (
@@ -584,7 +620,22 @@ export default function Admin() {
                       onClick={() => setSelectedRssItem(item)}
                       data-testid={`rss-item-${item.id}`}
                     >
-                      <p className="font-medium text-sm">{item.title}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium text-sm flex-1">{item.title}</p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-none text-zinc-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0 h-7 w-7 p-0"
+                          onClick={(e) => { e.stopPropagation(); handleRejectItem(item.id); }}
+                          data-testid={`reject-item-${item.id}`}
+                          title="Dismiss this suggestion"
+                        >
+                          <X className="w-4 h-4" strokeWidth={1.5} />
+                        </Button>
+                      </div>
+                      {item.ai_reason && (
+                        <p className="text-xs text-[#3DB883] mt-1 italic">{item.ai_reason}</p>
+                      )}
                       <p className="text-xs text-zinc-500 line-clamp-2 mt-1">{item.summary}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-xs font-mono text-zinc-400">{item.feed_name}</span>
@@ -603,9 +654,10 @@ export default function Admin() {
                     </div>
                   ))}
                   {rssItems.length === 0 && (
-                    <p className="p-8 text-center text-zinc-500">
-                      No pending RSS items. Fetch a feed first.
-                    </p>
+                    <div className="p-8 text-center text-zinc-500">
+                      <p>No suggested items yet.</p>
+                      <p className="text-xs mt-2">Click "Re-evaluate Items" to run AI analysis on pending feeds.</p>
+                    </div>
                   )}
                 </div>
               </div>
