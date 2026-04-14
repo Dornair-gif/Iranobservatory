@@ -1067,7 +1067,7 @@ async def _compute_dashboard_indexes():
             system_message="""You are a geopolitical data analyst for Iran Observatory. Produce accurate, source-based quantitative indexes. Return ONLY valid JSON."""
         ).with_model("openai", "gpt-5.2")
         
-        # CALL 1: Core indexes + events
+        # CALL 1: Core indexes
         prompt1 = f"""Based on these Iran news items, produce a JSON dashboard.
 
 NEWS (last 30 days):
@@ -1083,11 +1083,13 @@ Return ONLY this JSON:
 {{"situation_summary": ["<bullet 1>","<bullet 2>","<bullet 3>"],
 "updated_context": "<1 paragraph: what changed this week, what to watch>",
 "tension_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence>", "key_drivers": ["<driver1>","<driver2>","<driver3>","<driver4>"]}},
-"tension_history": [<30 ints 1-10>],
-"theme_counts": {{"military": <int>, "diplomacy": <int>, "economy": <int>, "human_rights": <int>, "nuclear": <int>, "sanctions": <int>}},
-"theme_trends": {{"military": "<rising|declining|stable>", "diplomacy": "<rising|declining|stable>", "economy": "<rising|declining|stable>", "human_rights": "<rising|declining|stable>", "nuclear": "<rising|declining|stable>", "sanctions": "<rising|declining|stable>"}},
-"theme_events": {{"military": [{{"date":"<YYYY-MM-DD>","title":"<event>","description":"<context>","source":"<RSS/Telegram>"}}], "diplomacy": [same], "economy": [same], "human_rights": [same], "nuclear": [same], "sanctions": [same]}}}}
-Max 6 events per theme. Based ONLY on provided sources."""
+"tension_history": [<30 floats 1-10, daily tension estimate, ending with today>],
+"human_rights_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence explaining the HR situation severity>", "key_factors": ["<factor1>","<factor2>","<factor3>"]}},
+"internet_blackout_days": <int, number of days Iran has been without international internet based on NetBlocks reports in the sources>,
+"protests_reported": <int>,
+"hr_timeline": [{{"date":"<YYYY-MM-DD>","event":"<what happened>","source":"<HRA News/VahidOnline>"}}],
+"hr_key_issues": ["<issue 1>","<issue 2>","<issue 3>"]}}
+Max 10 HR timeline events. Based ONLY on provided sources."""
 
         msg1 = UserMessage(text=prompt1)
         response1 = await chat.send_message(msg1)
@@ -1106,22 +1108,67 @@ Max 6 events per theme. Based ONLY on provided sources."""
             system_message="""You are a geopolitical data analyst. Return ONLY valid JSON."""
         ).with_model("openai", "gpt-5.2")
         
-        prompt2 = f"""Based on these sources about Iran, produce detailed tracking data.
+        prompt2 = f"""Based on these sources about Iran, produce detailed economic and sanctions tracking data.
 
 HRA News (Telegram):
-{hra_texts[:2000]}
+{hra_texts[:1500]}
 
 VahidOnline (Telegram):
-{vahid_texts[:2000]}
+{vahid_texts[:1500]}
 
 NEWS headlines:
 {rss_titles[:2000]}
 
 Return ONLY this JSON:
-{{"human_rights": {{"political_prisoners_mentioned": <int>, "internet_status": "<current status description>", "protests_reported": <int>, "key_issues": ["<issue1>","<issue2>","<issue3>"], "timeline": [{{"date":"<YYYY-MM-DD>","event":"<what happened>","source":"<HRA News/VahidOnline>"}}]}},
-"sanctions_tracker": [{{"date":"<YYYY-MM-DD>","entity":"<who>","type":"<US Treasury/EU/UN>","action":"<Added|Extended|Lifted>","details":"<1 sentence>"}}],
-"economic_indicators": {{"oil_impact":"<1-2 sentences>","currency_pressure":"<1-2 sentences>","inflation_context":"<1-2 sentences>","trade_disruption":"<1-2 sentences>","key_metrics":[{{"label":"<name>","value":"<value>","trend":"<up|down|stable>","context":"<why>"}}]}}}}
-Up to 10 HR timeline events, 8 sanctions, 5 economic metrics. Source-based only."""
+{{"sanctions_tracker": {{
+  "us_active_count": <int, estimated total active US sanctions designations on Iran>,
+  "eu_active_count": <int, estimated total active EU restrictive measures on Iran>,
+  "un_active_count": <int, estimated total active UN sanctions on Iran including snapback>,
+  "us_trend": [<12 ints representing monthly new US sanctions count over past year, oldest to newest>],
+  "eu_trend": [<12 ints representing monthly new EU sanctions count over past year, oldest to newest>],
+  "categories": [
+    {{
+      "regime": "United States",
+      "short": "US",
+      "description": "<1 sentence: overall US sanctions posture toward Iran>",
+      "key_sanctions": [
+        {{"name":"<sanction program or EO name>","date":"<YYYY-MM-DD or year>","target":"<sector/entities targeted>","status":"Active","details":"<1 sentence impact>"}}
+      ]
+    }},
+    {{
+      "regime": "European Union",
+      "short": "EU",
+      "description": "<1 sentence: overall EU sanctions posture toward Iran>",
+      "key_sanctions": [
+        {{"name":"<regulation or decision name>","date":"<YYYY-MM-DD or year>","target":"<sector/entities targeted>","status":"Active","details":"<1 sentence impact>"}}
+      ]
+    }},
+    {{
+      "regime": "United Nations (Snapback)",
+      "short": "UN",
+      "description": "<1 sentence explaining the UN snapback mechanism reactivation and its significance>",
+      "key_sanctions": [
+        {{"name":"<UNSCR number or measure>","date":"<YYYY-MM-DD or year>","target":"<what it restricts>","status":"Active","details":"<1 sentence impact>"}}
+      ]
+    }}
+  ]
+}},
+"economic_indicators": {{
+  "summary": "<2-3 sentences overall economic situation>",
+  "metrics": [
+    {{"label":"IRR/USD (Parallel Market)","value":"<estimated current rate>","change_pct": <float, recent % change>,"trend_data":[<8 floats representing recent values>],"context":"<1 sentence>"}},
+    {{"label":"Brent Crude Oil","value":"<current price estimate>","change_pct": <float>,"trend_data":[<8 floats>],"context":"<1 sentence>"}},
+    {{"label":"Inflation Rate","value":"<current estimate %>","change_pct": <float>,"trend_data":[<8 floats>],"context":"<1 sentence>"}},
+    {{"label":"TEDPIX (Tehran Stock Exchange)","value":"<current estimate>","change_pct": <float>,"trend_data":[<8 floats>],"context":"<1 sentence>"}},
+    {{"label":"War Damage Estimate","value":"<if mentioned in sources>","change_pct": <float>,"trend_data":[<8 floats>],"context":"<1 sentence>"}}
+  ]
+}}}}
+IMPORTANT for sanctions:
+- For US: List the 5-7 most important active sanctions programs (e.g., EO 13846 oil exports, EO 13902 construction/mining, IRGC designation, banking sanctions, OFAC SDN designations for key entities).
+- For EU: List the 5-7 most important active EU restrictive measures (arms embargo, oil embargo, financial restrictions, IRGC listings, tech export bans).
+- For UN Snapback: The UN snapback mechanism was triggered. List the key UNSC resolutions that were reactivated (UNSCR 1696, 1737, 1747, 1803, 1835, 1929, 2231 provisions). Explain the arms embargo, ballistic missile restrictions, and other measures now back in force.
+- Use actual sanction program names and resolution numbers. Be specific and factual.
+Be accurate based on the sources. For economic data, use the most recent figures mentioned or reasonable estimates."""
 
         msg2 = UserMessage(text=prompt2)
         response2 = await chat2.send_message(msg2)
@@ -1132,9 +1179,6 @@ Up to 10 HR timeline events, 8 sanctions, 5 economic metrics. Source-based only.
             if r2.startswith("json"):
                 r2 = r2[4:]
         data2 = json_lib.loads(r2.strip())
-        
-        # Merge
-        dashboard_data.update(data2)
         
         # Merge
         dashboard_data.update(data2)

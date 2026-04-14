@@ -61,7 +61,8 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - Magazine-format Articles & Studies pages with pagination
 - Navigation links (Articles, Studies) in header
 - PDF upload on articles + email collection for downloads + Subscribers admin tab
-- Iran Monitor Dashboard: AI-powered tension index, event tracker (clickable), human rights timeline (HRA News + VahidOnline Telegram), sanctions tracker (expandable), economic indicators
+- Iran Monitor Dashboard: AI-powered tension index, human rights index (NetBlocks/HRA), 30-day trend chart, economic indicators with sparklines
+- Sanctions Tracker: Categorized by regime (US, EU, UN Snapback) with key measures listed per category, expandable details, monthly trend charts
 - Sources: RSS feeds + Telegram channels (t.me/hranews, t.me/VahidOnline)
 
 ### P1 (High Priority)
