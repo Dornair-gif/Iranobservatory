@@ -1008,6 +1008,179 @@ async def get_stats(request: Request):
         "active_feeds": feeds
     }
 
+# ============ IRAN MONITOR DASHBOARD ============
+
+# Telegram channel scraper
+async def _fetch_telegram_channel(channel: str, limit: int = 20):
+    """Fetch latest messages from a public Telegram channel."""
+    import re as regex
+    url = f"https://t.me/s/{channel}"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15) as resp:
+                html = await resp.text()
+        
+        messages = regex.findall(r'<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', html, regex.DOTALL)
+        dates = regex.findall(r'<time[^>]+datetime="([^"]+)"', html)
+        
+        results = []
+        for i, msg in enumerate(messages[:limit]):
+            clean_text = regex.sub(r'<[^>]+>', '', msg).strip()
+            if clean_text:
+                results.append({
+                    "text": clean_text[:500],
+                    "date": dates[i] if i < len(dates) else "",
+                    "channel": channel
+                })
+        return results
+    except Exception as e:
+        logger.error(f"Telegram fetch error for {channel}: {e}")
+        return []
+
+# Compute dashboard indexes using AI
+async def _compute_dashboard_indexes():
+    """Analyze RSS items + Telegram to compute all dashboard indexes."""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import json as json_lib
+        
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        
+        # Gather recent RSS items (last 7 days)
+        week_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        recent_items = await db.rss_items.find(
+            {"created_at": {"$gte": week_ago}}
+        ).sort("created_at", -1).to_list(100)
+        
+        # Fetch Telegram HRA data
+        hra_messages = await _fetch_telegram_channel("hranews", 20)
+        
+        # Build context for AI
+        rss_titles = "\n".join([f"- {item['title'][:100]}" for item in recent_items[:50]])
+        hra_texts = "\n".join([f"- {msg['text'][:150]}" for msg in hra_messages[:15]])
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"dashboard-{uuid.uuid4()}",
+            system_message="""You are a geopolitical data analyst for Iran Observatory. You analyze news events to produce accurate quantitative indexes. Be precise and data-driven. Base your analysis ONLY on the information provided — do not invent events."""
+        ).with_model("openai", "gpt-5.2")
+        
+        prompt = f"""Analyze these recent news items about Iran and produce a comprehensive dashboard JSON.
+
+RSS NEWS ITEMS (last 30 days):
+{rss_titles}
+
+HUMAN RIGHTS CHANNEL (HRA News - Telegram):
+{hra_texts}
+
+Produce a JSON object with these EXACT fields:
+
+{{
+  "tension_index": {{
+    "score": <float 1-10, be precise based on actual severity of events>,
+    "level": "<LOW|MODERATE|ELEVATED|CRITICAL>",
+    "summary": "<1 sentence explaining the score>",
+    "key_drivers": ["<specific event 1>", "<specific event 2>", "<specific event 3>", "<specific event 4>"]
+  }},
+  "theme_counts": {{
+    "military": <int count of military-related events>,
+    "diplomacy": <int count of diplomacy events>,
+    "economy": <int count of economy events>,
+    "human_rights": <int count of human rights events>,
+    "nuclear": <int count of nuclear-related events>,
+    "sanctions": <int count of sanctions events>
+  }},
+  "theme_trends": {{
+    "military": "<rising|declining|stable>",
+    "diplomacy": "<rising|declining|stable>",
+    "economy": "<rising|declining|stable>",
+    "human_rights": "<rising|declining|stable>",
+    "nuclear": "<rising|declining|stable>",
+    "sanctions": "<rising|declining|stable>"
+  }},
+  "human_rights": {{
+    "political_prisoners_mentioned": <int, estimated from HRA data>,
+    "internet_disruption": "<yes/no/partial — based on HRA reports>",
+    "protests_reported": <int count>,
+    "key_issues": ["<specific issue 1>", "<specific issue 2>", "<specific issue 3>"],
+    "recent_events": [
+      {{"title": "<event>", "description": "<1 sentence>", "severity": "<high|medium|low>"}},
+      {{"title": "<event>", "description": "<1 sentence>", "severity": "<high|medium|low>"}},
+      {{"title": "<event>", "description": "<1 sentence>", "severity": "<high|medium|low>"}}
+    ]
+  }},
+  "sanctions_recent": [
+    {{"date": "<YYYY-MM-DD approximate>", "entity": "<who was sanctioned>", "type": "<US/EU/UN>", "action": "<Added|Extended|Lifted>"}},
+    {{"date": "<YYYY-MM-DD approximate>", "entity": "<entity>", "type": "<US/EU/UN>", "action": "<Added|Extended|Lifted>"}}
+  ],
+  "tension_history": [<30 integers 1-10 representing daily tension for last 30 days, based on event density>]
+}}
+
+Return ONLY the JSON, no other text."""
+        
+        msg = UserMessage(text=prompt)
+        response = await chat.send_message(msg)
+        
+        # Parse response
+        response_clean = response.strip()
+        if response_clean.startswith("```"):
+            response_clean = response_clean.split("```")[1]
+            if response_clean.startswith("json"):
+                response_clean = response_clean[4:]
+            response_clean = response_clean.strip()
+        
+        dashboard_data = json_lib.loads(response_clean)
+        dashboard_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        dashboard_data["rss_items_analyzed"] = len(recent_items)
+        dashboard_data["telegram_messages_analyzed"] = len(hra_messages)
+        
+        # Cache in DB
+        await db.dashboard_cache.delete_many({})
+        await db.dashboard_cache.insert_one(dashboard_data)
+        
+        logger.info(f"Dashboard indexes computed: tension={dashboard_data['tension_index']['score']}")
+        return dashboard_data
+        
+    except Exception as e:
+        logger.error(f"Dashboard computation error: {e}")
+        # Return cached data if available
+        cached = await db.dashboard_cache.find_one({}, {"_id": 0})
+        if cached:
+            return cached
+        return None
+
+# Dashboard API endpoint
+@api_router.get("/dashboard/indexes")
+async def get_dashboard_indexes():
+    """Public endpoint - returns cached dashboard data."""
+    cached = await db.dashboard_cache.find_one({}, {"_id": 0})
+    if cached:
+        return cached
+    # Compute on first request
+    data = await _compute_dashboard_indexes()
+    if data:
+        return data
+    raise HTTPException(status_code=503, detail="Dashboard data not yet available")
+
+@api_router.post("/dashboard/refresh")
+async def refresh_dashboard(request: Request):
+    """Admin endpoint - force refresh dashboard indexes."""
+    await get_current_user(request)
+    data = await _compute_dashboard_indexes()
+    if data:
+        return data
+    raise HTTPException(status_code=500, detail="Failed to compute dashboard data")
+
+# Background task: refresh dashboard every 2 hours
+async def auto_refresh_dashboard():
+    """Background task to refresh dashboard indexes."""
+    while True:
+        try:
+            await asyncio.sleep(7200)  # 2 hours
+            await _compute_dashboard_indexes()
+        except Exception as e:
+            logger.error(f"Dashboard auto-refresh error: {e}")
+
 # Health check
 @api_router.get("/")
 async def root():
@@ -1167,6 +1340,10 @@ async def startup():
     if pending_items:
         asyncio.create_task(_evaluate_rss_items(pending_items))
         logger.info(f"Evaluating {len(pending_items)} RSS items with AI")
+    # Start dashboard auto-refresh
+    asyncio.create_task(auto_refresh_dashboard())
+    # Compute dashboard on startup
+    asyncio.create_task(_compute_dashboard_indexes())
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

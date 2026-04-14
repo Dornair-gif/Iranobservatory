@@ -51,6 +51,13 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6">
             {/* Nav Links */}
             <Link 
+              to="/monitor" 
+              className="font-mono text-xs uppercase tracking-wider text-zinc-700 hover:text-[#1E3A5F] transition-colors"
+              data-testid="nav-monitor"
+            >
+              {language === 'fr' ? 'Iran Monitor' : language === 'fa' ? 'رصد ایران' : 'Iran Monitor'}
+            </Link>
+            <Link 
               to="/articles" 
               className="font-mono text-xs uppercase tracking-wider text-zinc-700 hover:text-[#1E3A5F] transition-colors"
               data-testid="nav-articles"
@@ -158,6 +165,14 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-zinc-200 py-4 space-y-4">
             <div className="flex flex-col gap-1 px-2">
+              <Link
+                to="/monitor"
+                className="block px-3 py-2 font-mono text-xs uppercase tracking-wider text-zinc-700 hover:bg-zinc-50"
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="mobile-nav-monitor"
+              >
+                {language === 'fr' ? 'Iran Monitor' : language === 'fa' ? 'رصد ایران' : 'Iran Monitor'}
+              </Link>
               <Link
                 to="/articles"
                 className="block px-3 py-2 font-mono text-xs uppercase tracking-wider text-zinc-700 hover:bg-zinc-50"

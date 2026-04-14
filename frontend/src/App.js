@@ -13,6 +13,7 @@ import Studies from "./pages/Studies";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import IndexPreview from "./pages/IndexPreview";
+import Dashboard from "./pages/Dashboard";
 
 function AppContent() {
   return (
@@ -44,6 +45,7 @@ function AppContent() {
           </>
         } />
         <Route path="/preview-index" element={<IndexPreview />} />
+        <Route path="/monitor" element={<Dashboard />} />
         <Route path="/" element={
           <>
             <Header />
