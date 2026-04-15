@@ -1108,6 +1108,52 @@ Max 10 HR timeline events. Based ONLY on provided sources."""
             system_message="""You are a geopolitical data analyst. Return ONLY valid JSON."""
         ).with_model("openai", "gpt-5.2")
         
+        # Scrape actual sanctions source pages for context
+        sanctions_context = ""
+        try:
+            async with aiohttp.ClientSession() as session:
+                # US Treasury OFAC Iran page
+                try:
+                    async with session.get("https://ofac.treasury.gov/sanctions-programs-and-country-information/iran-sanctions", timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            from html.parser import HTMLParser
+                            html_text = await resp.text()
+                            # Extract text content
+                            class TextExtractor(HTMLParser):
+                                def __init__(self):
+                                    super().__init__()
+                                    self.texts = []
+                                    self.skip = False
+                                def handle_starttag(self, tag, attrs):
+                                    if tag in ('script', 'style'):
+                                        self.skip = True
+                                def handle_endtag(self, tag):
+                                    if tag in ('script', 'style'):
+                                        self.skip = False
+                                def handle_data(self, data):
+                                    if not self.skip and data.strip():
+                                        self.texts.append(data.strip())
+                            extractor = TextExtractor()
+                            extractor.feed(html_text)
+                            us_text = " ".join(extractor.texts)[:2000]
+                            sanctions_context += f"\nUS TREASURY OFAC — IRAN SANCTIONS PAGE:\n{us_text}\n"
+                except Exception as e:
+                    logger.warning(f"Failed to scrape US Treasury: {e}")
+                
+                # EU Council Iran sanctions page
+                try:
+                    async with session.get("https://www.consilium.europa.eu/en/policies/sanctions-against-iran/", timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            html_text = await resp.text()
+                            extractor2 = TextExtractor()
+                            extractor2.feed(html_text)
+                            eu_text = " ".join(extractor2.texts)[:2000]
+                            sanctions_context += f"\nEU COUNCIL — SANCTIONS AGAINST IRAN PAGE:\n{eu_text}\n"
+                except Exception as e:
+                    logger.warning(f"Failed to scrape EU Council: {e}")
+        except Exception as e:
+            logger.warning(f"Sanctions scraping failed: {e}")
+        
         prompt2 = f"""Based on these sources about Iran, produce detailed economic and sanctions tracking data.
 
 HRA News (Telegram):
@@ -1118,6 +1164,9 @@ VahidOnline (Telegram):
 
 NEWS headlines:
 {rss_titles[:2000]}
+
+OFFICIAL SANCTIONS SOURCES (scraped):
+{sanctions_context[:3000] if sanctions_context else "Not available — use your knowledge of current US/EU/UN Iran sanctions."}
 
 Return ONLY this JSON:
 {{"sanctions_tracker": {{
@@ -1164,10 +1213,11 @@ Return ONLY this JSON:
   ]
 }}}}
 IMPORTANT for sanctions:
-- For US: List the 5-7 most important active sanctions programs (e.g., EO 13846 oil exports, EO 13902 construction/mining, IRGC designation, banking sanctions, OFAC SDN designations for key entities).
-- For EU: List the 5-7 most important active EU restrictive measures (arms embargo, oil embargo, financial restrictions, IRGC listings, tech export bans).
-- For UN Snapback: The UN snapback mechanism was triggered. List the key UNSC resolutions that were reactivated (UNSCR 1696, 1737, 1747, 1803, 1835, 1929, 2231 provisions). Explain the arms embargo, ballistic missile restrictions, and other measures now back in force.
-- Use actual sanction program names and resolution numbers. Be specific and factual.
+- For US: List the 5-7 most important active US sanctions programs from OFAC. Include the latest designations and Executive Orders. Reference the OFAC Iran sanctions page data provided above. Include recent 2024-2026 actions.
+- For EU: List the 5-7 most important active EU restrictive measures. Reference the EU Council sanctions page data provided above. Include the latest sanctions packages adopted by the Council (2024-2026 rounds).
+- For UN Snapback: The UN snapback mechanism was triggered in October 2025 by the E3 (UK/France/Germany). All prior UNSC resolutions are now reactivated. List the key UNSCRs (1696, 1737, 1747, 1803, 1835, 1929) and the specific measures they impose (arms embargo, ballistic missile restrictions, nuclear-related bans, asset freezes, travel bans).
+- Use actual sanction program names, EO numbers, regulation numbers, and UNSCR numbers. Be specific and factual.
+- Prioritize the most recent and impactful sanctions.
 Be accurate based on the sources. For economic data, use the most recent figures mentioned or reasonable estimates."""
 
         msg2 = UserMessage(text=prompt2)

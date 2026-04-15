@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Activity, AlertTriangle, DollarSign, Users, Scale, 
   Shield, Wifi, WifiOff, TrendingUp, TrendingDown, Minus,
-  Eye, ChevronDown, ChevronUp, Calendar, Fuel
+  Eye, ChevronDown, ChevronUp, Calendar, Fuel, ExternalLink
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import SEO from '../components/SEO';
@@ -129,47 +129,47 @@ export default function Dashboard() {
 
         {/* BRIEFING */}
         {data.situation_summary && (
-          <section className="border border-zinc-800 bg-zinc-900/50 p-5">
-            <h2 className="text-[10px] font-mono text-[#3DB883] uppercase tracking-widest mb-3">
+          <section className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-6 lg:p-8">
+            <h2 className="text-xs font-mono text-[#3DB883] uppercase tracking-widest mb-4 font-bold">
               {language === 'fr' ? 'Briefing' : 'Situation Briefing'}
             </h2>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {(Array.isArray(data.situation_summary) ? data.situation_summary : [data.situation_summary]).map((b, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-zinc-300 leading-relaxed">
-                  <span className="text-[#3DB883] mt-1 flex-shrink-0">&#8226;</span>{b}
+                <li key={i} className="flex items-start gap-3 text-[15px] text-zinc-200 leading-relaxed">
+                  <span className="text-[#3DB883] mt-1 flex-shrink-0 text-lg">&#8226;</span>{b}
                 </li>
               ))}
             </ul>
             {data.updated_context && (
-              <p className="mt-3 pt-3 border-t border-zinc-800 text-xs text-zinc-500 leading-relaxed italic">{data.updated_context}</p>
+              <p className="mt-4 pt-4 border-t border-zinc-700/50 text-sm text-zinc-400 leading-relaxed italic">{data.updated_context}</p>
             )}
           </section>
         )}
 
         {/* TENSION INDEX + HUMAN RIGHTS INDEX side by side */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Tension */}
-          <div className="border border-zinc-800 bg-zinc-900/50 p-5">
-            <h3 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-4">
+          <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-6">
+            <h3 className="text-xs font-mono text-zinc-400 uppercase tracking-widest mb-5 font-bold">
               {language === 'fr' ? 'Indice de Tension Géopolitique' : 'Geopolitical Tension Index'}
             </h3>
             <div className="flex items-center gap-6">
-              <div className="relative w-28 h-28 flex-shrink-0">
+              <div className="relative w-32 h-32 flex-shrink-0">
                 <svg viewBox="0 0 120 120" className="w-full h-full">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="#1f2937" strokeWidth="8" />
-                  <circle cx="60" cy="60" r="52" fill="none" stroke={tensionColor(ti.score)} strokeWidth="8" strokeDasharray={`${(ti.score / 10) * 327} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" />
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#1e293b" strokeWidth="8" />
+                  <circle cx="60" cy="60" r="52" fill="none" stroke={tensionColor(ti.score)} strokeWidth="8" strokeDasharray={`${(ti.score / 10) * 327} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" className="drop-shadow-lg" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-heading font-black" style={{ color: tensionColor(ti.score) }}>{ti.score}</span>
-                  <span className="text-[8px] font-mono text-zinc-600">/10</span>
+                  <span className="text-4xl font-heading font-black" style={{ color: tensionColor(ti.score) }}>{ti.score}</span>
+                  <span className="text-[9px] font-mono text-zinc-500">/10</span>
                 </div>
               </div>
               <div className="flex-1">
-                <span className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider font-bold" style={{ backgroundColor: tensionColor(ti.score) + '20', color: tensionColor(ti.score) }}>{ti.level}</span>
-                <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">{ti.summary}</p>
-                <div className="flex flex-wrap gap-1 mt-2">
+                <span className="inline-block px-3 py-1 text-[10px] font-mono uppercase tracking-wider font-bold rounded" style={{ backgroundColor: tensionColor(ti.score) + '25', color: tensionColor(ti.score) }}>{ti.level}</span>
+                <p className="text-sm text-zinc-300 mt-3 leading-relaxed">{ti.summary}</p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
                   {ti.key_drivers?.map((d, i) => (
-                    <span key={i} className="px-1.5 py-0.5 bg-zinc-800 text-zinc-500 text-[9px] font-mono">{d}</span>
+                    <span key={i} className="px-2 py-1 bg-zinc-800/80 text-zinc-400 text-[10px] font-mono rounded">{d}</span>
                   ))}
                 </div>
               </div>
@@ -177,27 +177,27 @@ export default function Dashboard() {
           </div>
 
           {/* Human Rights Index */}
-          <div className="border border-zinc-800 bg-zinc-900/50 p-5">
-            <h3 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-4">
+          <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-6">
+            <h3 className="text-xs font-mono text-zinc-400 uppercase tracking-widest mb-5 font-bold">
               {language === 'fr' ? 'Indice Droits Humains' : 'Human Rights Index'}
             </h3>
             <div className="flex items-center gap-6">
-              <div className="relative w-28 h-28 flex-shrink-0">
+              <div className="relative w-32 h-32 flex-shrink-0">
                 <svg viewBox="0 0 120 120" className="w-full h-full">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="#1f2937" strokeWidth="8" />
-                  <circle cx="60" cy="60" r="52" fill="none" stroke={tensionColor(hri.score || 0)} strokeWidth="8" strokeDasharray={`${((hri.score || 0) / 10) * 327} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" />
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#1e293b" strokeWidth="8" />
+                  <circle cx="60" cy="60" r="52" fill="none" stroke={tensionColor(hri.score || 0)} strokeWidth="8" strokeDasharray={`${((hri.score || 0) / 10) * 327} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" className="drop-shadow-lg" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-heading font-black" style={{ color: tensionColor(hri.score || 0) }}>{hri.score || '—'}</span>
-                  <span className="text-[8px] font-mono text-zinc-600">/10</span>
+                  <span className="text-4xl font-heading font-black" style={{ color: tensionColor(hri.score || 0) }}>{hri.score || '—'}</span>
+                  <span className="text-[9px] font-mono text-zinc-500">/10</span>
                 </div>
               </div>
               <div className="flex-1">
-                <span className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider font-bold" style={{ backgroundColor: tensionColor(hri.score || 0) + '20', color: tensionColor(hri.score || 0) }}>{hri.level || '—'}</span>
-                <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">{hri.summary}</p>
-                <div className="flex flex-wrap gap-1 mt-2">
+                <span className="inline-block px-3 py-1 text-[10px] font-mono uppercase tracking-wider font-bold rounded" style={{ backgroundColor: tensionColor(hri.score || 0) + '25', color: tensionColor(hri.score || 0) }}>{hri.level || '—'}</span>
+                <p className="text-sm text-zinc-300 mt-3 leading-relaxed">{hri.summary}</p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
                   {hri.key_factors?.map((f, i) => (
-                    <span key={i} className="px-1.5 py-0.5 bg-zinc-800 text-zinc-500 text-[9px] font-mono">{f}</span>
+                    <span key={i} className="px-2 py-1 bg-zinc-800/80 text-zinc-400 text-[10px] font-mono rounded">{f}</span>
                   ))}
                 </div>
               </div>
@@ -206,85 +206,85 @@ export default function Dashboard() {
         </section>
 
         {/* 30-DAY TREND */}
-        <section className="border border-zinc-800 bg-zinc-900/50 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+        <section className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-bold">
               {language === 'fr' ? 'Tendance de Tension — 30 Jours' : 'Tension Trend — 30 Days'}
             </span>
-            <div className="flex gap-3">
-              <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>{language === 'fr' ? 'Critique 8+' : 'Critical 8+'}</span>
-              <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>{language === 'fr' ? 'Élevé 6-7' : 'Elevated 6-7'}</span>
-              <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-600"><span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>{language === 'fr' ? 'Modéré 4-5' : 'Moderate 4-5'}</span>
+            <div className="flex gap-4">
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500"><span className="w-2 h-2 rounded-full bg-red-500"></span>{language === 'fr' ? 'Critique 8+' : 'Critical 8+'}</span>
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500"><span className="w-2 h-2 rounded-full bg-amber-500"></span>{language === 'fr' ? 'Élevé 6-7' : 'Elevated 6-7'}</span>
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500"><span className="w-2 h-2 rounded-full bg-blue-400"></span>{language === 'fr' ? 'Modéré 4-5' : 'Moderate 4-5'}</span>
             </div>
           </div>
           {history.length > 0 ? (
             <>
-              <div className="flex items-end gap-[3px] h-32">
+              <div className="flex items-end gap-[3px] h-40">
                 {history.map((val, i) => {
                   const numVal = Number(val) || 0;
                   return (
                     <div key={i} className="flex-1 flex flex-col justify-end group relative" title={`Day ${i+1}: ${numVal}/10`}>
                       <div 
-                        className="w-full rounded-sm transition-all hover:opacity-100"
+                        className="w-full rounded-sm transition-all hover:opacity-100 cursor-pointer"
                         style={{ 
                           height: `${Math.max((numVal / 10) * 100, 5)}%`, 
                           backgroundColor: barColor(numVal), 
-                          opacity: 0.4 + (i / history.length) * 0.6 
+                          opacity: 0.5 + (i / history.length) * 0.5 
                         }} 
                       />
-                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 hidden group-hover:block">
-                        <span className="text-[9px] font-mono text-white bg-zinc-700 px-1 rounded">{numVal}</span>
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+                        <span className="text-[10px] font-mono text-white bg-zinc-700 px-1.5 py-0.5 rounded shadow-lg">{numVal}</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <div className="flex justify-between mt-1.5">
-                <span className="text-[8px] font-mono text-zinc-700">-30d</span>
-                <span className="text-[8px] font-mono text-zinc-700">{language === 'fr' ? "Aujourd'hui" : 'Today'}</span>
+              <div className="flex justify-between mt-2">
+                <span className="text-[10px] font-mono text-zinc-600">-30d</span>
+                <span className="text-[10px] font-mono text-zinc-600">{language === 'fr' ? "Aujourd'hui" : 'Today'}</span>
               </div>
             </>
           ) : (
-            <p className="text-zinc-600 text-xs text-center py-8">{language === 'fr' ? 'Données en cours de calcul' : 'Computing trend data...'}</p>
+            <p className="text-zinc-500 text-sm text-center py-10">{language === 'fr' ? 'Données en cours de calcul' : 'Computing trend data...'}</p>
           )}
         </section>
 
         {/* HUMAN RIGHTS & SOCIETY */}
         <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Shield className="w-4 h-4 text-[#7c3aed]" strokeWidth={1.5} />
-            <h2 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="w-5 h-5 text-[#7c3aed]" strokeWidth={1.5} />
+            <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-bold">
               {language === 'fr' ? 'Droits Humains & Société' : 'Human Rights & Society'}
             </h2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Key metrics */}
             <div className="space-y-3">
-              <div className="border border-zinc-800 bg-zinc-900/50 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-mono text-zinc-600 uppercase">
+              <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase font-bold">
                     {language === 'fr' ? 'Internet — NetBlocks Iran' : 'Internet — NetBlocks Iran'}
                   </span>
-                  {blackoutDays > 0 ? <WifiOff className="w-4 h-4 text-red-500" strokeWidth={1.5} /> : <Wifi className="w-4 h-4 text-green-500" strokeWidth={1.5} />}
+                  {blackoutDays > 0 ? <WifiOff className="w-5 h-5 text-red-500" strokeWidth={1.5} /> : <Wifi className="w-5 h-5 text-green-500" strokeWidth={1.5} />}
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-heading font-black text-red-500">{blackoutDays}</span>
-                  <span className="text-xs text-zinc-400">{language === 'fr' ? 'jours de coupure' : 'blackout days'}</span>
+                  <span className="text-4xl font-heading font-black text-red-500">{blackoutDays}</span>
+                  <span className="text-sm text-zinc-400">{language === 'fr' ? 'jours de coupure' : 'blackout days'}</span>
                 </div>
               </div>
-              <div className="border border-zinc-800 bg-zinc-900/50 p-4">
-                <span className="text-[9px] font-mono text-zinc-600 uppercase">
+              <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase font-bold">
                   {language === 'fr' ? 'Manifestations signalées' : 'Protests Reported'}
                 </span>
-                <p className="text-3xl font-heading font-black text-amber-500 mt-1">{protests}</p>
+                <p className="text-4xl font-heading font-black text-amber-500 mt-2">{protests}</p>
               </div>
-              <div className="border border-zinc-800 bg-zinc-900/50 p-4">
-                <span className="text-[9px] font-mono text-zinc-600 uppercase">
+              <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase font-bold">
                   {language === 'fr' ? 'Enjeux principaux' : 'Key Issues'}
                 </span>
-                <ul className="mt-2 space-y-1.5">
+                <ul className="mt-3 space-y-2">
                   {hrIssues.map((issue, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[11px] text-zinc-400 leading-relaxed">
+                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-300 leading-relaxed">
                       <span className="text-[#7c3aed] mt-0.5 flex-shrink-0">&#8226;</span>{issue}
                     </li>
                   ))}
@@ -293,27 +293,27 @@ export default function Dashboard() {
             </div>
 
             {/* Timeline */}
-            <div className="lg:col-span-2 border border-zinc-800 bg-zinc-900/50">
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+            <div className="lg:col-span-2 border border-zinc-700/50 bg-zinc-900/70 rounded-lg overflow-hidden">
+              <div className="p-4 border-b border-zinc-700/50 flex items-center justify-between">
+                <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest font-bold">
                   {language === 'fr' ? 'Chronologie' : 'Timeline'}
                 </span>
-                <span className="text-[9px] font-mono text-zinc-700">HRA News / VahidOnline</span>
+                <span className="text-[10px] font-mono text-zinc-600">HRA News / VahidOnline</span>
               </div>
-              <div className="divide-y divide-zinc-800/30 max-h-[380px] overflow-y-auto">
+              <div className="divide-y divide-zinc-800/40 max-h-[400px] overflow-y-auto">
                 {hrTimeline.map((event, i) => (
-                  <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors">
+                  <div key={i} className="px-5 py-3.5 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
                     <div className="flex flex-col items-center flex-shrink-0 w-3 mt-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[#7c3aed]" />
-                      {i < hrTimeline.length - 1 && <div className="w-px flex-1 bg-zinc-800 mt-1" style={{minHeight: '20px'}} />}
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#7c3aed]" />
+                      {i < hrTimeline.length - 1 && <div className="w-px flex-1 bg-zinc-700/50 mt-1" style={{minHeight: '20px'}} />}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <Calendar className="w-3 h-3 text-zinc-600" strokeWidth={1.5} />
-                        <span className="text-[10px] font-mono text-zinc-500">{event.date}</span>
-                        <span className="text-[9px] font-mono text-zinc-700">{event.source}</span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar className="w-3 h-3 text-zinc-500" strokeWidth={1.5} />
+                        <span className="text-[11px] font-mono text-zinc-400">{event.date}</span>
+                        <span className="text-[10px] font-mono text-zinc-600">{event.source}</span>
                       </div>
-                      <p className="text-[12px] text-zinc-300 leading-relaxed">{event.event}</p>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{event.event}</p>
                     </div>
                   </div>
                 ))}
@@ -324,20 +324,20 @@ export default function Dashboard() {
 
         {/* ECONOMIC INDICATORS */}
         <section>
-          <div className="flex items-center gap-2 mb-3">
-            <DollarSign className="w-4 h-4 text-[#d97706]" strokeWidth={1.5} />
-            <h2 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+          <div className="flex items-center gap-2 mb-4">
+            <DollarSign className="w-5 h-5 text-[#d97706]" strokeWidth={1.5} />
+            <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-bold">
               {language === 'fr' ? 'Indicateurs Économiques' : 'Economic Indicators'}
             </h2>
           </div>
           
           {econ.summary && (
-            <div className="border border-zinc-800 bg-zinc-900/50 p-4 mb-4">
-              <p className="text-[12px] text-zinc-400 leading-relaxed">{econ.summary}</p>
+            <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5 mb-4">
+              <p className="text-sm text-zinc-300 leading-relaxed">{econ.summary}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {econMetrics.map((metric, i) => {
               const changePct = metric.change_pct || 0;
               const isPositive = changePct > 0;
@@ -346,19 +346,19 @@ export default function Dashboard() {
                 : (isPositive ? '#059669' : '#dc2626');
               
               return (
-                <div key={i} className="border border-zinc-800 bg-zinc-900/50 p-4 hover:border-zinc-600 transition-colors">
-                  <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider mb-3">{metric.label}</p>
-                  <div className="flex items-end justify-between mb-2">
-                    <span className="text-xl font-heading font-black text-white">{metric.value}</span>
-                    <span className="text-xs font-mono flex items-center gap-0.5" style={{ color: changeColor }}>
-                      {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                <div key={i} className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5 hover:border-zinc-600 transition-colors">
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-3 font-bold">{metric.label}</p>
+                  <div className="flex items-end justify-between mb-3">
+                    <span className="text-2xl font-heading font-black text-white">{metric.value}</span>
+                    <span className="text-sm font-mono flex items-center gap-0.5 font-bold" style={{ color: changeColor }}>
+                      {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                       {isPositive ? '+' : ''}{changePct}%
                     </span>
                   </div>
                   {metric.trend_data && metric.trend_data.length > 1 && (
-                    <MiniSparkline data={metric.trend_data} color={changeColor} height={28} width={160} />
+                    <MiniSparkline data={metric.trend_data} color={changeColor} height={32} width={180} />
                   )}
-                  <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">{metric.context}</p>
+                  <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">{metric.context}</p>
                 </div>
               );
             })}
@@ -367,9 +367,9 @@ export default function Dashboard() {
 
         {/* SANCTIONS TRACKER — CATEGORIZED */}
         <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Scale className="w-4 h-4 text-[#059669]" strokeWidth={1.5} />
-            <h2 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+          <div className="flex items-center gap-2 mb-4">
+            <Scale className="w-5 h-5 text-[#059669]" strokeWidth={1.5} />
+            <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-bold">
               {language === 'fr' ? 'Suivi des Sanctions' : 'Sanctions Tracker'}
             </h2>
           </div>
@@ -377,29 +377,29 @@ export default function Dashboard() {
           {/* Sanctions counts + trend charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* Counts */}
-            <div className="border border-zinc-800 bg-zinc-900/50 p-5">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">
+            <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">
                 {language === 'fr' ? 'Sanctions actives estimées' : 'Estimated Active Sanctions'}
               </span>
               <div className="grid grid-cols-3 gap-3 mt-4">
                 <div className="text-center">
-                  <p className="text-2xl font-heading font-black text-red-400">{sanctions.us_active_count || '—'}</p>
-                  <p className="text-[8px] font-mono text-zinc-600 uppercase mt-1">US</p>
+                  <p className="text-3xl font-heading font-black text-red-400">{sanctions.us_active_count || '—'}</p>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase mt-1">US</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-heading font-black text-blue-400">{sanctions.eu_active_count || '—'}</p>
-                  <p className="text-[8px] font-mono text-zinc-600 uppercase mt-1">EU</p>
+                  <p className="text-3xl font-heading font-black text-blue-400">{sanctions.eu_active_count || '—'}</p>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase mt-1">EU</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-heading font-black text-amber-400">{sanctions.un_active_count || '—'}</p>
-                  <p className="text-[8px] font-mono text-zinc-600 uppercase mt-1">UN</p>
+                  <p className="text-3xl font-heading font-black text-amber-400">{sanctions.un_active_count || '—'}</p>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase mt-1">UN</p>
                 </div>
               </div>
             </div>
 
             {/* US Sanctions Trend */}
-            <div className="border border-zinc-800 bg-zinc-900/50 p-5">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">
+            <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">
                 US — {language === 'fr' ? 'Nouvelles sanctions/mois (12 mois)' : 'New sanctions/month (12 months)'}
               </span>
               <div className="flex items-end gap-1 h-20 mt-3">
@@ -418,14 +418,14 @@ export default function Dashboard() {
               </div>
               <div className="flex justify-between mt-1">
                 {months.map((m, i) => (
-                  <span key={i} className="text-[7px] font-mono text-zinc-700 flex-1 text-center">{m}</span>
+                  <span key={i} className="text-[8px] font-mono text-zinc-600 flex-1 text-center">{m}</span>
                 ))}
               </div>
             </div>
 
             {/* EU Sanctions Trend */}
-            <div className="border border-zinc-800 bg-zinc-900/50 p-5">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">
+            <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">
                 EU — {language === 'fr' ? 'Nouvelles sanctions/mois (12 mois)' : 'New sanctions/month (12 months)'}
               </span>
               <div className="flex items-end gap-1 h-20 mt-3">
@@ -444,7 +444,7 @@ export default function Dashboard() {
               </div>
               <div className="flex justify-between mt-1">
                 {months.map((m, i) => (
-                  <span key={i} className="text-[7px] font-mono text-zinc-700 flex-1 text-center">{m}</span>
+                  <span key={i} className="text-[8px] font-mono text-zinc-600 flex-1 text-center">{m}</span>
                 ))}
               </div>
             </div>
@@ -460,53 +460,68 @@ export default function Dashboard() {
               const badgeClass = categoryBadge[short] || 'bg-amber-500/15 text-amber-400';
               const keySanctions = cat.key_sanctions || [];
               const isExpanded = showAllSanctions === catIdx;
+              const sourceUrl = short === 'US' 
+                ? 'https://ofac.treasury.gov/sanctions-programs-and-country-information/iran-sanctions'
+                : short === 'EU' 
+                  ? 'https://www.consilium.europa.eu/en/policies/sanctions-against-iran/'
+                  : 'https://www.un.org/securitycouncil/sanctions/2231';
 
               return (
-                <div key={catIdx} className="border border-zinc-800 bg-zinc-900/50" data-testid={`sanctions-category-${short.toLowerCase()}`}>
+                <div key={catIdx} className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg overflow-hidden" data-testid={`sanctions-category-${short.toLowerCase()}`}>
                   {/* Category header */}
-                  <div className={`p-4 border-b border-zinc-800 ${bgClass}`}>
+                  <div className={`p-5 border-b border-zinc-700/50 ${bgClass}`}>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className={`text-lg font-heading font-black ${textClass}`}>{cat.regime}</span>
-                        <span className={`px-2 py-0.5 text-[8px] font-mono uppercase tracking-wider ${badgeClass}`}>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className={`text-xl font-heading font-black ${textClass}`}>{cat.regime}</span>
+                        <span className={`px-2.5 py-0.5 text-[9px] font-mono uppercase tracking-wider font-bold rounded ${badgeClass}`}>
                           {keySanctions.length} {language === 'fr' ? 'mesures clés' : 'key measures'}
                         </span>
+                        <a 
+                          href={sourceUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[10px] font-mono text-zinc-500 hover:text-[#3DB883] transition-colors"
+                          data-testid={`source-link-${short.toLowerCase()}`}
+                        >
+                          <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+                          {language === 'fr' ? 'Source officielle' : 'Official source'}
+                        </a>
                       </div>
                       <button
                         onClick={() => setShowAllSanctions(isExpanded ? null : catIdx)}
-                        className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+                        className="flex items-center gap-1 text-[10px] font-mono text-zinc-400 hover:text-zinc-200 transition-colors"
                         data-testid={`toggle-sanctions-${short.toLowerCase()}`}
                       >
                         {isExpanded ? (language === 'fr' ? 'Réduire' : 'Collapse') : (language === 'fr' ? 'Détails' : 'Details')}
-                        {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                     {cat.description && (
-                      <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">{cat.description}</p>
+                      <p className="text-sm text-zinc-300 mt-2 leading-relaxed">{cat.description}</p>
                     )}
                   </div>
 
-                  {/* Sanctions list */}
+                  {/* Sanctions list — expanded */}
                   {isExpanded && (
-                    <div className="divide-y divide-zinc-800/30">
+                    <div className="divide-y divide-zinc-800/40">
                       {keySanctions.map((s, i) => (
-                        <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors">
+                        <div key={i} className="px-5 py-3.5 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
                           <div className="flex-shrink-0 mt-1.5">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm font-medium text-white">{s.name}</p>
-                              <span className={`px-1.5 py-0.5 text-[8px] font-mono uppercase ${s.status === 'Active' ? badgeClass : 'bg-green-500/15 text-green-400'}`}>
+                              <p className="text-[15px] font-medium text-white">{s.name}</p>
+                              <span className={`px-2 py-0.5 text-[9px] font-mono uppercase font-bold rounded ${s.status === 'Active' ? badgeClass : 'bg-green-500/15 text-green-400'}`}>
                                 {s.status}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Calendar className="w-3 h-3 text-zinc-600" strokeWidth={1.5} />
-                              <span className="text-[10px] font-mono text-zinc-500">{s.date}</span>
-                              {s.target && <span className="text-[9px] font-mono text-zinc-600">| {s.target}</span>}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <Calendar className="w-3 h-3 text-zinc-500" strokeWidth={1.5} />
+                              <span className="text-[11px] font-mono text-zinc-400">{s.date}</span>
+                              {s.target && <span className="text-[10px] font-mono text-zinc-500">| {s.target}</span>}
                             </div>
-                            {s.details && <p className="text-[11px] text-zinc-500 mt-1.5 leading-relaxed">{s.details}</p>}
+                            {s.details && <p className="text-sm text-zinc-400 mt-2 leading-relaxed">{s.details}</p>}
                           </div>
                         </div>
                       ))}
@@ -515,18 +530,18 @@ export default function Dashboard() {
 
                   {/* Collapsed preview — show first 2 */}
                   {!isExpanded && keySanctions.length > 0 && (
-                    <div className="divide-y divide-zinc-800/30">
+                    <div className="divide-y divide-zinc-800/40">
                       {keySanctions.slice(0, 2).map((s, i) => (
-                        <div key={i} className="px-4 py-2.5 flex items-center gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                          <span className="text-[12px] text-zinc-400 truncate flex-1">{s.name}</span>
-                          <span className="text-[9px] font-mono text-zinc-600 flex-shrink-0">{s.date}</span>
+                        <div key={i} className="px-5 py-3 flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                          <span className="text-sm text-zinc-300 truncate flex-1">{s.name}</span>
+                          <span className="text-[10px] font-mono text-zinc-500 flex-shrink-0">{s.date}</span>
                         </div>
                       ))}
                       {keySanctions.length > 2 && (
                         <button 
                           onClick={() => setShowAllSanctions(catIdx)} 
-                          className="w-full p-2 text-center text-[9px] font-mono text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/30 transition-colors"
+                          className="w-full p-3 text-center text-[10px] font-mono text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 transition-colors"
                         >
                           + {keySanctions.length - 2} {language === 'fr' ? 'autres mesures' : 'more measures'}
                         </button>
@@ -540,9 +555,15 @@ export default function Dashboard() {
         </section>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-zinc-800/50 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[8px] font-mono text-zinc-700">Sources: RSS feeds, HRA News, VahidOnline (Telegram), NetBlocks</p>
-          <p className="text-[8px] font-mono text-zinc-700">{data.rss_items_analyzed} items + {data.telegram_messages_analyzed} messages</p>
+        <div className="pt-4 border-t border-zinc-700/50 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-[10px] font-mono text-zinc-500">Sources:</p>
+            <a href="https://ofac.treasury.gov/sanctions-programs-and-country-information/iran-sanctions" target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-zinc-500 hover:text-[#3DB883] transition-colors flex items-center gap-1">US Treasury/OFAC <ExternalLink className="w-2.5 h-2.5" /></a>
+            <a href="https://www.consilium.europa.eu/en/policies/sanctions-against-iran/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-zinc-500 hover:text-[#3DB883] transition-colors flex items-center gap-1">EU Council <ExternalLink className="w-2.5 h-2.5" /></a>
+            <a href="https://www.un.org/securitycouncil/sanctions/2231" target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-zinc-500 hover:text-[#3DB883] transition-colors flex items-center gap-1">UN/UNSCR 2231 <ExternalLink className="w-2.5 h-2.5" /></a>
+            <span className="text-[10px] font-mono text-zinc-600">| RSS, HRA News, VahidOnline, NetBlocks</span>
+          </div>
+          <p className="text-[10px] font-mono text-zinc-500">{data.rss_items_analyzed} items + {data.telegram_messages_analyzed} messages</p>
         </div>
       </main>
     </div>
