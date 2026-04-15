@@ -40,8 +40,8 @@ export default function Home() {
   // Include max 6 articles for homepage
   const allArticles = [...articles];
   const featuredArticle = allArticles[0];
-  const sideArticles = allArticles.slice(1, 3);
-  const gridArticles = allArticles.slice(3, 6);
+  const sideArticles = allArticles.slice(1, 5);
+  const gridArticles = allArticles.slice(5, 8);
 
   const seoDescriptions = {
     en: "Independent platform offering fact-based insights into Iran's political, economic and social dynamics. Iran's future matters, far beyond its borders.",
@@ -129,42 +129,29 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* Smart layout based on article count */}
-            {allArticles.length === 1 ? (
-              /* Single article — full width featured */
-              <div className="mb-12 animate-fade-up">
-                <ArticleCard article={featuredArticle} featured />
-              </div>
-            ) : allArticles.length === 2 ? (
-              /* Two articles — equal columns */
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-                <div className="animate-fade-up">
-                  <ArticleCard article={allArticles[0]} featured />
+            {/* Featured + Side Articles — Magazine Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+              {/* Featured Article - 8 columns */}
+              {featuredArticle && (
+                <div className="lg:col-span-8 animate-fade-up">
+                  <ArticleCard article={featuredArticle} featured />
                 </div>
-                <div className="animate-fade-up-delay-1">
-                  <ArticleCard article={allArticles[1]} featured />
-                </div>
-              </div>
-            ) : (
-              /* 3+ articles — Featured (8-col) + Side (4-col) */
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
-                {featuredArticle && (
-                  <div className="lg:col-span-8 animate-fade-up">
-                    <ArticleCard article={featuredArticle} featured />
-                  </div>
-                )}
-                <div className="lg:col-span-4 space-y-6">
+              )}
+              
+              {/* Side Articles - 4 columns, stacked */}
+              {sideArticles.length > 0 && (
+                <div className="lg:col-span-4 flex flex-col gap-4">
                   {sideArticles.map((article, index) => (
                     <div 
                       key={article.id} 
-                      className={`animate-fade-up-delay-${index + 1}`}
+                      className={`animate-fade-up-delay-${index + 1} flex-1`}
                     >
                       <ArticleCard article={article} />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Grid Articles */}
             {gridArticles.length > 0 && (

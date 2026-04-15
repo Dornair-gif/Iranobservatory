@@ -62,9 +62,9 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - Navigation links (Articles, Studies) in header
 - PDF upload on articles + email collection for downloads + Subscribers admin tab
 - Iran Monitor Dashboard: AI-powered tension index, human rights index (NetBlocks/HRA), 30-day trend chart, economic indicators with sparklines
-- Sanctions Tracker: Categorized by regime (US, EU, UN Snapback) with key measures listed per category, expandable details, monthly trend charts
-- Source links: Official source links to US Treasury/OFAC, EU Council, UN/UNSCR 2231 on each sanctions category + footer
-- Backend scrapes EU Council and US Treasury OFAC pages to feed real sanctions data to AI (April 2026)
+- Sanctions Tracker: Categorized by regime (US, EU, UN Snapback) with key measures, expandable details, monthly trend charts, sector breakdown bar chart, persons/entities counts, recent packages timeline
+- Backend scrapes EU Council and US Treasury OFAC pages for real sanctions data (April 2026)
+- Source links: Official source links to US Treasury/OFAC, EU Council, UN/UNSCR 2231
 - Dashboard readability overhaul: Bigger text, better contrast, rounded cards, larger index scores (April 2026)
 - Homepage articles layout: Smart layout adapts to article count (1, 2, or 3+) — no more empty space (April 2026)
 - Sources: RSS feeds + Telegram channels (t.me/hranews, t.me/VahidOnline)

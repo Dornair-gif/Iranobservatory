@@ -1173,8 +1173,25 @@ Return ONLY this JSON:
   "us_active_count": <int, estimated total active US sanctions designations on Iran>,
   "eu_active_count": <int, estimated total active EU restrictive measures on Iran>,
   "un_active_count": <int, estimated total active UN sanctions on Iran including snapback>,
+  "us_persons_designated": <int, estimated number of individual persons designated under US sanctions>,
+  "us_entities_designated": <int, estimated number of entities/companies designated under US sanctions>,
+  "eu_persons_designated": <int, estimated persons listed under EU restrictive measures>,
+  "eu_entities_designated": <int, estimated entities listed under EU restrictive measures>,
   "us_trend": [<12 ints representing monthly new US sanctions count over past year, oldest to newest>],
   "eu_trend": [<12 ints representing monthly new EU sanctions count over past year, oldest to newest>],
+  "sector_breakdown": [
+    {{"sector": "Oil & Energy", "us_count": <int>, "eu_count": <int>, "un_count": <int>}},
+    {{"sector": "Financial & Banking", "us_count": <int>, "eu_count": <int>, "un_count": <int>}},
+    {{"sector": "Nuclear & Proliferation", "us_count": <int>, "eu_count": <int>, "un_count": <int>}},
+    {{"sector": "Military & Defense (IRGC)", "us_count": <int>, "eu_count": <int>, "un_count": <int>}},
+    {{"sector": "Human Rights & Repression", "us_count": <int>, "eu_count": <int>, "un_count": <int>}},
+    {{"sector": "Shipping & Trade", "us_count": <int>, "eu_count": <int>, "un_count": <int>}},
+    {{"sector": "Technology & Cyber", "us_count": <int>, "eu_count": <int>, "un_count": <int>}},
+    {{"sector": "Drones & UAV", "us_count": <int>, "eu_count": <int>, "un_count": <int>}}
+  ],
+  "recent_packages": [
+    {{"date":"<YYYY-MM-DD>","issuer":"<US/EU/UN>","title":"<package name or description>","persons_added":<int>,"entities_added":<int>,"details":"<1 sentence summary>"}}
+  ],
   "categories": [
     {{
       "regime": "United States",
@@ -1213,9 +1230,11 @@ Return ONLY this JSON:
   ]
 }}}}
 IMPORTANT for sanctions:
-- For US: List the 5-7 most important active US sanctions programs from OFAC. Include the latest designations and Executive Orders. Reference the OFAC Iran sanctions page data provided above. Include recent 2024-2026 actions.
-- For EU: List the 5-7 most important active EU restrictive measures. Reference the EU Council sanctions page data provided above. Include the latest sanctions packages adopted by the Council (2024-2026 rounds).
+- For US: List the 7-10 most important active US sanctions programs from OFAC. Include the latest designations and Executive Orders. Reference the OFAC Iran sanctions page data provided above. Include recent 2024-2026 actions.
+- For EU: List the 7-10 most important active EU restrictive measures. Reference the EU Council sanctions page data provided above. Include the latest sanctions packages adopted by the Council (2024-2026 rounds), including drone-related listings.
 - For UN Snapback: The UN snapback mechanism was triggered in October 2025 by the E3 (UK/France/Germany). All prior UNSC resolutions are now reactivated. List the key UNSCRs (1696, 1737, 1747, 1803, 1835, 1929) and the specific measures they impose (arms embargo, ballistic missile restrictions, nuclear-related bans, asset freezes, travel bans).
+- sector_breakdown: Provide realistic estimates of sanctions counts per sector across US, EU, UN. These power a bar chart.
+- recent_packages: List the 5-8 most recent sanctions packages (2024-2026), with person/entity counts added in each.
 - Use actual sanction program names, EO numbers, regulation numbers, and UNSCR numbers. Be specific and factual.
 - Prioritize the most recent and impactful sanctions.
 Be accurate based on the sources. For economic data, use the most recent figures mentioned or reasonable estimates."""

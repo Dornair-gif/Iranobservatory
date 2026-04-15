@@ -84,6 +84,8 @@ export default function Dashboard() {
   const protests = data.protests_reported || 0;
   const sanctions = data.sanctions_tracker || {};
   const sanctionsCategories = sanctions.categories || [];
+  const sectorBreakdown = sanctions.sector_breakdown || [];
+  const recentPackages = sanctions.recent_packages || [];
   const econ = data.economic_indicators || {};
   const econMetrics = econ.metrics || [];
 
@@ -97,6 +99,9 @@ export default function Dashboard() {
   const categoryBg = { 'US': 'bg-red-500/10 border-red-500/20', 'EU': 'bg-blue-500/10 border-blue-500/20', 'UN': 'bg-amber-500/10 border-amber-500/20' };
   const categoryText = { 'US': 'text-red-400', 'EU': 'text-blue-400', 'UN': 'text-amber-400' };
   const categoryBadge = { 'US': 'bg-red-500/15 text-red-400', 'EU': 'bg-blue-500/15 text-blue-400', 'UN': 'bg-amber-500/15 text-amber-400' };
+
+  // Sector chart max for scaling
+  const sectorMax = Math.max(...sectorBreakdown.map(s => (s.us_count || 0) + (s.eu_count || 0) + (s.un_count || 0)), 1);
 
   return (
     <div className="min-h-screen bg-[#0a1628]" data-testid="dashboard-page">
@@ -376,7 +381,7 @@ export default function Dashboard() {
 
           {/* Sanctions counts + trend charts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-            {/* Counts */}
+            {/* Counts + Persons/Entities */}
             <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5">
               <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">
                 {language === 'fr' ? 'Sanctions actives estimées' : 'Estimated Active Sanctions'}
@@ -393,6 +398,33 @@ export default function Dashboard() {
                 <div className="text-center">
                   <p className="text-3xl font-heading font-black text-amber-400">{sanctions.un_active_count || '—'}</p>
                   <p className="text-[9px] font-mono text-zinc-500 uppercase mt-1">UN</p>
+                </div>
+              </div>
+              {/* Persons & Entities */}
+              <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-zinc-700/50">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Users className="w-3 h-3 text-zinc-500" strokeWidth={1.5} />
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">{language === 'fr' ? 'Personnes' : 'Persons'}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-heading font-black text-red-400">{sanctions.us_persons_designated || '—'}</span>
+                    <span className="text-[8px] font-mono text-zinc-600">US</span>
+                    <span className="text-lg font-heading font-black text-blue-400">{sanctions.eu_persons_designated || '—'}</span>
+                    <span className="text-[8px] font-mono text-zinc-600">EU</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Shield className="w-3 h-3 text-zinc-500" strokeWidth={1.5} />
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">{language === 'fr' ? 'Entités' : 'Entities'}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-heading font-black text-red-400">{sanctions.us_entities_designated || '—'}</span>
+                    <span className="text-[8px] font-mono text-zinc-600">US</span>
+                    <span className="text-lg font-heading font-black text-blue-400">{sanctions.eu_entities_designated || '—'}</span>
+                    <span className="text-[8px] font-mono text-zinc-600">EU</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -448,6 +480,81 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Sector Breakdown + Recent Packages */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            {/* Sector Breakdown horizontal bar chart */}
+            {sectorBreakdown.length > 0 && (
+              <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg p-5" data-testid="sector-breakdown">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">
+                  {language === 'fr' ? 'Sanctions par Secteur' : 'Sanctions by Sector'}
+                </span>
+                <div className="flex gap-3 mt-2 mb-4">
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-500"><span className="w-2 h-2 rounded-sm bg-red-500"></span>US</span>
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-500"><span className="w-2 h-2 rounded-sm bg-blue-500"></span>EU</span>
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-500"><span className="w-2 h-2 rounded-sm bg-amber-500"></span>UN</span>
+                </div>
+                <div className="space-y-3">
+                  {sectorBreakdown.map((sector, i) => {
+                    const total = (sector.us_count || 0) + (sector.eu_count || 0) + (sector.un_count || 0);
+                    return (
+                      <div key={i}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] text-zinc-300">{sector.sector}</span>
+                          <span className="text-[10px] font-mono text-zinc-500">{total}</span>
+                        </div>
+                        <div className="flex h-4 rounded-sm overflow-hidden bg-zinc-800/50">
+                          {sector.us_count > 0 && (
+                            <div className="bg-red-500/80 hover:bg-red-500 transition-colors" style={{ width: `${(sector.us_count / sectorMax) * 100}%` }} title={`US: ${sector.us_count}`} />
+                          )}
+                          {sector.eu_count > 0 && (
+                            <div className="bg-blue-500/80 hover:bg-blue-500 transition-colors" style={{ width: `${(sector.eu_count / sectorMax) * 100}%` }} title={`EU: ${sector.eu_count}`} />
+                          )}
+                          {sector.un_count > 0 && (
+                            <div className="bg-amber-500/80 hover:bg-amber-500 transition-colors" style={{ width: `${(sector.un_count / sectorMax) * 100}%` }} title={`UN: ${sector.un_count}`} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Sanctions Packages */}
+            {recentPackages.length > 0 && (
+              <div className="border border-zinc-700/50 bg-zinc-900/70 rounded-lg overflow-hidden" data-testid="recent-packages">
+                <div className="p-4 border-b border-zinc-700/50">
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">
+                    {language === 'fr' ? 'Derniers Paquets de Sanctions' : 'Recent Sanctions Packages'}
+                  </span>
+                </div>
+                <div className="divide-y divide-zinc-800/40 max-h-[380px] overflow-y-auto">
+                  {recentPackages.map((pkg, i) => {
+                    const issuerColor = pkg.issuer === 'US' ? 'text-red-400 bg-red-500/15' : pkg.issuer === 'EU' ? 'text-blue-400 bg-blue-500/15' : 'text-amber-400 bg-amber-500/15';
+                    return (
+                      <div key={i} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={`px-2 py-0.5 text-[9px] font-mono uppercase font-bold rounded ${issuerColor}`}>{pkg.issuer}</span>
+                          <span className="text-[10px] font-mono text-zinc-500">{pkg.date}</span>
+                        </div>
+                        <p className="text-sm text-zinc-200 mb-1.5">{pkg.title}</p>
+                        <div className="flex items-center gap-3 text-[10px] font-mono text-zinc-500">
+                          {pkg.persons_added > 0 && (
+                            <span className="flex items-center gap-1"><Users className="w-3 h-3" strokeWidth={1.5} /> +{pkg.persons_added} {language === 'fr' ? 'personnes' : 'persons'}</span>
+                          )}
+                          {pkg.entities_added > 0 && (
+                            <span className="flex items-center gap-1"><Shield className="w-3 h-3" strokeWidth={1.5} /> +{pkg.entities_added} {language === 'fr' ? 'entités' : 'entities'}</span>
+                          )}
+                        </div>
+                        {pkg.details && <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">{pkg.details}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Categorized sanctions by regime */}
