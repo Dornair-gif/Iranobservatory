@@ -358,6 +358,7 @@ export default function Dashboard() {
                     <span className="text-sm font-mono flex items-center gap-0.5 font-bold" style={{ color: changeColor }}>
                       {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                       {isPositive ? '+' : ''}{changePct}%
+                      {metric.period && <span className="text-[9px] text-zinc-500 ml-1">{metric.period}</span>}
                     </span>
                   </div>
                   {metric.trend_data && metric.trend_data.length > 1 && (
