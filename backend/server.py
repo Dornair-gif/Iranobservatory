@@ -1084,7 +1084,7 @@ Return ONLY this JSON:
 "updated_context": "<1 paragraph: what changed this week, what to watch>",
 "tension_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence>", "key_drivers": ["<driver1>","<driver2>","<driver3>","<driver4>"]}},
 "tension_history": [<30 floats 1-10, daily tension estimate, ending with today>],
-"human_rights_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence>", "key_factors": ["<factor1>","<factor2>","<factor3>"], "executions": <int, estimated number of executions in Iran in 2025-2026 based on sources and your knowledge — Iran executes 600-900/year>, "political_prisoners": <int, estimated number of political prisoners currently held — estimate from HRA/Amnesty data>}},
+"human_rights_index": {{"summary": "<1 sentence>", "key_factors": ["<factor1>","<factor2>","<factor3>"]}},
 "internet_blackout_days": <int, number of days Iran has been without international internet based on NetBlocks reports in the sources>,
 "protests_reported": <int>,
 "hr_timeline": [{{"date":"<YYYY-MM-DD>","event":"<what happened>","source":"<HRA News/VahidOnline>"}}],
@@ -1101,6 +1101,20 @@ Max 10 HR timeline events. Based ONLY on provided sources."""
                 r1 = r1[4:]
         dashboard_data = json_lib.loads(r1.strip())
         
+        # HARDCODED HR FIGURES from verified independent sources
+        # Executions: IHR/ECPM report (April 2026) — at least 1,639 in 2025 (highest since 1989, +68% from 975 in 2024)
+        # NCRI reports 2,201; Iran-HRM reports 2,167 — IHR figure is the most conservative/verified
+        # Political prisoners: ~15,000 estimated (worldpopulationreview.com, 2026); HRW reports "tens of thousands" of arbitrary arrests
+        # HRANA documented 53,000+ arrests post-protest; 2,800+ named detainees as of Feb 2026
+        hri = dashboard_data.get("human_rights_index", {})
+        hri["executions"] = "1,639+"
+        hri["executions_source"] = "IHR/ECPM (2025)"
+        hri["executions_detail"] = "Highest since 1989. +68% vs 2024 (975). 48 women, 11 public. NCRI reports 2,201."
+        hri["political_prisoners"] = "15,000+"
+        hri["political_prisoners_source"] = "HRW / HRANA (2026)"
+        hri["political_prisoners_detail"] = "53,000+ arrests documented post-Jan 2026 protests. 2,800+ named detainees."
+        dashboard_data["human_rights_index"] = hri
+        
         # CALL 2: Economic indicators only — sanctions are hardcoded from official sources
         chat2 = LlmChat(
             api_key=api_key,
@@ -1108,28 +1122,30 @@ Max 10 HR timeline events. Based ONLY on provided sources."""
             system_message="""You are a geopolitical data analyst. Return ONLY valid JSON."""
         ).with_model("openai", "gpt-5.2")
         
-        prompt2 = f"""Based on these Iran news sources and your knowledge of current economic data, produce economic indicators.
+        prompt2 = f"""Based on these Iran news sources and INTERNATIONAL independent economic data, produce economic indicators.
 
 NEWS headlines:
 {rss_titles[:2000]}
 
+VERIFIED ECONOMIC DATA (use these as baseline — from IMF, World Bank, independent analysts):
+- IRR/USD parallel market: ~1,400,000-1,500,000 IRR per USD (early 2026, 44% YoY depreciation — source: World Bank, investing.com)
+- Inflation: 62.2% YoY in Feb 2026 (food: 99%) — source: World Bank. IMF forecasts 68.9%.
+- GDP: -2.7% in 2025/26 fiscal year — source: World Bank.
+- Oil exports: Reduced ~100k bpd late 2025 due to sanctions enforcement — source: IMF/AA.
+- Brent crude: Check latest from news context.
+
 Return ONLY this JSON:
 {{"economic_indicators": {{
-  "summary": "<2-3 sentences overall economic situation in Iran given current sanctions and geopolitical context>",
+  "summary": "<2-3 sentences on Iran's economic situation citing international sources>",
   "metrics": [
-    {{"label":"IRR/USD (Parallel Market)","value":"<estimated current rate, e.g. 685,000>","change_pct": <float, e.g. -2.5>,"period":"MoM","trend_data":[<8 floats representing monthly values>],"context":"<1 sentence explaining trend>"}},
-    {{"label":"Brent Crude Oil","value":"<current $/barrel, e.g. $82>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats>],"context":"<1 sentence>"}},
-    {{"label":"Inflation Rate","value":"<current YoY %, e.g. 35.2%>","change_pct": <float change from previous period>,"period":"YoY","trend_data":[<8 floats monthly YoY rates>],"context":"<1 sentence>"}},
-    {{"label":"TEDPIX (Tehran Stock Exchange)","value":"<current index level, e.g. 2,150,000>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats>],"context":"<1 sentence>"}},
-    {{"label":"Oil Export Revenue","value":"<est. monthly revenue, e.g. $2.8B>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats>],"context":"<1 sentence>"}}
+    {{"label":"IRR/USD (Parallel Market)","value":"~1,450,000","change_pct": -44,"period":"YoY","trend_data":[850000,920000,1000000,1050000,1150000,1300000,1420000,1450000],"context":"<1 sentence — source: World Bank/parallel market trackers>"}},
+    {{"label":"Brent Crude Oil","value":"<current $/barrel from news>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats>],"context":"<1 sentence>"}},
+    {{"label":"Inflation Rate (YoY)","value":"62.2%","change_pct": 62.2,"period":"YoY","trend_data":[35,38,40,42,45,50,58,62],"context":"World Bank Feb 2026: 62.2% overall, 99% food inflation. IMF forecasts 69%."}},
+    {{"label":"GDP Growth","value":"-2.7%","change_pct": -2.7,"period":"2025/26 FY","trend_data":[4.5,3.8,3.0,1.5,0.5,-0.8,-1.5,-2.7],"context":"World Bank: First contraction since 2020, driven by conflict, sanctions, energy shortages."}},
+    {{"label":"Oil Export Revenue","value":"<est. from context>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats>],"context":"<1 sentence — IMF notes ~16% export decline in 2025>"}}
   ]
 }}}}
-CRITICAL INSTRUCTIONS:
-- You MUST provide numeric values for ALL fields. Do NOT return null.
-- Use your best knowledge of Iran's current economic situation as of early 2026 combined with the news context.
-- The IRR has been depreciating significantly. Brent is above $80. Iran's inflation is around 30-40%. TEDPIX has been volatile.
-- Each metric must have "period" field (MoM, WoW, YoY, QoQ) indicating the change_pct timeframe.
-- trend_data should be 8 realistic data points showing recent trend direction."""
+CRITICAL: Use the VERIFIED baseline data provided above. Do NOT use Iranian government figures (CBI official rate of 42,000 is fictitious). Use World Bank, IMF, and independent market data. All values must be non-null numbers."""
 
         msg2 = UserMessage(text=prompt2)
         response2 = await chat2.send_message(msg2)

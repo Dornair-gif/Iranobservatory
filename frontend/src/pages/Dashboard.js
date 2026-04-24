@@ -131,7 +131,7 @@ export default function Dashboard() {
                 {language === 'fr' ? 'Indicateurs Économiques' : 'Economic Indicators'}
               </h2>
             </div>
-            <span className="text-xs font-mono text-zinc-400">Sources: CBI, TGJU, OPEC, ISC</span>
+            <span className="text-xs font-mono text-zinc-400">Sources: IMF, World Bank, OPEC</span>
           </div>
 
           {econ.summary && (
@@ -196,14 +196,16 @@ export default function Dashboard() {
             <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm text-center" data-testid="hr-executions">
               <Skull className="w-8 h-8 text-zinc-800 mx-auto mb-2" strokeWidth={1.5} />
               <p className="text-5xl font-heading font-black text-zinc-900">{hri.executions || '—'}</p>
-              <p className="text-sm text-zinc-500 mt-1">{language === 'fr' ? 'Exécutions (2025-2026)' : 'Executions (2025-2026)'}</p>
-              <p className="text-[10px] font-mono text-zinc-400 mt-1">HRA News / Iran HR</p>
+              <p className="text-sm text-zinc-500 mt-1">{language === 'fr' ? 'Exécutions (2025)' : 'Executions (2025)'}</p>
+              <p className="text-[10px] font-mono text-zinc-400 mt-1">{hri.executions_source || 'IHR/ECPM'}</p>
+              {hri.executions_detail && <p className="text-[9px] text-zinc-400 mt-1 leading-tight">{hri.executions_detail}</p>}
             </div>
             <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm text-center" data-testid="hr-prisoners">
               <Lock className="w-8 h-8 text-purple-600 mx-auto mb-2" strokeWidth={1.5} />
               <p className="text-5xl font-heading font-black text-purple-700">{hri.political_prisoners || '—'}</p>
               <p className="text-sm text-zinc-500 mt-1">{language === 'fr' ? 'Prisonniers politiques' : 'Political Prisoners'}</p>
-              <p className="text-[10px] font-mono text-zinc-400 mt-1">HRA News</p>
+              <p className="text-[10px] font-mono text-zinc-400 mt-1">{hri.political_prisoners_source || 'HRW / HRANA'}</p>
+              {hri.political_prisoners_detail && <p className="text-[9px] text-zinc-400 mt-1 leading-tight">{hri.political_prisoners_detail}</p>}
             </div>
           </div>
 
@@ -403,7 +405,7 @@ export default function Dashboard() {
 
         {/* Footer */}
         <div className="pt-4 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs font-mono text-zinc-400">Sources: US Treasury/OFAC, EU Council, UNSCR 2231, HRA News, VahidOnline, NetBlocks, CBI, TGJU, OPEC</p>
+          <p className="text-xs font-mono text-zinc-400">Sources: IMF, World Bank, IHR/ECPM, HRW, HRANA, US Treasury/OFAC, EU Council, UNSCR 2231, NetBlocks</p>
           <p className="text-xs font-mono text-zinc-400">{data.rss_items_analyzed} items + {data.telegram_messages_analyzed} messages</p>
         </div>
       </main>
