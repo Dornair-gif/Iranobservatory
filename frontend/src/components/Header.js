@@ -139,7 +139,7 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <a href="#donate" data-testid="donate-btn" className="inline-flex items-center gap-2 px-4 py-2 bg-[#3DB883] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2D9E6E] transition-colors rounded-sm">
+              <a href="https://www.helloasso.com/associations/dorna/formulaires/2" target="_blank" rel="noopener noreferrer" data-testid="donate-btn" className="inline-flex items-center gap-2 px-4 py-2 bg-[#3DB883] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2D9E6E] transition-colors rounded-sm">
                 <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
                 {language === 'fr' ? 'Soutenir' : language === 'fa' ? 'حمایت' : 'Donate'}
               </a>
@@ -238,7 +238,9 @@ export function Header() {
               </div>
             ) : (
               <a
-                href="#donate"
+                href="https://www.helloasso.com/associations/dorna/formulaires/2"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="block mx-2 text-center px-3 py-2 font-mono text-xs uppercase tracking-wider bg-[#3DB883] text-white flex items-center justify-center gap-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
