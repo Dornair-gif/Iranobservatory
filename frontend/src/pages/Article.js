@@ -150,14 +150,18 @@ export default function Article() {
           </div>
         )}
 
-        {/* Content */}
+        {/* Content — supports HTML for studies/analyses */}
         <div 
-          className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:tracking-tight prose-p:text-zinc-700 prose-p:leading-relaxed"
+          className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:tracking-tight prose-p:text-zinc-700 prose-p:leading-relaxed prose-a:text-[#1E3A5F] prose-a:underline prose-img:rounded-lg prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-2 prose-th:border prose-th:border-zinc-200 prose-th:p-2 prose-th:bg-zinc-50"
           data-testid="article-content"
         >
-          {content.split('\n\n').map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
+          {content.includes('<') && (content.includes('</') || content.includes('/>')) ? (
+            <div dangerouslySetInnerHTML={{ __html: content }} />
+          ) : (
+            content.split('\n\n').map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))
+          )}
         </div>
 
         {/* PDF Download Section */}

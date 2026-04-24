@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Globe, User, LogOut, Menu, X } from 'lucide-react';
+import { Globe, User, LogOut, Menu, X, Heart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
@@ -109,7 +109,7 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Auth */}
+            {/* Auth - Admin only (hidden) + Donate */}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -139,11 +139,10 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link to="/login" data-testid="login-link">
-                <Button className="btn-secondary rounded-none">
-                  {t('login')}
-                </Button>
-              </Link>
+              <a href="#donate" data-testid="donate-btn" className="inline-flex items-center gap-2 px-4 py-2 bg-[#3DB883] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2D9E6E] transition-colors rounded-sm">
+                <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
+                {language === 'fr' ? 'Soutenir' : language === 'fa' ? 'حمایت' : 'Donate'}
+              </a>
             )}
           </nav>
 
@@ -238,13 +237,14 @@ export function Header() {
                 </button>
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="block mx-2 text-center px-3 py-2 font-mono text-xs uppercase tracking-wider bg-[#1E3A5F] text-white"
+              <a
+                href="#donate"
+                className="block mx-2 text-center px-3 py-2 font-mono text-xs uppercase tracking-wider bg-[#3DB883] text-white flex items-center justify-center gap-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {t('login')}
-              </Link>
+                <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
+                {language === 'fr' ? 'Soutenir' : language === 'fa' ? 'حمایت' : 'Donate'}
+              </a>
             )}
           </div>
         )}

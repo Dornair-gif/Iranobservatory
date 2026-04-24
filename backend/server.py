@@ -1084,7 +1084,7 @@ Return ONLY this JSON:
 "updated_context": "<1 paragraph: what changed this week, what to watch>",
 "tension_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence>", "key_drivers": ["<driver1>","<driver2>","<driver3>","<driver4>"]}},
 "tension_history": [<30 floats 1-10, daily tension estimate, ending with today>],
-"human_rights_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence explaining the HR situation severity>", "key_factors": ["<factor1>","<factor2>","<factor3>"]}},
+"human_rights_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence>", "key_factors": ["<factor1>","<factor2>","<factor3>"], "executions": <int, estimated number of executions in Iran in 2025-2026 based on sources and your knowledge — Iran executes 600-900/year>, "political_prisoners": <int, estimated number of political prisoners currently held — estimate from HRA/Amnesty data>}},
 "internet_blackout_days": <int, number of days Iran has been without international internet based on NetBlocks reports in the sources>,
 "protests_reported": <int>,
 "hr_timeline": [{{"date":"<YYYY-MM-DD>","event":"<what happened>","source":"<HRA News/VahidOnline>"}}],
