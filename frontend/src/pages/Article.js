@@ -113,7 +113,7 @@ export default function Article() {
       </div>
 
       {/* Article Header */}
-      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <article className={`${article.content_type === 'analysis' || article.content_type === 'study' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12`}>
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <span className="px-3 py-1 bg-[#3DB883] text-white text-xs font-mono uppercase tracking-wider">
@@ -152,7 +152,7 @@ export default function Article() {
 
         {/* Content — supports HTML for studies/analyses */}
         <div 
-          className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:tracking-tight prose-p:text-zinc-700 prose-p:leading-relaxed prose-a:text-[#1E3A5F] prose-a:underline prose-img:rounded-lg prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-2 prose-th:border prose-th:border-zinc-200 prose-th:p-2 prose-th:bg-zinc-50"
+          className={`prose ${article.content_type === 'analysis' || article.content_type === 'study' ? 'prose-xl max-w-none' : 'prose-lg max-w-none'} prose-headings:font-heading prose-headings:tracking-tight prose-headings:text-[#1E3A5F] prose-p:text-zinc-700 prose-p:leading-relaxed prose-a:text-[#1E3A5F] prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-3 prose-th:border prose-th:border-zinc-200 prose-th:p-3 prose-th:bg-[#1E3A5F]/5 prose-th:text-[#1E3A5F] prose-th:font-bold prose-blockquote:border-l-[#1E3A5F] prose-blockquote:bg-zinc-50 prose-blockquote:py-1 prose-blockquote:px-4 prose-strong:text-[#1E3A5F] prose-li:marker:text-[#1E3A5F] prose-hr:border-zinc-200`}
           data-testid="article-content"
         >
           {content.includes('<') && (content.includes('</') || content.includes('/>')) ? (

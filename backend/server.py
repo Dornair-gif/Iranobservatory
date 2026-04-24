@@ -678,6 +678,17 @@ async def create_article(data: ArticleCreate, request: Request):
     """Create a new article manually (for studies, analysis, etc.)"""
     await get_current_user(request)
     
+    # Auto-extract first image from HTML content if no image_url provided
+    image_url = data.image_url
+    if not image_url and data.content_type in ('analysis', 'study'):
+        import re
+        for content_field in [data.content_en, data.content_fr, data.content_fa]:
+            if content_field:
+                img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', content_field)
+                if img_match:
+                    image_url = img_match.group(1)
+                    break
+    
     article_doc = {
         "title_en": data.title_en,
         "title_fr": data.title_fr,
@@ -688,7 +699,7 @@ async def create_article(data: ArticleCreate, request: Request):
         "summary_en": data.summary_en,
         "summary_fr": data.summary_fr,
         "summary_fa": data.summary_fa,
-        "image_url": data.image_url,
+        "image_url": image_url,
         "source_url": data.source_url,
         "tags": data.tags,
         "category": data.category,
@@ -926,12 +937,38 @@ async def upload_pdf(request: Request, file: UploadFile = File(...)):
     
     return {"pdf_url": pdf_url, "filename": file.filename}
 
+@api_router.post("/upload/image")
+async def upload_image(request: Request, file: UploadFile = File(...)):
+    await get_current_user(request)
+    
+    ext = file.filename.lower().rsplit('.', 1)[-1] if '.' in file.filename else ''
+    if ext not in ('jpg', 'jpeg', 'png', 'webp', 'gif'):
+        raise HTTPException(status_code=400, detail="Only image files allowed (jpg, png, webp, gif)")
+    
+    file_id = str(uuid.uuid4())
+    safe_name = f"{file_id}.{ext}"
+    file_path = UPLOAD_DIR / safe_name
+    
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 10MB)")
+    
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    backend_url = os.environ.get("BACKEND_URL", "")
+    image_url = f"{backend_url}/api/files/{safe_name}"
+    
+    return {"image_url": image_url, "filename": file.filename}
+
 @api_router.get("/files/{filename}")
 async def serve_file(filename: str):
     file_path = UPLOAD_DIR / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(file_path, media_type="application/pdf", filename=filename)
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    media_types = {'pdf': 'application/pdf', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp', 'gif': 'image/gif'}
+    return FileResponse(file_path, media_type=media_types.get(ext, 'application/octet-stream'), filename=filename)
 
 # Subscriber / Email collection endpoints
 @api_router.post("/subscribers")

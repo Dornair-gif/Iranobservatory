@@ -176,6 +176,40 @@ export default function Admin() {
     }
   };
 
+  const handleImageUpload = async (e, target) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const ext = file.name.toLowerCase().split('.').pop();
+    if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+      toast.error('Only image files allowed (jpg, png, webp, gif)');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await axios.post(`${API}/upload/image`, formData, {
+        ...axiosConfig,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const imageUrl = response.data.image_url;
+      if (target === 'new') {
+        setNewArticle(prev => ({ ...prev, image_url: imageUrl }));
+      } else if (target === 'edit') {
+        setEditArticle(prev => ({ ...prev, image_url: imageUrl }));
+      }
+      toast.success(`Image uploaded: ${file.name}`);
+    } catch (err) {
+      toast.error('Failed to upload image');
+    }
+  };
+
+  // Auto-extract first <img> src from HTML content
+  const extractFirstImage = (html) => {
+    if (!html) return null;
+    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : null;
+  };
+
   const handleDeleteSubscriber = async (subId) => {
     try {
       await axios.delete(`${API}/subscribers/${subId}`, axiosConfig);
@@ -1060,13 +1094,40 @@ export default function Admin() {
             </Tabs>
 
             <div className="space-y-2">
-              <Label className="font-mono text-xs uppercase tracking-wider">Image URL</Label>
-              <Input
-                value={newArticle.image_url || ''}
-                onChange={(e) => setNewArticle({ ...newArticle, image_url: e.target.value })}
-                className="rounded-none"
-                placeholder="https://..."
-              />
+              <Label className="font-mono text-xs uppercase tracking-wider">Cover Image</Label>
+              {newArticle.image_url ? (
+                <div className="space-y-2">
+                  <div className="relative w-full h-32 rounded border border-zinc-200 overflow-hidden bg-zinc-50">
+                    <img src={newArticle.image_url} alt="Cover" className="w-full h-full object-cover" />
+                    <Button size="sm" variant="ghost" className="absolute top-1 right-1 bg-white/80 h-6 w-6 p-0 text-red-500 hover:bg-red-50" onClick={() => setNewArticle({ ...newArticle, image_url: '' })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, 'new')}
+                    className="rounded-none"
+                    data-testid="image-upload-new"
+                  />
+                  {(newArticle.content_type === 'analysis' || newArticle.content_type === 'study') && (
+                    (() => {
+                      const htmlImg = extractFirstImage(newArticle.content_en || newArticle.content_fr);
+                      return htmlImg ? (
+                        <Button 
+                          size="sm" variant="outline" className="rounded-none text-xs w-full"
+                          onClick={() => setNewArticle({ ...newArticle, image_url: htmlImg })}
+                        >
+                          Use first image from HTML content
+                        </Button>
+                      ) : null;
+                    })()
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1175,12 +1236,27 @@ export default function Admin() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-mono text-xs uppercase tracking-wider">Image URL</Label>
-                  <Input
-                    value={editArticle.image_url || ''}
-                    onChange={(e) => setEditArticle({ ...editArticle, image_url: e.target.value })}
-                    className="rounded-none"
-                  />
+                  <Label className="font-mono text-xs uppercase tracking-wider">Cover Image</Label>
+                  {editArticle.image_url ? (
+                    <div className="relative w-full h-20 rounded border border-zinc-200 overflow-hidden bg-zinc-50">
+                      <img src={editArticle.image_url} alt="Cover" className="w-full h-full object-cover" />
+                      <Button size="sm" variant="ghost" className="absolute top-1 right-1 bg-white/80 h-6 w-6 p-0 text-red-500 hover:bg-red-50" onClick={() => setEditArticle({ ...editArticle, image_url: '' })}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <Input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'edit')} className="rounded-none" />
+                      {(editArticle.content_type === 'analysis' || editArticle.content_type === 'study') && (() => {
+                        const htmlImg = extractFirstImage(editArticle.content_en || editArticle.content_fr);
+                        return htmlImg ? (
+                          <Button size="sm" variant="outline" className="rounded-none text-xs w-full" onClick={() => setEditArticle({ ...editArticle, image_url: htmlImg })}>
+                            Use first image from HTML
+                          </Button>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="font-mono text-xs uppercase tracking-wider">{t('category')}</Label>
