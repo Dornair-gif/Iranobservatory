@@ -37,11 +37,10 @@ export default function Home() {
     fetchContent();
   }, [language]);
 
-  // Show more articles on homepage
+  // Homepage: 1 featured + 3 side only
   const allArticles = [...articles];
   const featuredArticle = allArticles[0];
-  const sideArticles = allArticles.slice(1, 5);
-  const gridArticles = allArticles.slice(5, 12);
+  const sideArticles = allArticles.slice(1, 4);
 
   const seoDescriptions = {
     en: "Independent platform offering fact-based insights into Iran's political, economic and social dynamics. Iran's future matters, far beyond its borders.",
@@ -102,84 +101,88 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" id="latest">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-8 border-b border-zinc-200 pb-4">
+        <div className="flex items-center justify-between mb-8">
           <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-[#1E3A5F]">
             {t('latestNews')}
           </h2>
-          <span className="font-mono text-xs uppercase tracking-wider text-zinc-500">
-            {articles.length} {t('articles')}
-          </span>
+          <Link 
+            to="/articles" 
+            className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#1E3A5F] hover:text-[#3DB883] transition-colors"
+            data-testid="view-all-articles-link"
+          >
+            {language === 'fr' ? 'Tous les articles' : 'All Articles'}
+            <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8">
-              <ArticleCardSkeleton featured />
-            </div>
-            <div className="lg:col-span-4 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ArticleCardSkeleton featured />
+            <div className="space-y-4">
+              <ArticleCardSkeleton />
               <ArticleCardSkeleton />
               <ArticleCardSkeleton />
             </div>
           </div>
         ) : articles.length === 0 ? (
-          <div className="text-center py-16 border border-zinc-200 bg-zinc-50">
+          <div className="text-center py-16 border border-zinc-200 bg-zinc-50 rounded-xl">
             <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
               {t('noArticles')}
             </p>
           </div>
         ) : (
-          <>
-            {/* Featured + Side Articles — Magazine Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
-              {/* Featured Article - 8 columns */}
-              {featuredArticle && (
-                <div className="lg:col-span-8 animate-fade-up">
-                  <ArticleCard article={featuredArticle} featured />
-                </div>
-              )}
-              
-              {/* Side Articles - 4 columns, stacked */}
-              {sideArticles.length > 0 && (
-                <div className="lg:col-span-4 flex flex-col gap-4">
-                  {sideArticles.map((article, index) => (
-                    <div 
-                      key={article.id} 
-                      className={`animate-fade-up-delay-${index + 1} flex-1`}
-                    >
-                      <ArticleCard article={article} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Grid Articles */}
-            {gridArticles.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {gridArticles.map((article, index) => (
-                  <div 
-                    key={article.id}
-                    className="animate-fade-up"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <ArticleCard article={article} />
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Featured Article — left half */}
+            {featuredArticle && (
+              <div className="animate-fade-up">
+                <ArticleCard article={featuredArticle} featured />
               </div>
             )}
-
-            {/* View All Articles Link */}
-            <div className="text-center mt-8">
-              <Link 
-                to="/articles" 
-                className="inline-flex items-center gap-2 px-6 py-3 border border-[#1E3A5F] text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:bg-[#1E3A5F] hover:text-white transition-colors"
-                data-testid="view-all-articles-link"
-              >
-                {language === 'fr' ? 'Voir tous les articles' : language === 'fa' ? 'مشاهده همه مقالات' : 'View All Articles'}
-                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-              </Link>
-            </div>
-          </>
+            
+            {/* Side Articles — right half, horizontal compact cards */}
+            {sideArticles.length > 0 && (
+              <div className="flex flex-col gap-4 justify-between">
+                {sideArticles.map((article, index) => (
+                  <Link 
+                    key={article.id} 
+                    to={`/article/${article.id}`}
+                    className={`group flex gap-4 items-start bg-white border border-zinc-100 rounded-lg p-4 hover:shadow-md hover:border-zinc-200 transition-all animate-fade-up`}
+                    style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+                    data-testid={`side-article-${article.id}`}
+                  >
+                    {article.image_url && (
+                      <div className="w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden">
+                        <img src={article.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#3DB883] font-bold">{article.category || 'News'}</span>
+                        <span className="text-[10px] font-mono text-zinc-400">
+                          {article.published_at ? new Date(article.published_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' }) : ''}
+                        </span>
+                      </div>
+                      <h3 className="font-heading font-bold text-base leading-snug mb-1.5 group-hover:text-[#1E3A5F] transition-colors line-clamp-2">
+                        {article[`title_${language}`] || article.title_en || article.title_fr}
+                      </h3>
+                      <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed">
+                        {article[`summary_${language}`] || article.summary_en || article.summary_fr}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+                
+                {/* View All button at bottom of side column */}
+                <Link 
+                  to="/articles" 
+                  className="flex items-center justify-center gap-2 py-3 border border-[#1E3A5F] text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:bg-[#1E3A5F] hover:text-white transition-colors rounded-lg"
+                >
+                  {language === 'fr' ? `Voir les ${articles.length} articles` : `View all ${articles.length} articles`}
+                  <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+                </Link>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
