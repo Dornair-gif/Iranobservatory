@@ -60,6 +60,7 @@ export default function Admin() {
   const [selectedRssItem, setSelectedRssItem] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [showCreateArticle, setShowCreateArticle] = useState(false);
+  const [previewLang, setPreviewLang] = useState(null);
   const [subscribers, setSubscribers] = useState([]);
   const [newArticle, setNewArticle] = useState({
     title_en: '', title_fr: '', title_fa: '',
@@ -1021,14 +1022,38 @@ export default function Admin() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-mono text-xs uppercase tracking-wider">{t('content')}</Label>
-                    <Textarea
-                      value={newArticle[`content_${lang}`] || ''}
-                      onChange={(e) => setNewArticle({ ...newArticle, [`content_${lang}`]: e.target.value })}
-                      className="rounded-none"
-                      rows={10}
-                      dir={lang === 'fa' ? 'rtl' : 'ltr'}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="font-mono text-xs uppercase tracking-wider">{t('content')}</Label>
+                      {(newArticle.content_type === 'analysis' || newArticle.content_type === 'study') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-zinc-400">HTML supported</span>
+                          <Button 
+                            size="sm" variant="outline" 
+                            className="h-6 text-[10px] rounded-none font-mono"
+                            onClick={() => setPreviewLang(previewLang === lang ? null : lang)}
+                          >
+                            {previewLang === lang ? 'Edit' : 'Preview'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {previewLang === lang ? (
+                      <div 
+                        className="border border-zinc-200 rounded-none p-4 min-h-[200px] max-h-[400px] overflow-y-auto prose prose-sm max-w-none prose-headings:font-heading prose-a:text-[#1E3A5F] prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-2 prose-th:border prose-th:border-zinc-200 prose-th:p-2 prose-th:bg-zinc-50"
+                        dangerouslySetInnerHTML={{ __html: newArticle[`content_${lang}`] || '<p class="text-zinc-400">No content yet</p>' }}
+                      />
+                    ) : (
+                      <Textarea
+                        value={newArticle[`content_${lang}`] || ''}
+                        onChange={(e) => setNewArticle({ ...newArticle, [`content_${lang}`]: e.target.value })}
+                        className="rounded-none font-mono text-sm"
+                        rows={12}
+                        dir={lang === 'fa' ? 'rtl' : 'ltr'}
+                        placeholder={newArticle.content_type === 'analysis' || newArticle.content_type === 'study' 
+                          ? 'Paste HTML content here... e.g. <h2>Section</h2><p>Content...</p>' 
+                          : 'Article content...'}
+                      />
+                    )}
                   </div>
                 </TabsContent>
               ))}
@@ -1113,14 +1138,36 @@ export default function Admin() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="font-mono text-xs uppercase tracking-wider">{t('content')}</Label>
-                      <Textarea
-                        value={editArticle[`content_${lang}`] || ''}
-                        onChange={(e) => setEditArticle({ ...editArticle, [`content_${lang}`]: e.target.value })}
-                        className="rounded-none"
-                        rows={10}
-                        dir={lang === 'fa' ? 'rtl' : 'ltr'}
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label className="font-mono text-xs uppercase tracking-wider">{t('content')}</Label>
+                        {(editArticle.content_type === 'analysis' || editArticle.content_type === 'study') && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-zinc-400">HTML supported</span>
+                            <Button 
+                              size="sm" variant="outline" 
+                              className="h-6 text-[10px] rounded-none font-mono"
+                              onClick={() => setPreviewLang(previewLang === lang ? null : lang)}
+                            >
+                              {previewLang === lang ? 'Edit' : 'Preview'}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      {previewLang === lang ? (
+                        <div 
+                          className="border border-zinc-200 rounded-none p-4 min-h-[200px] max-h-[400px] overflow-y-auto prose prose-sm max-w-none prose-headings:font-heading prose-a:text-[#1E3A5F] prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-2 prose-th:border prose-th:border-zinc-200 prose-th:p-2 prose-th:bg-zinc-50"
+                          dangerouslySetInnerHTML={{ __html: editArticle[`content_${lang}`] || '<p class="text-zinc-400">No content yet</p>' }}
+                        />
+                      ) : (
+                        <Textarea
+                          value={editArticle[`content_${lang}`] || ''}
+                          onChange={(e) => setEditArticle({ ...editArticle, [`content_${lang}`]: e.target.value })}
+                          className="rounded-none font-mono text-sm"
+                          rows={12}
+                          dir={lang === 'fa' ? 'rtl' : 'ltr'}
+                          placeholder="Paste HTML content here..."
+                        />
+                      )}
                     </div>
                   </TabsContent>
                 ))}
