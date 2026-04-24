@@ -24,24 +24,24 @@ export function ArticleCard({ article, featured = false }) {
     return (
       <Link 
         to={`/article/${article.id}`}
-        className="article-card group block bg-white border border-zinc-200 overflow-hidden"
+        className="article-card group block bg-white border border-zinc-200 overflow-hidden rounded-lg h-full"
         data-testid={`featured-article-${article.id}`}
       >
-        <div className="relative aspect-[16/9] overflow-hidden">
+        <div className="relative h-full min-h-[360px] overflow-hidden">
           <img
             src={article.image_url || 'https://images.unsplash.com/photo-1767208212251-7b9b0bde15db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHw0fHx0ZWhyYW4lMjBza3lsaW5lfGVufDB8fHx8MTc3NTIwMjc0NHww&ixlib=rb-4.1.0&q=85'}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1E3A5F]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1E3A5F]/80 via-[#1E3A5F]/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-2 py-1 bg-[#3DB883] text-xs font-mono uppercase tracking-wider">
+              <span className="px-2 py-1 bg-[#3DB883] text-xs font-mono uppercase tracking-wider rounded">
                 {article.category || 'News'}
               </span>
               <span className="text-xs font-mono opacity-80">{timeAgo}</span>
             </div>
-            <h2 className="font-heading font-black text-2xl sm:text-3xl lg:text-4xl tracking-tighter leading-tight mb-2">
+            <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter leading-tight mb-2">
               {title}
             </h2>
             <p className="text-sm opacity-90 line-clamp-2">
