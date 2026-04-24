@@ -144,8 +144,8 @@ export default function Dashboard() {
             {econMetrics.map((metric, i) => {
               const changePct = metric.change_pct || 0;
               const isPositive = changePct > 0;
-              const changeColor = metric.label?.toLowerCase().includes('inflation') || metric.label?.toLowerCase().includes('irr')
-                ? (isPositive ? '#dc2626' : '#059669')
+              const changeColor = metric.label?.toLowerCase().includes('inflation') || metric.label?.toLowerCase().includes('irr') || metric.label?.toLowerCase().includes('gdp')
+                ? '#dc2626'
                 : (isPositive ? '#059669' : '#dc2626');
               return (
                 <div key={i} className="bg-white border border-zinc-200 rounded-xl p-6 hover:shadow-md transition-shadow shadow-sm" data-testid={`econ-metric-${i}`}>
