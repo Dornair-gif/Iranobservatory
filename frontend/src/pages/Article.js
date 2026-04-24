@@ -74,6 +74,8 @@ export default function Article() {
   const title = getArticleField(article, 'title');
   const content = getArticleField(article, 'content');
   const summary = getArticleField(article, 'summary');
+  const isStudy = article.content_type === 'analysis' || article.content_type === 'study';
+  const isHtml = content && content.includes('<') && (content.includes('</') || content.includes('/>'));
 
   const publishedDate = article.published_at || article.created_at;
   const formattedDate = publishedDate 
@@ -113,7 +115,7 @@ export default function Article() {
       </div>
 
       {/* Article Header */}
-      <article className={`${article.content_type === 'analysis' || article.content_type === 'study' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12`}>
+      <article className={`${isStudy ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12`}>
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <span className="px-3 py-1 bg-[#3DB883] text-white text-xs font-mono uppercase tracking-wider">
@@ -140,7 +142,7 @@ export default function Article() {
 
         {/* Featured Image */}
         {article.image_url && (
-          <div className="relative aspect-[16/9] mb-8 overflow-hidden border border-zinc-200">
+          <div className="relative aspect-[16/9] mb-8 overflow-hidden border border-zinc-200 rounded-lg">
             <img
               src={article.image_url}
               alt={title}
@@ -150,19 +152,28 @@ export default function Article() {
           </div>
         )}
 
-        {/* Content — supports HTML for studies/analyses */}
-        <div 
-          className={`prose ${article.content_type === 'analysis' || article.content_type === 'study' ? 'prose-xl max-w-none' : 'prose-lg max-w-none'} prose-headings:font-heading prose-headings:tracking-tight prose-headings:text-[#1E3A5F] prose-p:text-zinc-700 prose-p:leading-relaxed prose-a:text-[#1E3A5F] prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-3 prose-th:border prose-th:border-zinc-200 prose-th:p-3 prose-th:bg-[#1E3A5F]/5 prose-th:text-[#1E3A5F] prose-th:font-bold prose-blockquote:border-l-[#1E3A5F] prose-blockquote:bg-zinc-50 prose-blockquote:py-1 prose-blockquote:px-4 prose-strong:text-[#1E3A5F] prose-li:marker:text-[#1E3A5F] prose-hr:border-zinc-200`}
-          data-testid="article-content"
-        >
-          {content.includes('<') && (content.includes('</') || content.includes('/>')) ? (
-            <div dangerouslySetInnerHTML={{ __html: content }} />
-          ) : (
-            content.split('\n\n').map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))
-          )}
-        </div>
+        {/* Content */}
+        {isStudy && isHtml ? (
+          /* Study/Analysis with HTML — render raw without prose constraints */
+          <div 
+            className="study-content w-full"
+            data-testid="article-content"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        ) : (
+          <div 
+            className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:tracking-tight prose-headings:text-[#1E3A5F] prose-p:text-zinc-700 prose-p:leading-relaxed prose-a:text-[#1E3A5F] prose-a:underline prose-img:rounded-lg prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-3 prose-th:border prose-th:border-zinc-200 prose-th:p-3 prose-th:bg-zinc-50"
+            data-testid="article-content"
+          >
+            {isHtml ? (
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            ) : (
+              content.split('\n\n').map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))
+            )}
+          </div>
+        )}
 
         {/* PDF Download Section */}
         {article.pdf_url && (

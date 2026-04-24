@@ -195,3 +195,51 @@ code {
 ::-webkit-scrollbar-thumb:hover {
   background: #71717a;
 }
+
+
+/* Study/Analysis HTML content — full width, respect original HTML layout */
+.study-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.study-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+.study-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.study-content td, .study-content th {
+  border: 1px solid #e4e4e7;
+  padding: 0.75rem;
+}
+.study-content th {
+  background: #f4f4f5;
+  font-weight: 600;
+}
+.study-content h1, .study-content h2, .study-content h3, .study-content h4 {
+  font-family: 'Cabinet Grotesk', 'IBM Plex Sans', sans-serif;
+  color: #1E3A5F;
+  letter-spacing: -0.025em;
+}
+.study-content h2 { font-size: 1.75rem; margin-top: 2rem; margin-bottom: 1rem; font-weight: 800; }
+.study-content h3 { font-size: 1.35rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 700; }
+.study-content p { color: #3f3f46; line-height: 1.8; margin-bottom: 1rem; }
+.study-content a { color: #1E3A5F; text-decoration: underline; }
+.study-content blockquote {
+  border-left: 4px solid #1E3A5F;
+  background: #f8f9fb;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+}
+.study-content ul, .study-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.study-content li { color: #3f3f46; line-height: 1.8; margin-bottom: 0.25rem; }
+.study-content li::marker { color: #1E3A5F; }
+.study-content hr { border-color: #e4e4e7; margin: 2rem 0; }

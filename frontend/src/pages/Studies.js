@@ -10,6 +10,14 @@ import { fr as frLocale, enUS } from 'date-fns/locale';
 
 const STUDIES_PER_PAGE = 8;
 
+// Extract first <img> src from HTML content
+function extractCoverImage(article, language) {
+  if (article.image_url) return article.image_url;
+  const content = article[`content_${language}`] || article.content_en || article.content_fr || '';
+  const match = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return match ? match[1] : null;
+}
+
 export default function Studies() {
   const { t, language, getArticleField } = useLanguage();
   const [studies, setStudies] = useState([]);
@@ -113,10 +121,10 @@ export default function Studies() {
                 data-testid="featured-study"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-5">
-                  {featuredStudy.image_url ? (
+                  {extractCoverImage(featuredStudy, language) ? (
                     <div className="lg:col-span-2 aspect-[4/3] lg:aspect-auto overflow-hidden">
                       <img
-                        src={featuredStudy.image_url}
+                        src={extractCoverImage(featuredStudy, language)}
                         alt={getArticleField(featuredStudy, 'title')}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
@@ -173,10 +181,10 @@ export default function Studies() {
                   className="group bg-white border border-zinc-200 overflow-hidden flex flex-col sm:flex-row"
                   data-testid={`study-card-${study.id}`}
                 >
-                  {study.image_url ? (
+                  {extractCoverImage(study, language) ? (
                     <div className="sm:w-48 aspect-[16/10] sm:aspect-auto overflow-hidden flex-shrink-0">
                       <img
-                        src={study.image_url}
+                        src={extractCoverImage(study, language)}
                         alt={getArticleField(study, 'title')}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
