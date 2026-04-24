@@ -37,11 +37,11 @@ export default function Home() {
     fetchContent();
   }, [language]);
 
-  // Include max 6 articles for homepage
+  // Show more articles on homepage
   const allArticles = [...articles];
   const featuredArticle = allArticles[0];
   const sideArticles = allArticles.slice(1, 5);
-  const gridArticles = allArticles.slice(5, 8);
+  const gridArticles = allArticles.slice(5, 12);
 
   const seoDescriptions = {
     en: "Independent platform offering fact-based insights into Iran's political, economic and social dynamics. Iran's future matters, far beyond its borders.",
