@@ -370,9 +370,9 @@ export default function Dashboard() {
                 <div className="flex-1"><p className="text-sm font-bold text-zinc-800 group-hover:text-blue-700">EU Council</p><p className="text-xs text-zinc-500">Sanctions Against Iran</p></div>
                 <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-blue-600" />
               </a>
-              <a href="https://www.un.org/securitycouncil/sanctions/2231" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 border border-amber-200 bg-amber-50 rounded-lg hover:shadow-md transition-shadow group" data-testid="source-link-un">
+              <a href="https://www.un.org/securitycouncil/sanctions/1737" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 border border-amber-200 bg-amber-50 rounded-lg hover:shadow-md transition-shadow group" data-testid="source-link-un">
                 <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-heading font-black text-sm">UN</span></div>
-                <div className="flex-1"><p className="text-sm font-bold text-zinc-800 group-hover:text-amber-700">UN Security Council</p><p className="text-xs text-zinc-500">UNSCR 2231 Snapback</p></div>
+                <div className="flex-1"><p className="text-sm font-bold text-zinc-800 group-hover:text-amber-700">UN Security Council</p><p className="text-xs text-zinc-500">1737 Committee (Snapback)</p></div>
                 <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-amber-600" />
               </a>
             </div>
@@ -381,7 +381,7 @@ export default function Dashboard() {
 
         {/* Footer */}
         <div className="pt-4 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs font-mono text-zinc-400">Sources: IMF, World Bank, IHR/ECPM, HRW, HRANA, US Treasury/OFAC, EU Council, UNSCR 2231, NetBlocks</p>
+          <p className="text-xs font-mono text-zinc-400">Sources: IMF, World Bank, IHR/ECPM, HRW, HRANA, US Treasury/OFAC, EU Council, UN 1737 Committee, NetBlocks</p>
           <p className="text-xs font-mono text-zinc-400">{data.rss_items_analyzed} items + {data.telegram_messages_analyzed} messages</p>
         </div>
       </main>

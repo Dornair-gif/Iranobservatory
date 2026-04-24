@@ -1099,6 +1099,32 @@ Max 10 HR timeline events. Based ONLY on provided sources."""
             r1 = r1.split("```")[1]
             if r1.startswith("json"):
                 r1 = r1[4:]
+        r1 = r1.strip()
+        start1 = r1.find('{')
+        if start1 >= 0:
+            brace_count = 0
+            in_string = False
+            escape_next = False
+            for idx in range(start1, len(r1)):
+                ch = r1[idx]
+                if escape_next:
+                    escape_next = False
+                    continue
+                if ch == '\\':
+                    escape_next = True
+                    continue
+                if ch == '"':
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+                if ch == '{':
+                    brace_count += 1
+                elif ch == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        r1 = r1[start1:idx + 1]
+                        break
         dashboard_data = json_lib.loads(r1.strip())
         
         # HARDCODED HR FIGURES from verified independent sources
@@ -1155,6 +1181,33 @@ CRITICAL: Use the VERIFIED baseline data provided above. Do NOT use Iranian gove
             r2 = r2.split("```")[1]
             if r2.startswith("json"):
                 r2 = r2[4:]
+        # Extract only the first valid JSON object
+        r2 = r2.strip()
+        start = r2.find('{')
+        if start >= 0:
+            brace_count = 0
+            in_string = False
+            escape = False
+            for idx in range(start, len(r2)):
+                ch = r2[idx]
+                if escape:
+                    escape = False
+                    continue
+                if ch == '\\':
+                    escape = True
+                    continue
+                if ch == '"' and not escape:
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+                if ch == '{':
+                    brace_count += 1
+                elif ch == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        r2 = r2[start:idx + 1]
+                        break
         data2 = json_lib.loads(r2.strip())
         
         # Merge economic data
@@ -1165,7 +1218,7 @@ CRITICAL: Use the VERIFIED baseline data provided above. Do NOT use Iranian gove
         dashboard_data["sanctions_tracker"] = {
             "us_active_count": "4,000+",
             "eu_active_count": "500+",
-            "un_active_count": 6,
+            "un_active_count": "121",
             "us_persons_designated": "900+",
             "us_entities_designated": "3,100+",
             "eu_persons_designated": "300+",
@@ -1187,7 +1240,7 @@ CRITICAL: Use the VERIFIED baseline data provided above. Do NOT use Iranian gove
                 {"date": "2026-03-20", "issuer": "US", "title": "OFAC General License U — Authorizing delivery/sale of Iranian-origin crude loaded on vessels", "persons_added": 0, "entities_added": 0, "details": "Enforcement action related to seized Iranian oil shipments."},
                 {"date": "2026-02-19", "issuer": "EU", "title": "EU designates IRGC as terrorist organisation", "persons_added": 0, "entities_added": 1, "details": "The Islamic Revolutionary Guard Corps listed under EU counter-terrorism sanctions regime. All IRGC funds in EU frozen."},
                 {"date": "2026-01-23", "issuer": "US", "title": "OFAC General License T — Safety/environmental transactions for blocked vessels", "persons_added": 0, "entities_added": 0, "details": "Related to vessels blocked under Iran sanctions enforcement."},
-                {"date": "2025-10-18", "issuer": "UN", "title": "UN Snapback — E3 triggers reimposition of all prior UNSC Iran sanctions", "persons_added": 0, "entities_added": 0, "details": "UK/France/Germany triggered snapback under UNSCR 2231. All prior resolutions (1696, 1737, 1747, 1803, 1835, 1929) reactivated."},
+                {"date": "2025-09-27", "issuer": "UN", "title": "UN Snapback — E3 triggers reimposition of all prior UNSC Iran sanctions", "persons_added": 43, "entities_added": 78, "details": "UK/France/Germany triggered snapback under UNSCR 2231. 1737 Committee re-established. Resolutions 1696, 1737, 1747, 1803, 1835, 1929 reactivated. Disputed by Russia/China."},
                 {"date": "2025-09-29", "issuer": "EU", "title": "EU reimpose all nuclear-related economic/financial sanctions on Iran", "persons_added": 0, "entities_added": 0, "details": "Following UN snapback, Council reimposed all JCPOA-related sanctions lifted in 2016."},
                 {"date": "2025-05-14", "issuer": "EU", "title": "EU broadens drone/missile sanctions framework — Middle East & Red Sea scope", "persons_added": 24, "entities_added": 26, "details": "Framework expanded to cover Iran's military support of armed groups in Middle East/Red Sea, total 24 individuals + 26 entities."},
                 {"date": "2024-10-11", "issuer": "US", "title": "OFAC Determination — Petroleum & petrochemical sectors under EO 13902", "persons_added": 0, "entities_added": 0, "details": "Expanded sectoral sanctions to Iran's petroleum and petrochemical sectors."}
@@ -1229,7 +1282,7 @@ CRITICAL: Use the VERIFIED baseline data provided above. Do NOT use Iranian gove
                 {
                     "regime": "United Nations (Snapback)",
                     "short": "UN",
-                    "description": "In October 2025, the E3 (UK/France/Germany) triggered the snapback mechanism under UNSCR 2231, reinstating all prior UN Security Council sanctions resolutions on Iran with full legal force.",
+                    "description": "On 27 September 2025, the E3 (UK/France/Germany) triggered the snapback under UNSCR 2231. All prior UNSC resolutions reactivated. 1737 Committee re-established with 43 designated individuals and 78 entities. Disputed by Russia, China, and Iran.",
                     "key_sanctions": [
                         {"name": "UNSCR 1696 (2006)", "date": "2006-07-31", "target": "Uranium enrichment suspension demand", "status": "Reactivated Oct 2025", "details": "Demands Iran suspend all enrichment-related and reprocessing activities. Basis for subsequent escalatory resolutions."},
                         {"name": "UNSCR 1737 (2006)", "date": "2006-12-23", "target": "Nuclear-related asset freeze, procurement ban", "status": "Reactivated Oct 2025", "details": "Imposes asset freeze on nuclear/missile-related entities. Bans proliferation-sensitive technology transfers."},
