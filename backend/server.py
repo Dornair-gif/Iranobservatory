@@ -1166,6 +1166,7 @@ Return ONLY this JSON:
   "metrics": [
     {{"label":"IRR/USD (Parallel Market)","value":"~1,450,000","change_pct": -44,"period":"YoY","trend_data":[850000,920000,1000000,1050000,1150000,1300000,1420000,1450000],"context":"<1 sentence — source: World Bank/parallel market trackers>"}},
     {{"label":"Brent Crude Oil","value":"<current $/barrel from news>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats>],"context":"<1 sentence>"}},
+    {{"label":"Iranian Crude (est.)","value":"<Brent minus $10-20 discount>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats, each ~$10-20 below Brent trend>],"context":"Iranian heavy crude trades at $10-20/bbl discount to Brent due to sanctions and limited buyers (China, India)."}},
     {{"label":"Inflation Rate (YoY)","value":"62.2%","change_pct": 62.2,"period":"YoY","trend_data":[35,38,40,42,45,50,58,62],"context":"World Bank Feb 2026: 62.2% overall, 99% food inflation. IMF forecasts 69%."}},
     {{"label":"GDP Growth","value":"-2.7%","change_pct": -2.7,"period":"2025/26 FY","trend_data":[4.5,3.8,3.0,1.5,0.5,-0.8,-1.5,-2.7],"context":"World Bank: First contraction since 2020, driven by conflict, sanctions, energy shortages."}},
     {{"label":"Oil Export Revenue","value":"<est. from context>","change_pct": <float>,"period":"MoM","trend_data":[<8 floats>],"context":"<1 sentence — IMF notes ~16% export decline in 2025>"}}
