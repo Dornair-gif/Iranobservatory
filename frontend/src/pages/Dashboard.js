@@ -257,7 +257,7 @@ export default function Dashboard() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-5 mb-5">
             {/* Counts + Persons/Entities */}
             <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
               <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-bold">Active Sanctions</span>
@@ -295,30 +295,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* US Trend */}
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm">
-              <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-bold">US — New/month (12mo)</span>
-              <div className="flex items-end gap-1 h-28 mt-3">
-                {(usTrend.length > 0 ? usTrend : Array(12).fill(0)).map((val, i) => {
-                  const maxVal = Math.max(...usTrend, 1);
-                  return (<div key={i} className="flex-1"><div className="w-full bg-red-500 rounded-t hover:bg-red-600 transition-colors" style={{ height: `${Math.max((val / maxVal) * 100, 4)}%`, opacity: 0.75 }} title={`${months[i]}: ${val}`} /></div>);
-                })}
-              </div>
-              <div className="flex justify-between mt-1">{months.map((m, i) => (<span key={i} className="text-[9px] font-mono text-zinc-400 flex-1 text-center">{m}</span>))}</div>
-            </div>
-
-            {/* EU Trend */}
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm">
-              <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-bold">EU — New/month (12mo)</span>
-              <div className="flex items-end gap-1 h-28 mt-3">
-                {(euTrend.length > 0 ? euTrend : Array(12).fill(0)).map((val, i) => {
-                  const maxVal = Math.max(...euTrend, 1);
-                  return (<div key={i} className="flex-1"><div className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors" style={{ height: `${Math.max((val / maxVal) * 100, 4)}%`, opacity: 0.75 }} title={`${months[i]}: ${val}`} /></div>);
-                })}
-              </div>
-              <div className="flex justify-between mt-1">{months.map((m, i) => (<span key={i} className="text-[9px] font-mono text-zinc-400 flex-1 text-center">{m}</span>))}</div>
             </div>
           </div>
 
