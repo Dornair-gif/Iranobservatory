@@ -69,15 +69,15 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - Homepage articles layout: Smart layout adapts to article count (1, 2, or 3+) — no more empty space (April 2026)
 - Sources: RSS feeds + Telegram channels (t.me/hranews, t.me/VahidOnline)
 
-### P1 (High Priority)
-- Favicon: en attente d'un logo carré fourni par l'utilisateur
-- Scheduled RSS feed auto-fetching
-- Email notifications for new draft articles
-- Article image upload functionality
+### P1 (Completed)
+- Studies & Briefs page: Filter tabs (All / Studies & Analysis / Weekly Briefs)
+- Weekly Brief auto-generation: Every Monday 6-8 AM UTC, GPT-5.2 generates HTML brief as draft
+- Newsletter system: Admin can generate newsletter HTML + send to opted-in subscribers (requires RESEND_API_KEY)
+- Image upload for articles (replaces URL input)
+- Article HTML content rendering for studies/analyses
 
 ### P2 (Medium Priority)
 - Persian social media feed (utilisateur a dit "plus tard")
-- Newsletter subscription system
 - Premium content gating (subscription)
 - Article analytics dashboard
 

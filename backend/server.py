@@ -1440,6 +1440,280 @@ async def sitemap():
     
     return Response(content=xml_content, media_type="application/xml")
 
+# ============ WEEKLY BRIEF GENERATION ============
+async def generate_weekly_brief():
+    """Generate a weekly intelligence brief from the past week's RSS items. Runs every Monday."""
+    import json
+    try:
+        # Get RSS items from the past 7 days
+        one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        recent_items = await db.rss_items.find(
+            {"created_at": {"$gte": one_week_ago}},
+            {"_id": 0, "title": 1, "description": 1, "link": 1, "source_feed": 1}
+        ).sort("created_at", -1).to_list(100)
+        
+        if not recent_items or len(recent_items) < 3:
+            logger.info("Not enough RSS items for weekly brief (need 3+)")
+            return None
+        
+        # Get published articles from last week for featured news
+        recent_articles = await db.articles.find(
+            {"status": "published", "created_at": {"$gte": one_week_ago}, "content_type": "news"},
+            {"_id": 0, "title_en": 1, "title_fr": 1, "summary_en": 1, "summary_fr": 1}
+        ).sort("created_at", -1).to_list(10)
+        
+        # Build context
+        rss_context = "\n".join([f"- {item.get('title', '')}: {item.get('description', '')[:150]}" for item in recent_items[:50]])
+        articles_context = "\n".join([f"- {a.get('title_en', '')}: {a.get('summary_en', '')[:100]}" for a in recent_articles[:5]])
+        
+        today = datetime.now(timezone.utc)
+        week_start = (today - timedelta(days=7)).strftime("%B %d")
+        week_end = today.strftime("%B %d, %Y")
+        
+        api_key = os.environ.get("LLM_API_KEY") or os.environ.get("EMERGENT_LLM_KEY") or os.environ.get("EMERGENT_API_KEY")
+        if not api_key:
+            logger.error("No LLM API key for weekly brief")
+            return None
+        
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"weekly-brief-{uuid.uuid4()}",
+            system_message="""You are a senior geopolitical intelligence analyst at Iran Observatory. Write sharp, assertive weekly intelligence briefs. No hedging, no filler. Style: The Economist meets BCA Research."""
+        ).with_model("openai", "gpt-5.2")
+        
+        prompt = f"""Write a professional weekly intelligence brief for Iran Observatory covering {week_start} to {week_end}.
+
+RSS FEED ITEMS THIS WEEK:
+{rss_context}
+
+PUBLISHED ARTICLES THIS WEEK:
+{articles_context}
+
+Write the brief in BOTH English and French. Return ONLY this JSON:
+{{
+  "title_en": "Weekly Brief: {week_start} – {week_end}",
+  "title_fr": "Brief Hebdomadaire: {week_start} – {week_end}",
+  "summary_en": "<2-3 sentence executive summary of the week's key developments>",
+  "summary_fr": "<same in French>",
+  "content_en": "<HTML formatted brief with sections: Executive Summary, Geopolitics & Security, Economy & Sanctions, Human Rights & Society, Outlook. Use <h2>, <h3>, <p>, <ul>, <li>, <strong> tags. Make it 500-800 words. Be direct, analytical, no hedging.>",
+  "content_fr": "<same structure in French>"
+}}
+
+IMPORTANT: Return valid JSON only. Content must be HTML-formatted for direct rendering."""
+        
+        msg = UserMessage(text=prompt)
+        response = await chat.send_message(msg)
+        
+        r = response.strip()
+        if r.startswith("```"):
+            r = r.split("```")[1]
+            if r.startswith("json"):
+                r = r[4:]
+        # Extract JSON
+        r = r.strip()
+        start = r.find('{')
+        if start >= 0:
+            brace_count = 0
+            in_str = False
+            esc = False
+            for idx in range(start, len(r)):
+                ch = r[idx]
+                if esc: esc = False; continue
+                if ch == '\\': esc = True; continue
+                if ch == '"': in_str = not in_str; continue
+                if in_str: continue
+                if ch == '{': brace_count += 1
+                elif ch == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        r = r[start:idx+1]
+                        break
+        
+        brief_data = json.loads(r)
+        
+        # Save as draft article
+        brief_doc = {
+            "title_en": brief_data.get("title_en", f"Weekly Brief: {week_start} – {week_end}"),
+            "title_fr": brief_data.get("title_fr", f"Brief Hebdomadaire: {week_start} – {week_end}"),
+            "title_fa": "",
+            "content_en": brief_data.get("content_en", ""),
+            "content_fr": brief_data.get("content_fr", ""),
+            "content_fa": "",
+            "summary_en": brief_data.get("summary_en", ""),
+            "summary_fr": brief_data.get("summary_fr", ""),
+            "summary_fa": "",
+            "image_url": "",
+            "source_url": "",
+            "tags": ["weekly-brief"],
+            "category": "politics",
+            "content_type": "brief",
+            "status": "draft",
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        result = await db.articles.insert_one(brief_doc)
+        logger.info(f"Weekly brief generated as draft: {brief_data.get('title_en', '')}")
+        return str(result.inserted_id)
+        
+    except Exception as e:
+        logger.error(f"Weekly brief generation error: {e}")
+        return None
+
+# Background task: check every hour if it's Monday morning and generate brief
+async def weekly_brief_scheduler():
+    """Check if it's Monday and generate the weekly brief."""
+    generated_this_week = False
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            # Monday = 0, check between 6-8 AM UTC
+            if now.weekday() == 0 and 6 <= now.hour < 8 and not generated_this_week:
+                # Check if we already generated a brief this week
+                week_start = now - timedelta(days=1)
+                existing = await db.articles.find_one({
+                    "content_type": "brief",
+                    "created_at": {"$gte": week_start}
+                })
+                if not existing:
+                    await generate_weekly_brief()
+                    generated_this_week = True
+            
+            # Reset flag on Tuesday
+            if now.weekday() == 1:
+                generated_this_week = False
+                
+            await asyncio.sleep(3600)  # Check every hour
+        except Exception as e:
+            logger.error(f"Weekly brief scheduler error: {e}")
+            await asyncio.sleep(3600)
+
+# ============ NEWSLETTER ============
+@api_router.post("/newsletter/send")
+async def send_newsletter(request: Request):
+    """Admin endpoint: Send newsletter to all subscribers."""
+    await get_current_user(request)
+    
+    body = await request.json()
+    subject = body.get("subject", "")
+    html_content = body.get("html_content", "")
+    
+    if not subject or not html_content:
+        raise HTTPException(status_code=400, detail="Subject and html_content required")
+    
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        raise HTTPException(status_code=500, detail="Email service not configured (RESEND_API_KEY)")
+    
+    import resend
+    resend.api_key = resend_key
+    sender = os.environ.get("SENDER_EMAIL", "newsletter@iranobservatory.org")
+    
+    # Get all subscribers who expect newsletter
+    subscribers = await db.subscribers.find(
+        {"expects_newsletter": True},
+        {"_id": 0, "email": 1}
+    ).to_list(10000)
+    
+    if not subscribers:
+        return {"status": "no_subscribers", "sent": 0}
+    
+    sent_count = 0
+    errors = []
+    for sub in subscribers:
+        try:
+            params = {
+                "from": sender,
+                "to": [sub["email"]],
+                "subject": subject,
+                "html": html_content
+            }
+            await asyncio.to_thread(resend.Emails.send, params)
+            sent_count += 1
+        except Exception as e:
+            errors.append(f"{sub['email']}: {str(e)}")
+    
+    return {"status": "sent", "sent": sent_count, "errors": errors[:10]}
+
+@api_router.post("/newsletter/generate")
+async def generate_newsletter(request: Request):
+    """Generate newsletter HTML from latest brief + featured articles."""
+    await get_current_user(request)
+    
+    # Get latest brief
+    latest_brief = await db.articles.find_one(
+        {"content_type": "brief", "status": "published"},
+        {"_id": 0},
+        sort=[("created_at", -1)]
+    )
+    
+    # Get featured news from last week
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    featured_news = await db.articles.find(
+        {"status": "published", "content_type": "news", "created_at": {"$gte": one_week_ago}},
+        {"_id": 0, "title_en": 1, "title_fr": 1, "summary_en": 1, "summary_fr": 1, "image_url": 1}
+    ).sort("created_at", -1).limit(5).to_list(5)
+    
+    # Get latest studies
+    latest_studies = await db.articles.find(
+        {"status": "published", "content_type": {"$in": ["study", "analysis"]}, "created_at": {"$gte": one_week_ago}},
+        {"_id": 0, "title_en": 1, "title_fr": 1, "summary_en": 1, "summary_fr": 1}
+    ).sort("created_at", -1).limit(3).to_list(3)
+    
+    # Build newsletter HTML
+    base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org')
+    
+    html = f"""
+    <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;color:#1E3A5F;">
+      <div style="background:#1E3A5F;padding:24px;text-align:center;">
+        <h1 style="color:white;margin:0;font-size:24px;">Iran Observatory</h1>
+        <p style="color:#3DB883;margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Weekly Newsletter</p>
+      </div>
+    """
+    
+    if latest_brief:
+        html += f"""
+      <div style="padding:24px;border-bottom:1px solid #eee;">
+        <h2 style="color:#1E3A5F;font-size:20px;margin:0 0 8px;">{latest_brief.get('title_en', 'Weekly Brief')}</h2>
+        <p style="color:#555;font-size:14px;line-height:1.6;">{latest_brief.get('summary_en', '')}</p>
+        <a href="{base_url}/studies" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;">Read Full Brief &rarr;</a>
+      </div>
+    """
+    
+    if featured_news:
+        html += '<div style="padding:24px;border-bottom:1px solid #eee;"><h3 style="color:#1E3A5F;font-size:16px;margin:0 0 16px;text-transform:uppercase;letter-spacing:1px;">Featured News</h3>'
+        for news in featured_news:
+            html += f'<div style="margin-bottom:16px;"><p style="font-weight:bold;margin:0 0 4px;font-size:14px;">{news.get("title_en","")}</p><p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{news.get("summary_en","")[:120]}...</p></div>'
+        html += f'<a href="{base_url}/articles" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;">All Articles &rarr;</a></div>'
+    
+    if latest_studies:
+        html += '<div style="padding:24px;border-bottom:1px solid #eee;"><h3 style="color:#1E3A5F;font-size:16px;margin:0 0 16px;text-transform:uppercase;letter-spacing:1px;">New Studies</h3>'
+        for study in latest_studies:
+            html += f'<div style="margin-bottom:12px;"><p style="font-weight:bold;margin:0;font-size:14px;">{study.get("title_en","")}</p></div>'
+        html += f'<a href="{base_url}/studies" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;">View Studies &rarr;</a></div>'
+    
+    html += f"""
+      <div style="padding:20px;text-align:center;background:#f8f9fb;">
+        <p style="color:#888;font-size:11px;margin:0;">Iran Observatory | Observatoire de l'Iran</p>
+        <a href="{base_url}" style="color:#1E3A5F;font-size:11px;">Visit Website</a>
+      </div>
+    </div>
+    """
+    
+    return {"subject": f"Iran Observatory — {latest_brief.get('title_en', 'Weekly Newsletter') if latest_brief else 'Weekly Newsletter'}", "html_content": html}
+
+# Admin endpoint to manually trigger brief generation
+@api_router.post("/briefs/generate")
+async def trigger_brief_generation(request: Request):
+    """Admin: Manually trigger weekly brief generation."""
+    await get_current_user(request)
+    result = await generate_weekly_brief()
+    if result:
+        return {"status": "success", "article_id": result}
+    raise HTTPException(status_code=500, detail="Brief generation failed")
+
 # Include the router
 app.include_router(api_router)
 
@@ -1550,6 +1824,8 @@ async def startup():
     asyncio.create_task(auto_refresh_dashboard())
     # Compute dashboard on startup
     asyncio.create_task(_compute_dashboard_indexes())
+    # Start weekly brief scheduler
+    asyncio.create_task(weekly_brief_scheduler())
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

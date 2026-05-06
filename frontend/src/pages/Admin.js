@@ -32,7 +32,8 @@ import { API } from '../config/api';
 const CONTENT_TYPES = [
   { value: 'news', label: 'News', labelFr: 'Actualités' },
   { value: 'analysis', label: 'Analysis', labelFr: 'Analyse' },
-  { value: 'study', label: 'Study', labelFr: 'Étude' }
+  { value: 'study', label: 'Study', labelFr: 'Étude' },
+  { value: 'brief', label: 'Weekly Brief', labelFr: 'Brief Hebdo' }
 ];
 
 const LANGUAGES = [
@@ -61,6 +62,7 @@ export default function Admin() {
   const [generating, setGenerating] = useState(false);
   const [showCreateArticle, setShowCreateArticle] = useState(false);
   const [previewLang, setPreviewLang] = useState(null);
+  const [newsletterPreview, setNewsletterPreview] = useState(null);
   const [subscribers, setSubscribers] = useState([]);
   const [newArticle, setNewArticle] = useState({
     title_en: '', title_fr: '', title_fa: '',
@@ -462,6 +464,14 @@ export default function Admin() {
               <FileText className="w-4 h-4 me-2" strokeWidth={1.5} />
               Subscribers
             </TabsTrigger>
+            <TabsTrigger 
+              value="newsletter" 
+              className="rounded-none data-[state=active]:bg-zinc-900 data-[state=active]:text-white font-mono text-xs uppercase tracking-wider"
+              data-testid="tab-newsletter"
+            >
+              <FileText className="w-4 h-4 me-2" strokeWidth={1.5} />
+              Newsletter
+            </TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
@@ -845,6 +855,85 @@ export default function Admin() {
                 {subscribers.length === 0 && (
                   <p className="p-8 text-center text-zinc-500 text-sm">No subscribers yet. Emails will appear here when users download PDFs.</p>
                 )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Newsletter Tab */}
+          <TabsContent value="newsletter" className="space-y-4">
+            <div className="bg-white border border-zinc-200 p-6">
+              <h3 className="font-heading font-bold text-lg mb-4">Send Newsletter</h3>
+              <p className="text-sm text-zinc-500 mb-6">Generate and send a newsletter to all subscribers who opted in. Includes the latest weekly brief, featured news, and new studies.</p>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <Button 
+                    className="w-full rounded-none bg-[#1E3A5F]"
+                    onClick={async () => {
+                      try {
+                        const res = await axios.post(`${API}/newsletter/generate`, {}, axiosConfig);
+                        setNewsletterPreview(res.data);
+                        toast.success('Newsletter generated');
+                      } catch (e) {
+                        toast.error('Failed to generate newsletter');
+                      }
+                    }}
+                    data-testid="generate-newsletter-btn"
+                  >
+                    Generate Newsletter Preview
+                  </Button>
+                  
+                  <Button 
+                    className="w-full rounded-none bg-[#3DB883] hover:bg-[#2D9E6E]"
+                    onClick={async () => {
+                      try {
+                        const res = await axios.post(`${API}/briefs/generate`, {}, axiosConfig);
+                        toast.success(`Weekly brief generated (ID: ${res.data.article_id})`);
+                        fetchArticles();
+                      } catch (e) {
+                        toast.error('Failed to generate brief: ' + (e.response?.data?.detail || e.message));
+                      }
+                    }}
+                    data-testid="generate-brief-btn"
+                  >
+                    Generate Weekly Brief Now
+                  </Button>
+                  
+                  {newsletterPreview && (
+                    <Button 
+                      className="w-full rounded-none bg-red-600 hover:bg-red-700 text-white"
+                      onClick={async () => {
+                        if (!window.confirm(`Send newsletter to all subscribers?`)) return;
+                        try {
+                          const res = await axios.post(`${API}/newsletter/send`, {
+                            subject: newsletterPreview.subject,
+                            html_content: newsletterPreview.html_content
+                          }, axiosConfig);
+                          toast.success(`Newsletter sent to ${res.data.sent} subscribers`);
+                        } catch (e) {
+                          toast.error('Failed to send: ' + (e.response?.data?.detail || e.message));
+                        }
+                      }}
+                      data-testid="send-newsletter-btn"
+                    >
+                      Send to All Subscribers ({subscribers.filter(s => s.newsletter).length})
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Preview */}
+                <div className="border border-zinc-200 rounded overflow-hidden">
+                  <div className="bg-zinc-100 p-2 border-b border-zinc-200">
+                    <span className="text-xs font-mono text-zinc-500">PREVIEW</span>
+                  </div>
+                  <div className="p-4 max-h-[500px] overflow-y-auto">
+                    {newsletterPreview ? (
+                      <div dangerouslySetInnerHTML={{ __html: newsletterPreview.html_content }} />
+                    ) : (
+                      <p className="text-zinc-400 text-sm text-center py-10">Click "Generate Newsletter Preview" to see the email</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>
