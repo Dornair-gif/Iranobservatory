@@ -191,45 +191,152 @@ export default function Dashboard() {
             <Anchor className="w-6 h-6 text-cyan-400" strokeWidth={1.5} />
             <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Crise du Détroit d\'Ormuz' : 'Strait of Hormuz Crisis'}</h2>
           </div>
-          <div className="bg-[#162640] border border-cyan-500/20 rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-white/10">
-              <div className="flex items-start gap-4">
-                <Waves className="w-10 h-10 text-cyan-400 flex-shrink-0" strokeWidth={1.5} />
-                <div>
-                  <p className="text-base text-zinc-300 leading-relaxed mb-3">
-                    {language === 'fr'
-                      ? 'Le détroit d\'Ormuz, par lequel transite 30% du pétrole mondial, est un point chaud critique du conflit Iran-US. Depuis le blocus naval américain du 13 avril 2026, les tensions sont à leur plus haut niveau historique.'
-                      : 'The Strait of Hormuz, through which 30% of the world\'s seaborne oil passes, is a critical flashpoint. Since the US naval blockade of April 13, 2026, tensions have reached historic highs.'}
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
-                      <p className="text-2xl font-heading font-black text-cyan-400">1,550+</p>
-                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Navires bloqués' : 'Vessels Stuck'}</p>
-                    </div>
-                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
-                      <p className="text-2xl font-heading font-black text-cyan-400">22,500+</p>
-                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Marins en mer' : 'Mariners at Sea'}</p>
-                    </div>
-                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
-                      <p className="text-2xl font-heading font-black text-red-400">51</p>
-                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Navires redirigés' : 'Vessels Redirected'}</p>
-                    </div>
-                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
-                      <p className="text-2xl font-heading font-black text-amber-400">15,000</p>
-                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Forces US déployées' : 'US Forces Deployed'}</p>
-                    </div>
+
+          {/* Key indicators row */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            <div className="bg-[#162640] border border-cyan-500/20 rounded-xl p-5 text-center">
+              <p className="text-4xl font-heading font-black text-cyan-400">~90%</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Réduction du trafic' : 'Traffic Reduction'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">vs 20M bpd normal capacity</p>
+              <p className="text-[8px] text-zinc-600">Source: EIA / UNCTAD</p>
+            </div>
+            <div className="bg-[#162640] border border-red-500/20 rounded-xl p-5 text-center">
+              <p className="text-4xl font-heading font-black text-red-400">2,000+</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Navires bloqués' : 'Vessels Stranded'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">{language === 'fr' ? 'Deux côtés du détroit' : 'Both sides of Strait'}</p>
+              <p className="text-[8px] text-zinc-600">Source: CENTCOM / Crisis Group</p>
+            </div>
+            <div className="bg-[#162640] border border-amber-500/20 rounded-xl p-5 text-center">
+              <p className="text-4xl font-heading font-black text-amber-400">$126</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Brent pic ($/bbl)' : 'Brent Peak ($/bbl)'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">Dubai crude hit $166</p>
+              <p className="text-[8px] text-zinc-600">Source: S&P Global / ICE</p>
+            </div>
+            <div className="bg-[#162640] border border-purple-500/20 rounded-xl p-5 text-center">
+              <p className="text-4xl font-heading font-black text-purple-400">-2.9%</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Impact PIB mondial' : 'Global GDP Impact'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">Q2 2026 projection</p>
+              <p className="text-[8px] text-zinc-600">Source: Dallas Fed Research</p>
+            </div>
+          </div>
+
+          {/* Detailed indicators */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+            {/* Shipping & Insurance */}
+            <div className="bg-[#162640] border border-white/10 rounded-xl p-5">
+              <h3 className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold mb-4">{language === 'fr' ? 'Maritime & Assurance' : 'Shipping & Insurance'}</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Prime de risque guerre' : 'War Risk Premium'}</span>
+                  <div className="text-right">
+                    <span className="text-lg font-heading font-black text-red-400">0.8-5%</span>
+                    <span className="text-[10px] text-zinc-500 block">{language === 'fr' ? 'de la valeur du navire' : 'of hull value'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Coût transit VLCC' : 'VLCC Transit Cost'}</span>
+                  <div className="text-right">
+                    <span className="text-lg font-heading font-black text-amber-400">$1.5-7.5M</span>
+                    <span className="text-[10px] text-zinc-500 block">{language === 'fr' ? 'par passage (navire $150M)' : 'per transit ($150M vessel)'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Surcharge par conteneur' : 'Container Surcharge'}</span>
+                  <div className="text-right">
+                    <span className="text-lg font-heading font-black text-amber-400">$3,500</span>
+                    <span className="text-[10px] text-zinc-500 block">{language === 'fr' ? 'par conteneur' : 'per container'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Péages exigés par l\'Iran' : 'Iran Demanded Tolls'}</span>
+                  <div className="text-right">
+                    <span className="text-lg font-heading font-black text-red-400">$2M</span>
+                    <span className="text-[10px] text-zinc-500 block">{language === 'fr' ? 'par navire' : 'per vessel'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Reroute via Cap Bonne-Espérance' : 'Cape Reroute Added Time'}</span>
+                  <div className="text-right">
+                    <span className="text-lg font-heading font-black text-zinc-300">+21 days</span>
                   </div>
                 </div>
               </div>
+              <p className="text-[8px] font-mono text-zinc-600 mt-3">Sources: S&P Global, Lloyd's, Fairway ETA, WEF</p>
             </div>
-            <div className="p-4 flex flex-wrap gap-3">
-              <a href="https://www.crisisgroup.org/trigger-list/iran-usisrael-trigger-list/flashpoints/strait-hormuz" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono uppercase tracking-wider hover:bg-cyan-500/20 transition-colors">
-                <ExternalLink className="w-3.5 h-3.5" /> Crisis Group Tracker
-              </a>
-              <a href="https://www.bcaresearch.com/collection/bcas-iran-conflict-daily-dashboard" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono uppercase tracking-wider hover:bg-cyan-500/20 transition-colors">
-                <ExternalLink className="w-3.5 h-3.5" /> BCA Research Dashboard
-              </a>
+
+            {/* Commodities Impact */}
+            <div className="bg-[#162640] border border-white/10 rounded-xl p-5">
+              <h3 className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold mb-4">{language === 'fr' ? 'Impact sur les commodités mondiales' : 'Global Commodities Impact'}</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Pétrole bloqué' : 'Oil Blocked'}</span>
+                  <span className="text-lg font-heading font-black text-red-400">~10M bpd</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">LNG</span>
+                  <span className="text-sm font-bold text-amber-400">{language === 'fr' ? 'Volumes bloqués significatifs' : 'Significant volumes blocked'}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Engrais (ammoniac)' : 'Fertilizer (Ammonia)'}</span>
+                  <span className="text-lg font-heading font-black text-amber-400">23%</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Hélium mondial' : 'Global Helium'}</span>
+                  <span className="text-lg font-heading font-black text-amber-400">33%</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Soufre maritime mondial' : 'Global Seaborne Sulfur'}</span>
+                  <span className="text-lg font-heading font-black text-amber-400">50%</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-zinc-300">{language === 'fr' ? 'Kérosène maritime mondial' : 'Global Seaborne Jet Fuel'}</span>
+                  <span className="text-lg font-heading font-black text-amber-400">20%</span>
+                </div>
+              </div>
+              <p className="text-[8px] font-mono text-zinc-600 mt-3">Sources: UNCTAD, Atlantic Council, EIA</p>
             </div>
+          </div>
+
+          {/* Military + Project Freedom */}
+          <div className="bg-[#162640] border border-cyan-500/20 rounded-xl p-5 mb-5">
+            <h3 className="text-xs font-mono text-cyan-400 uppercase tracking-wider font-bold mb-4">{language === 'fr' ? 'Opérations militaires — Project Freedom' : 'Military Operations — Project Freedom'}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                <p className="text-2xl font-heading font-black text-cyan-400">15,000</p>
+                <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Militaires US déployés' : 'US Service Members'}</p>
+              </div>
+              <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                <p className="text-2xl font-heading font-black text-cyan-400">100+</p>
+                <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Avions déployés' : 'Aircraft Deployed'}</p>
+              </div>
+              <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                <p className="text-2xl font-heading font-black text-red-400">51+</p>
+                <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Navires redirigés' : 'Vessels Redirected'}</p>
+              </div>
+              <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                <p className="text-2xl font-heading font-black text-red-400">7</p>
+                <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Bateaux iraniens coulés' : 'Iranian Boats Sunk'}</p>
+              </div>
+            </div>
+            <p className="text-sm text-zinc-400 leading-relaxed mb-3">
+              {language === 'fr'
+                ? 'Les États-Unis ont lancé "Project Freedom" le 3 mai 2026 pour guider les navires neutres hors du Golfe. L\'Iran exige des péages de $2M par navire et a saisi deux navires-conteneurs. Le blocus naval US est en vigueur depuis le 13 avril.'
+                : 'The US launched "Project Freedom" on May 3, 2026 to guide neutral vessels out of the Gulf. Iran demands $2M tolls per vessel and has seized two container ships. The US naval blockade has been in effect since April 13.'}
+            </p>
+            <p className="text-[8px] font-mono text-zinc-600">Sources: CENTCOM, Crisis Group, Pentagon/Dept of War, Reuters</p>
+          </div>
+
+          {/* External trackers */}
+          <div className="flex flex-wrap gap-3">
+            <a href="https://www.crisisgroup.org/trigger-list/iran-usisrael-trigger-list/flashpoints/strait-hormuz" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono uppercase tracking-wider hover:bg-cyan-500/20 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" /> Crisis Group — Hormuz Trigger List
+            </a>
+            <a href="https://www.bcaresearch.com/collection/bcas-iran-conflict-daily-dashboard" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono uppercase tracking-wider hover:bg-cyan-500/20 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" /> BCA Research — Iran Conflict Dashboard
+            </a>
+            <a href="https://unctad.org/publication/strait-hormuz-disruptions-implications-global-trade-and-development" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono uppercase tracking-wider hover:bg-cyan-500/20 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" /> UNCTAD — Trade Implications
+            </a>
           </div>
         </section>
 
