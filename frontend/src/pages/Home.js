@@ -351,6 +351,20 @@ export default function Home() {
         </section>
       )}
 
+      {/* Support Banner */}
+      <div className="bg-[#f8f9fb] border-t border-zinc-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-center gap-3 text-center">
+          <p className="text-sm text-zinc-500">
+            {language === 'fr' 
+              ? 'Si ces analyses vous sont utiles, soutenez l\'indépendance de l\'Iran Observatory.'
+              : 'If this work is useful to you, consider supporting Iran Observatory\'s independence.'}
+          </p>
+          <a href="https://www.helloasso.com/associations/dorna/formulaires/2" target="_blank" rel="noopener noreferrer" className="text-sm font-mono text-[#3DB883] hover:text-[#2D9E6E] transition-colors underline underline-offset-2 flex-shrink-0">
+            {language === 'fr' ? 'Soutenir' : 'Support us'}
+          </a>
+        </div>
+      </div>
+
       {/* Footer */}
       <footer className="bg-[#1E3A5F] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -522,6 +522,19 @@ export default function Dashboard() {
           <p className="text-xs font-mono text-zinc-600">Sources: IMF, World Bank, IHR/ECPM, HRW, HRANA, NetBlocks, Crisis Group, US Treasury/OFAC, EU Council, UN 1737, OPEC, FDD/UANI</p>
           <p className="text-xs font-mono text-zinc-600">{data.rss_items_analyzed} items + {data.telegram_messages_analyzed} messages</p>
         </div>
+
+        {/* Support Banner */}
+        <div className="mt-6 py-4 border-t border-white/5 text-center">
+          <p className="text-sm text-zinc-500">
+            {language === 'fr' 
+              ? 'Si ce briefing vous est utile, soutenez l\'indépendance de l\'Iran Observatory.'
+              : 'If this briefing is useful to your work, consider supporting Iran Observatory\'s independence.'}
+            {' '}
+            <a href="https://www.helloasso.com/associations/dorna/formulaires/2" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-[#2D9E6E] transition-colors underline underline-offset-2">
+              {language === 'fr' ? 'Soutenir' : 'Support us'}
+            </a>
+          </p>
+        </div>
       </main>
     </div>
   );
