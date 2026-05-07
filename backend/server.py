@@ -1712,70 +1712,169 @@ async def send_newsletter(request: Request):
 
 @api_router.post("/newsletter/generate")
 async def generate_newsletter(request: Request):
-    """Generate newsletter HTML from latest brief + featured articles."""
+    """Generate a professional newsletter HTML from latest brief + featured articles."""
     await get_current_user(request)
     
-    # Get latest brief
     latest_brief = await db.articles.find_one(
         {"content_type": "brief", "status": "published"},
         {"_id": 0},
         sort=[("created_at", -1)]
     )
     
-    # Get featured news from last week
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     featured_news = await db.articles.find(
         {"status": "published", "content_type": "news", "created_at": {"$gte": one_week_ago}},
         {"_id": 0, "title_en": 1, "title_fr": 1, "summary_en": 1, "summary_fr": 1, "image_url": 1}
     ).sort("created_at", -1).limit(5).to_list(5)
     
-    # Get latest studies
     latest_studies = await db.articles.find(
         {"status": "published", "content_type": {"$in": ["study", "analysis"]}, "created_at": {"$gte": one_week_ago}},
         {"_id": 0, "title_en": 1, "title_fr": 1, "summary_en": 1, "summary_fr": 1}
     ).sort("created_at", -1).limit(3).to_list(3)
     
-    # Build newsletter HTML
     base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org')
+    logo_url = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png"
+    helloasso_url = "https://www.helloasso.com/associations/dorna/formulaires/2"
+    today_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
     
-    html = f"""
-    <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;color:#1E3A5F;">
-      <div style="background:#1E3A5F;padding:24px;text-align:center;">
-        <h1 style="color:white;margin:0;font-size:24px;">Iran Observatory</h1>
-        <p style="color:#3DB883;margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Weekly Newsletter</p>
-      </div>
-    """
+    html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<div style="max-width:640px;margin:0 auto;background:#ffffff;">
+
+  <!-- Header -->
+  <div style="background:#1E3A5F;padding:32px 40px;text-align:center;">
+    <img src="{logo_url}" alt="Iran Observatory" style="height:50px;margin-bottom:12px;" />
+    <div style="width:60px;height:3px;background:#3DB883;margin:0 auto 12px;"></div>
+    <p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">Weekly Newsletter</p>
+    <p style="color:rgba(255,255,255,0.5);margin:6px 0 0;font-size:11px;">{today_str}</p>
+  </div>
+"""
     
+    # Weekly Brief section
     if latest_brief:
+        brief_title = latest_brief.get('title_en', 'Weekly Brief')
+        brief_summary = latest_brief.get('summary_en', '')
+        brief_content = latest_brief.get('content_en', '')
+        # Extract first 3 bullet points or paragraphs from content
+        import re
+        highlights = []
+        li_matches = re.findall(r'<li[^>]*>(.*?)</li>', brief_content, re.DOTALL)
+        for li in li_matches[:4]:
+            clean = re.sub(r'<[^>]+>', '', li).strip()
+            if clean and len(clean) > 20:
+                highlights.append(clean[:200])
+        
         html += f"""
-      <div style="padding:24px;border-bottom:1px solid #eee;">
-        <h2 style="color:#1E3A5F;font-size:20px;margin:0 0 8px;">{latest_brief.get('title_en', 'Weekly Brief')}</h2>
-        <p style="color:#555;font-size:14px;line-height:1.6;">{latest_brief.get('summary_en', '')}</p>
-        <a href="{base_url}/studies" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;">Read Full Brief &rarr;</a>
-      </div>
-    """
+  <!-- Weekly Brief -->
+  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;">
+    <div style="display:inline-block;background:#FEF3C7;color:#92400E;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">Weekly Brief</div>
+    <h2 style="color:#1E3A5F;font-size:22px;margin:12px 0 10px;font-weight:800;line-height:1.3;">{brief_title}</h2>
+    <p style="color:#555;font-size:15px;line-height:1.7;margin:0 0 16px;">{brief_summary}</p>
+"""
+        if highlights:
+            html += '<div style="background:#f8f9fb;border-left:4px solid #1E3A5F;padding:16px 20px;margin:0 0 16px;">'
+            for h in highlights:
+                html += f'<p style="color:#333;font-size:13px;line-height:1.6;margin:0 0 8px;">&#8226; {h}</p>'
+            html += '</div>'
+        
+        html += f"""
+    <a href="{base_url}/studies" style="display:inline-block;background:#1E3A5F;color:white;padding:10px 24px;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;border-radius:4px;">Read Full Brief &rarr;</a>
+  </div>
+"""
     
+    # Featured News section
     if featured_news:
-        html += '<div style="padding:24px;border-bottom:1px solid #eee;"><h3 style="color:#1E3A5F;font-size:16px;margin:0 0 16px;text-transform:uppercase;letter-spacing:1px;">Featured News</h3>'
-        for news in featured_news:
-            html += f'<div style="margin-bottom:16px;"><p style="font-weight:bold;margin:0 0 4px;font-size:14px;">{news.get("title_en","")}</p><p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{news.get("summary_en","")[:120]}...</p></div>'
-        html += f'<a href="{base_url}/articles" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;">All Articles &rarr;</a></div>'
-    
-    if latest_studies:
-        html += '<div style="padding:24px;border-bottom:1px solid #eee;"><h3 style="color:#1E3A5F;font-size:16px;margin:0 0 16px;text-transform:uppercase;letter-spacing:1px;">New Studies</h3>'
-        for study in latest_studies:
-            html += f'<div style="margin-bottom:12px;"><p style="font-weight:bold;margin:0;font-size:14px;">{study.get("title_en","")}</p></div>'
-        html += f'<a href="{base_url}/studies" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;">View Studies &rarr;</a></div>'
-    
-    html += f"""
-      <div style="padding:20px;text-align:center;background:#f8f9fb;">
-        <p style="color:#888;font-size:11px;margin:0;">Iran Observatory | Observatoire de l'Iran</p>
-        <a href="{base_url}" style="color:#1E3A5F;font-size:11px;">Visit Website</a>
-      </div>
+        html += """
+  <!-- Featured News -->
+  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;">
+    <div style="display:inline-block;background:#DBEAFE;color:#1E40AF;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">Featured Articles</div>
+"""
+        for i, news in enumerate(featured_news):
+            title = news.get("title_en", "")
+            summary = news.get("summary_en", "")[:150]
+            img = news.get("image_url", "")
+            border = 'border-bottom:1px solid #f0f2f5;' if i < len(featured_news) - 1 else ''
+            
+            if img:
+                html += f"""
+    <div style="padding:16px 0;{border}">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+        <td width="100" style="vertical-align:top;padding-right:16px;">
+          <img src="{img}" alt="" style="width:100px;height:75px;object-fit:cover;border-radius:6px;" />
+        </td>
+        <td style="vertical-align:top;">
+          <p style="font-weight:bold;margin:0 0 4px;font-size:15px;color:#1a1a2e;line-height:1.3;">{title}</p>
+          <p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{summary}...</p>
+        </td>
+      </tr></table>
     </div>
-    """
+"""
+            else:
+                html += f"""
+    <div style="padding:16px 0;{border}">
+      <p style="font-weight:bold;margin:0 0 4px;font-size:15px;color:#1a1a2e;line-height:1.3;">{title}</p>
+      <p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{summary}...</p>
+    </div>
+"""
+        html += f"""
+    <div style="padding-top:8px;">
+      <a href="{base_url}/articles" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;">View All Articles &rarr;</a>
+    </div>
+  </div>
+"""
     
-    return {"subject": f"Iran Observatory — {latest_brief.get('title_en', 'Weekly Newsletter') if latest_brief else 'Weekly Newsletter'}", "html_content": html}
+    # Studies section
+    if latest_studies:
+        html += """
+  <!-- New Studies -->
+  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;">
+    <div style="display:inline-block;background:#F3E8FF;color:#6B21A8;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">New Studies</div>
+"""
+        for study in latest_studies:
+            title = study.get("title_en", "")
+            summary = study.get("summary_en", "")[:120]
+            html += f"""
+    <div style="padding:10px 0;">
+      <p style="font-weight:bold;margin:0 0 2px;font-size:14px;color:#1a1a2e;">{title}</p>
+      <p style="color:#888;font-size:12px;margin:0;">{summary}</p>
+    </div>
+"""
+        html += f"""
+    <div style="padding-top:8px;">
+      <a href="{base_url}/studies" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;">View Studies &rarr;</a>
+    </div>
+  </div>
+"""
+    
+    # Support Banner
+    html += f"""
+  <!-- Support Banner -->
+  <div style="background:linear-gradient(135deg,#1E3A5F 0%,#2a4d75 100%);padding:28px 40px;text-align:center;">
+    <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:0 0 16px;line-height:1.5;">If this briefing is useful to your work, consider supporting<br>Iran Observatory's independence.</p>
+    <a href="{helloasso_url}" style="display:inline-block;background:#3DB883;color:white;padding:10px 28px;font-size:11px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;font-weight:bold;border-radius:20px;">&#9825; Support Us</a>
+  </div>
+
+  <!-- Footer -->
+  <div style="padding:24px 40px;background:#f8f9fb;text-align:center;">
+    <p style="color:#1E3A5F;font-size:13px;font-weight:bold;margin:0 0 4px;">Iran Observatory | Observatoire de l'Iran</p>
+    <p style="color:#999;font-size:11px;margin:0 0 8px;">Independent platform for fact-based analysis on Iran</p>
+    <div style="margin:12px 0;">
+      <a href="{base_url}" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Website</a>
+      <a href="{base_url}/monitor" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Iran Monitor</a>
+      <a href="{base_url}/articles" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Articles</a>
+      <a href="{base_url}/studies" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Studies & Briefs</a>
+    </div>
+    <p style="color:#bbb;font-size:10px;margin:0;">You received this because you subscribed to Iran Observatory newsletter.</p>
+  </div>
+
+</div>
+</body>
+</html>"""
+    
+    subject = f"Iran Observatory — {latest_brief.get('title_en', 'Weekly Newsletter')}" if latest_brief else "Iran Observatory — Weekly Newsletter"
+    return {"subject": subject, "html_content": html}
 
 # Admin endpoint to manually trigger brief generation
 @api_router.post("/briefs/generate")
