@@ -4,13 +4,13 @@ import axios from 'axios';
 import { 
   Activity, AlertTriangle, DollarSign, Users, Scale, 
   Shield, Wifi, WifiOff, TrendingUp, TrendingDown,
-  Eye, Calendar, ExternalLink, Skull, Lock, Megaphone
+  Eye, Calendar, ExternalLink, Skull, Lock, Megaphone, Anchor, Waves
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
 
-function MiniSparkline({ data, color = '#1E3A5F', height = 40, width = 160 }) {
+function MiniSparkline({ data, color = '#3DB883', height = 40, width = 160 }) {
   if (!data || data.length < 2) return null;
   const max = Math.max(...data);
   const min = Math.min(...data);
@@ -21,9 +21,31 @@ function MiniSparkline({ data, color = '#1E3A5F', height = 40, width = 160 }) {
   const areaPoints = `0,${height} ${points} ${width},${height}`;
   return (
     <svg width={width} height={height} className="overflow-visible">
-      <polygon fill={color + '12'} points={areaPoints} />
+      <polygon fill={color + '15'} points={areaPoints} />
       <polyline fill="none" stroke={color} strokeWidth="2.5" points={points} />
     </svg>
+  );
+}
+
+// Pulse animation SVG background
+function PulseBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden opacity-[0.06] pointer-events-none">
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="pulse-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <circle cx="30" cy="30" r="1" fill="#3DB883" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pulse-grid)" />
+        {[0, 1, 2].map(i => (
+          <circle key={i} cx="50%" cy="50%" r="0" fill="none" stroke="#3DB883" strokeWidth="0.5" opacity="0.5">
+            <animate attributeName="r" from="0" to="600" dur={`${4 + i}s`} repeatCount="indefinite" begin={`${i * 1.3}s`} />
+            <animate attributeName="opacity" from="0.5" to="0" dur={`${4 + i}s`} repeatCount="indefinite" begin={`${i * 1.3}s`} />
+          </circle>
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -42,59 +64,59 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center">
-        <Activity className="w-10 h-10 text-[#1E3A5F] animate-pulse" />
+      <div className="min-h-screen bg-[#0f1b2d] flex items-center justify-center">
+        <div className="relative">
+          <Activity className="w-12 h-12 text-[#3DB883] animate-pulse" />
+          <div className="absolute inset-0 animate-ping"><Activity className="w-12 h-12 text-[#3DB883] opacity-30" /></div>
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f1b2d] flex items-center justify-center">
         <div className="text-center">
           <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
-          <p className="text-zinc-500 text-lg">{language === 'fr' ? 'Données en cours de calcul...' : 'Computing data...'}</p>
+          <p className="text-zinc-400 text-lg">Computing data...</p>
         </div>
       </div>
     );
   }
 
+  const hri = data.human_rights_index || {};
   const hrTimeline = data.hr_timeline || [];
   const hrIssues = data.hr_key_issues || [];
   const blackoutDays = data.internet_blackout_days || 0;
   const protests = data.protests_reported || 0;
-  const hri = data.human_rights_index || {};
   const sanctions = data.sanctions_tracker || {};
   const sectorBreakdown = sanctions.sector_breakdown || [];
   const recentPackages = sanctions.recent_packages || [];
   const econ = data.economic_indicators || {};
   const econMetrics = econ.metrics || [];
-  const usTrend = sanctions.us_trend || [];
-  const euTrend = sanctions.eu_trend || [];
-  const months = ['J','F','M','A','M','J','J','A','S','O','N','D'];
   const sectorMax = Math.max(...sectorBreakdown.map(s => (s.us_count || 0) + (s.eu_count || 0) + (s.un_count || 0)), 1);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb]" data-testid="dashboard-page">
-      <SEO 
-        title="Iran Monitor"
-        description="Real-time intelligence dashboard on Iran"
-        url="/monitor" language={language}
-      />
+    <div className="min-h-screen bg-[#0f1b2d] text-white" data-testid="dashboard-page">
+      <SEO title="Iran Monitor" description="Real-time intelligence dashboard on Iran" url="/monitor" language={language} />
 
-      {/* Header */}
-      <div className="bg-white border-b border-zinc-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <Link to="/" className="text-zinc-400 hover:text-[#1E3A5F] text-xs font-mono uppercase tracking-wider">Iran Observatory</Link>
+      {/* Header with pulse */}
+      <div className="relative border-b border-white/10">
+        <PulseBackground />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Link to="/" className="text-zinc-500 hover:text-[#3DB883] text-xs font-mono uppercase tracking-wider transition-colors">Iran Observatory</Link>
           <div className="flex items-center justify-between mt-1">
             <div className="flex items-center gap-3">
-              <Eye className="w-7 h-7 text-[#1E3A5F]" strokeWidth={1.5} />
-              <h1 className="font-heading font-black text-3xl tracking-tighter text-[#1E3A5F]">Iran Monitor</h1>
+              <div className="relative">
+                <Activity className="w-8 h-8 text-[#3DB883]" strokeWidth={1.5} />
+                <div className="absolute inset-0 animate-ping opacity-30"><Activity className="w-8 h-8 text-[#3DB883]" strokeWidth={1.5} /></div>
+              </div>
+              <h1 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter">Iran Monitor</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Activity className="w-3.5 h-3.5 text-[#3DB883] animate-pulse" />
+              <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse" />
               <span className="text-xs font-mono text-zinc-400">
-                {data.updated_at ? new Date(data.updated_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                {data.updated_at ? new Date(data.updated_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'LIVE'}
               </span>
             </div>
           </div>
@@ -103,143 +125,180 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
 
-        {/* BRIEFING */}
+        {/* ===== SITUATION BRIEFING ===== */}
         {data.situation_summary && (
-          <section className="bg-white border-2 border-[#1E3A5F]/20 rounded-xl p-6 lg:p-8 shadow-md">
-            <h2 className="text-base font-mono text-[#1E3A5F] uppercase tracking-widest mb-5 font-black">
-              {language === 'fr' ? 'Briefing' : 'Situation Briefing'}
+          <section className="relative bg-[#162640] border border-[#3DB883]/30 rounded-xl p-6 lg:p-8 shadow-lg shadow-[#3DB883]/5">
+            <div className="absolute top-4 right-4 w-3 h-3 bg-[#3DB883] rounded-full animate-pulse" />
+            <h2 className="text-base font-mono text-[#3DB883] uppercase tracking-[0.2em] mb-5 font-black">
+              {language === 'fr' ? 'Briefing de Situation' : 'Situation Briefing'}
             </h2>
             <ul className="space-y-4">
               {(Array.isArray(data.situation_summary) ? data.situation_summary : [data.situation_summary]).map((b, i) => (
-                <li key={i} className="flex items-start gap-3 text-[17px] text-zinc-800 leading-relaxed font-medium">
-                  <span className="text-[#1E3A5F] mt-0.5 flex-shrink-0 text-xl font-black">&#8226;</span>{b}
+                <li key={i} className="flex items-start gap-3 text-[17px] text-white/90 leading-relaxed font-medium">
+                  <span className="text-[#3DB883] mt-0.5 flex-shrink-0 text-xl font-black">&#8226;</span>{b}
                 </li>
               ))}
             </ul>
-            {data.updated_context && (
-              <p className="mt-5 pt-5 border-t border-zinc-200 text-base text-zinc-500 leading-relaxed italic">{data.updated_context}</p>
-            )}
           </section>
         )}
 
-        {/* ============ ECONOMIC INDICATORS ============ */}
+        {/* ===== ECONOMIC INDICATORS ===== */}
         <section>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <DollarSign className="w-6 h-6 text-amber-600" strokeWidth={1.5} />
-              <h2 className="font-heading font-black text-xl text-[#1E3A5F] tracking-tight">
-                {language === 'fr' ? 'Indicateurs Économiques' : 'Economic Indicators'}
-              </h2>
+              <DollarSign className="w-6 h-6 text-amber-400" strokeWidth={1.5} />
+              <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Indicateurs Économiques' : 'Economic Indicators'}</h2>
             </div>
-            <span className="text-xs font-mono text-zinc-400">Sources: IMF, World Bank, OPEC</span>
+            <span className="text-xs font-mono text-zinc-500">IMF, World Bank, OPEC, Tanker Tracking</span>
           </div>
-
           {econ.summary && (
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 mb-5 shadow-sm">
-              <p className="text-[17px] text-zinc-600 leading-relaxed">{econ.summary}</p>
+            <div className="bg-[#162640] border border-white/10 rounded-xl p-5 mb-5">
+              <p className="text-base text-zinc-300 leading-relaxed">{econ.summary}</p>
             </div>
           )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {econMetrics.map((metric, i) => {
               const changePct = metric.change_pct || 0;
               const isPositive = changePct > 0;
               const changeColor = metric.label?.toLowerCase().includes('inflation') || metric.label?.toLowerCase().includes('irr') || metric.label?.toLowerCase().includes('gdp')
-                ? '#dc2626'
-                : (isPositive ? '#059669' : '#dc2626');
+                ? '#ef4444' : (isPositive ? '#22c55e' : '#ef4444');
               return (
-                <div key={i} className="bg-white border border-zinc-200 rounded-xl p-6 hover:shadow-md transition-shadow shadow-sm" data-testid={`econ-metric-${i}`}>
-                  <p className="text-xs font-mono text-zinc-400 uppercase tracking-wider mb-4 font-bold">{metric.label}</p>
-                  <div className="flex items-end justify-between mb-4">
-                    <span className="text-4xl font-heading font-black text-[#1E3A5F]">{metric.value}</span>
+                <div key={i} className="bg-[#162640] border border-white/10 rounded-xl p-5 hover:border-[#3DB883]/30 transition-colors" data-testid={`econ-metric-${i}`}>
+                  <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-3 font-bold">{metric.label}</p>
+                  <div className="flex items-end justify-between mb-3">
+                    <span className="text-3xl font-heading font-black text-white">{metric.value}</span>
                     <div className="text-right">
                       <span className="text-lg font-mono flex items-center gap-1 font-bold" style={{ color: changeColor }}>
-                        {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                        {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                         {isPositive ? '+' : ''}{changePct}%
                       </span>
-                      {metric.period && <span className="text-xs font-mono text-zinc-400 block">{metric.period}</span>}
+                      {metric.period && <span className="text-[10px] font-mono text-zinc-500 block">{metric.period}</span>}
                     </div>
                   </div>
                   {metric.trend_data && metric.trend_data.length > 1 && (
-                    <MiniSparkline data={metric.trend_data} color={changeColor} height={40} width={220} />
+                    <MiniSparkline data={metric.trend_data} color={changeColor} height={36} width={200} />
                   )}
-                  <p className="text-sm text-zinc-500 mt-3 leading-relaxed">{metric.context}</p>
+                  <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{metric.context}</p>
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* ============ HUMAN RIGHTS — REAL FIGURES ============ */}
+        {/* ===== HORMUZ CRISIS MONITORING ===== */}
         <section>
-          <div className="flex items-center gap-3 mb-5">
-            <Shield className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
-            <h2 className="font-heading font-black text-xl text-[#1E3A5F] tracking-tight">
-              {language === 'fr' ? 'Droits Humains' : 'Human Rights'}
-            </h2>
+          <div className="flex items-center gap-3 mb-6">
+            <Anchor className="w-6 h-6 text-cyan-400" strokeWidth={1.5} />
+            <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Crise du Détroit d\'Ormuz' : 'Strait of Hormuz Crisis'}</h2>
           </div>
+          <div className="bg-[#162640] border border-cyan-500/20 rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-start gap-4">
+                <Waves className="w-10 h-10 text-cyan-400 flex-shrink-0" strokeWidth={1.5} />
+                <div>
+                  <p className="text-base text-zinc-300 leading-relaxed mb-3">
+                    {language === 'fr'
+                      ? 'Le détroit d\'Ormuz, par lequel transite 30% du pétrole mondial, est un point chaud critique du conflit Iran-US. Depuis le blocus naval américain du 13 avril 2026, les tensions sont à leur plus haut niveau historique.'
+                      : 'The Strait of Hormuz, through which 30% of the world\'s seaborne oil passes, is a critical flashpoint. Since the US naval blockade of April 13, 2026, tensions have reached historic highs.'}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                      <p className="text-2xl font-heading font-black text-cyan-400">1,550+</p>
+                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Navires bloqués' : 'Vessels Stuck'}</p>
+                    </div>
+                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                      <p className="text-2xl font-heading font-black text-cyan-400">22,500+</p>
+                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Marins en mer' : 'Mariners at Sea'}</p>
+                    </div>
+                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                      <p className="text-2xl font-heading font-black text-red-400">51</p>
+                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Navires redirigés' : 'Vessels Redirected'}</p>
+                    </div>
+                    <div className="text-center p-3 bg-[#0f1b2d] rounded-lg">
+                      <p className="text-2xl font-heading font-black text-amber-400">15,000</p>
+                      <p className="text-[10px] font-mono text-zinc-500">{language === 'fr' ? 'Forces US déployées' : 'US Forces Deployed'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 flex flex-wrap gap-3">
+              <a href="https://www.crisisgroup.org/trigger-list/iran-usisrael-trigger-list/flashpoints/strait-hormuz" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono uppercase tracking-wider hover:bg-cyan-500/20 transition-colors">
+                <ExternalLink className="w-3.5 h-3.5" /> Crisis Group Tracker
+              </a>
+              <a href="https://www.bcaresearch.com/collection/bcas-iran-conflict-daily-dashboard" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono uppercase tracking-wider hover:bg-cyan-500/20 transition-colors">
+                <ExternalLink className="w-3.5 h-3.5" /> BCA Research Dashboard
+              </a>
+            </div>
+          </div>
+        </section>
 
-          {/* Stats Cards */}
+        {/* ===== HUMAN RIGHTS ===== */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <Shield className="w-6 h-6 text-purple-400" strokeWidth={1.5} />
+            <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Droits Humains' : 'Human Rights'}</h2>
+          </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm text-center" data-testid="hr-blackout">
+            <div className="bg-[#162640] border border-red-500/20 rounded-xl p-5 text-center" data-testid="hr-blackout">
               <WifiOff className="w-8 h-8 text-red-500 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-5xl font-heading font-black text-red-600">{blackoutDays}</p>
-              <p className="text-sm text-zinc-500 mt-1">{language === 'fr' ? 'Jours de coupure internet' : 'Internet Blackout Days'}</p>
-              <p className="text-[10px] font-mono text-zinc-400 mt-1">NetBlocks</p>
+              <p className="text-4xl font-heading font-black text-red-500">{hri.internet_blackout_days || blackoutDays || '—'}</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Jours de coupure internet' : 'Internet Blackout Days'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">{hri.internet_source || 'NetBlocks'}</p>
+              {hri.internet_connectivity && <p className="text-[10px] text-red-400 mt-1 font-bold">{hri.internet_connectivity} connectivity</p>}
+              {hri.internet_detail && <p className="text-[8px] text-zinc-600 mt-1 leading-tight">{hri.internet_detail}</p>}
             </div>
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm text-center" data-testid="hr-protests">
-              <Megaphone className="w-8 h-8 text-amber-500 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-5xl font-heading font-black text-amber-600">{protests}</p>
-              <p className="text-sm text-zinc-500 mt-1">{language === 'fr' ? 'Manifestations signalées' : 'Protests Reported'}</p>
-              <p className="text-[10px] font-mono text-zinc-400 mt-1">HRA News / VahidOnline</p>
+            <div className="bg-[#162640] border border-amber-500/20 rounded-xl p-5 text-center" data-testid="hr-protests">
+              <Megaphone className="w-8 h-8 text-amber-400 mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-4xl font-heading font-black text-amber-400">{protests}</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Manifestations signalées' : 'Protests Reported'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">{data.protests_source || 'HRA News (Jan-May 2026)'}</p>
             </div>
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm text-center" data-testid="hr-executions">
-              <Skull className="w-8 h-8 text-zinc-800 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-5xl font-heading font-black text-zinc-900">{hri.executions || '—'}</p>
-              <p className="text-sm text-zinc-500 mt-1">{language === 'fr' ? 'Exécutions (2025)' : 'Executions (2025)'}</p>
-              <p className="text-[10px] font-mono text-zinc-400 mt-1">{hri.executions_source || 'IHR/ECPM'}</p>
-              {hri.executions_detail && <p className="text-[9px] text-zinc-400 mt-1 leading-tight">{hri.executions_detail}</p>}
+            <div className="bg-[#162640] border border-white/10 rounded-xl p-5 text-center" data-testid="hr-executions">
+              <Skull className="w-8 h-8 text-zinc-300 mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-4xl font-heading font-black text-white">{hri.executions || '—'}</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Exécutions (2025)' : 'Executions (2025)'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">{hri.executions_source || 'IHR/ECPM'}</p>
+              {hri.executions_detail && <p className="text-[8px] text-zinc-600 mt-1 leading-tight">{hri.executions_detail}</p>}
             </div>
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm text-center" data-testid="hr-prisoners">
-              <Lock className="w-8 h-8 text-purple-600 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-5xl font-heading font-black text-purple-700">{hri.political_prisoners || '—'}</p>
-              <p className="text-sm text-zinc-500 mt-1">{language === 'fr' ? 'Prisonniers politiques' : 'Political Prisoners'}</p>
-              <p className="text-[10px] font-mono text-zinc-400 mt-1">{hri.political_prisoners_source || 'HRW / HRANA'}</p>
-              {hri.political_prisoners_detail && <p className="text-[9px] text-zinc-400 mt-1 leading-tight">{hri.political_prisoners_detail}</p>}
+            <div className="bg-[#162640] border border-purple-500/20 rounded-xl p-5 text-center" data-testid="hr-prisoners">
+              <Lock className="w-8 h-8 text-purple-400 mx-auto mb-2" strokeWidth={1.5} />
+              <p className="text-4xl font-heading font-black text-purple-400">{hri.political_prisoners || '—'}</p>
+              <p className="text-sm text-zinc-400 mt-1">{language === 'fr' ? 'Prisonniers politiques' : 'Political Prisoners'}</p>
+              <p className="text-[9px] font-mono text-zinc-600 mt-1">{hri.political_prisoners_source || 'HRW / HRANA'}</p>
+              {hri.political_prisoners_detail && <p className="text-[8px] text-zinc-600 mt-1 leading-tight">{hri.political_prisoners_detail}</p>}
             </div>
           </div>
-
-          {/* Key Issues + Timeline */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm">
-              <span className="text-xs font-mono text-zinc-400 uppercase font-bold">{language === 'fr' ? 'Enjeux principaux' : 'Key Issues'}</span>
+            <div className="bg-[#162640] border border-white/10 rounded-xl p-5">
+              <span className="text-xs font-mono text-zinc-500 uppercase font-bold">{language === 'fr' ? 'Enjeux principaux' : 'Key Issues'}</span>
               <ul className="mt-3 space-y-2.5">
                 {hrIssues.map((issue, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[15px] text-zinc-600 leading-relaxed">
-                    <span className="text-purple-600 mt-0.5 flex-shrink-0 font-bold">&#8226;</span>{issue}
+                  <li key={i} className="flex items-start gap-2 text-sm text-zinc-300 leading-relaxed">
+                    <span className="text-purple-400 mt-0.5 flex-shrink-0 font-bold">&#8226;</span>{issue}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm">
-              <div className="p-4 border-b border-zinc-100 flex items-center justify-between">
-                <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-bold">{language === 'fr' ? 'Chronologie' : 'Timeline'}</span>
-                <span className="text-xs font-mono text-zinc-400">HRA News / VahidOnline</span>
+            <div className="lg:col-span-2 bg-[#162640] border border-white/10 rounded-xl overflow-hidden">
+              <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest font-bold">Timeline</span>
+                <span className="text-xs font-mono text-zinc-600">HRA News / VahidOnline</span>
               </div>
-              <div className="divide-y divide-zinc-100 max-h-[400px] overflow-y-auto">
+              <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
                 {hrTimeline.map((event, i) => (
-                  <div key={i} className="px-5 py-3.5 flex items-start gap-3 hover:bg-zinc-50 transition-colors">
+                  <div key={i} className="px-5 py-3.5 flex items-start gap-3 hover:bg-white/[0.02] transition-colors">
                     <div className="flex flex-col items-center flex-shrink-0 w-3 mt-2">
                       <div className="w-3 h-3 rounded-full bg-purple-500" />
-                      {i < hrTimeline.length - 1 && <div className="w-px flex-1 bg-zinc-200 mt-1" style={{minHeight: '24px'}} />}
+                      {i < hrTimeline.length - 1 && <div className="w-px flex-1 bg-white/10 mt-1" style={{minHeight: '24px'}} />}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                        <Calendar className="w-3.5 h-3.5 text-zinc-500" />
                         <span className="text-xs font-mono text-zinc-500">{event.date}</span>
-                        <span className="text-[10px] font-mono text-zinc-400">{event.source}</span>
+                        <span className="text-[10px] font-mono text-zinc-600">{event.source}</span>
                       </div>
-                      <p className="text-sm text-zinc-700 leading-relaxed">{event.event}</p>
+                      <p className="text-sm text-zinc-300 leading-relaxed">{event.event}</p>
                     </div>
                   </div>
                 ))}
@@ -248,61 +307,39 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* ============ SANCTIONS TRACKER ============ */}
+        {/* ===== SANCTIONS ===== */}
         <section>
-          <div className="flex items-center gap-3 mb-5">
-            <Scale className="w-6 h-6 text-[#1E3A5F]" strokeWidth={1.5} />
-            <h2 className="font-heading font-black text-xl text-[#1E3A5F] tracking-tight">
-              {language === 'fr' ? 'Sanctions' : 'Sanctions'}
-            </h2>
+          <div className="flex items-center gap-3 mb-6">
+            <Scale className="w-6 h-6 text-[#3DB883]" strokeWidth={1.5} />
+            <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Sanctions' : 'Sanctions'}</h2>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-1 gap-5 mb-5">
-            {/* Counts + Persons/Entities */}
-            <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
-              <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-bold">Active Sanctions</span>
-              <div className="grid grid-cols-3 gap-3 mt-4">
-                <div className="text-center">
-                  <p className="text-4xl font-heading font-black text-red-600">{sanctions.us_active_count || '—'}</p>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">US</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-4xl font-heading font-black text-blue-600">{sanctions.eu_active_count || '—'}</p>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">EU</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-4xl font-heading font-black text-amber-600">{sanctions.un_active_count || '—'}</p>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">UN</p>
+          <div className="bg-[#162640] border border-white/10 rounded-xl p-6 mb-5">
+            <div className="grid grid-cols-3 gap-6 mb-5">
+              <div className="text-center"><p className="text-4xl font-heading font-black text-red-400">{sanctions.us_active_count || '—'}</p><p className="text-xs font-mono text-zinc-500 mt-1">US</p></div>
+              <div className="text-center"><p className="text-4xl font-heading font-black text-blue-400">{sanctions.eu_active_count || '—'}</p><p className="text-xs font-mono text-zinc-500 mt-1">EU</p></div>
+              <div className="text-center"><p className="text-4xl font-heading font-black text-amber-400">{sanctions.un_active_count || '—'}</p><p className="text-xs font-mono text-zinc-500 mt-1">UN</p></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1"><Users className="w-3.5 h-3.5 text-zinc-500" /><span className="text-[10px] font-mono text-zinc-500 uppercase">Persons</span></div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-heading font-black text-red-400">{sanctions.us_persons_designated || '—'}</span><span className="text-[9px] text-zinc-600">US</span>
+                  <span className="text-xl font-heading font-black text-blue-400">{sanctions.eu_persons_designated || '—'}</span><span className="text-[9px] text-zinc-600">EU</span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-zinc-100">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1"><Users className="w-3.5 h-3.5 text-zinc-400" /><span className="text-[10px] font-mono text-zinc-400 uppercase">Persons</span></div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-heading font-black text-red-600">{sanctions.us_persons_designated || '—'}</span>
-                    <span className="text-[9px] text-zinc-400">US</span>
-                    <span className="text-xl font-heading font-black text-blue-600">{sanctions.eu_persons_designated || '—'}</span>
-                    <span className="text-[9px] text-zinc-400">EU</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1"><Shield className="w-3.5 h-3.5 text-zinc-400" /><span className="text-[10px] font-mono text-zinc-400 uppercase">Entities</span></div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xl font-heading font-black text-red-600">{sanctions.us_entities_designated || '—'}</span>
-                    <span className="text-[9px] text-zinc-400">US</span>
-                    <span className="text-xl font-heading font-black text-blue-600">{sanctions.eu_entities_designated || '—'}</span>
-                    <span className="text-[9px] text-zinc-400">EU</span>
-                  </div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1"><Shield className="w-3.5 h-3.5 text-zinc-500" /><span className="text-[10px] font-mono text-zinc-500 uppercase">Entities</span></div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-heading font-black text-red-400">{sanctions.us_entities_designated || '—'}</span><span className="text-[9px] text-zinc-600">US</span>
+                  <span className="text-xl font-heading font-black text-blue-400">{sanctions.eu_entities_designated || '—'}</span><span className="text-[9px] text-zinc-600">EU</span>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Sector Breakdown + Recent Packages */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
             {sectorBreakdown.length > 0 && (
-              <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm" data-testid="sector-breakdown">
-                <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-bold">Sanctions by Sector</span>
+              <div className="bg-[#162640] border border-white/10 rounded-xl p-5" data-testid="sector-breakdown">
+                <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider font-bold">Sanctions by Sector</span>
                 <div className="flex gap-3 mt-2 mb-4">
                   <span className="flex items-center gap-1 text-xs font-mono text-zinc-500"><span className="w-2.5 h-2.5 rounded-sm bg-red-500"></span>US</span>
                   <span className="flex items-center gap-1 text-xs font-mono text-zinc-500"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500"></span>EU</span>
@@ -313,14 +350,11 @@ export default function Dashboard() {
                     const total = (sector.us_count || 0) + (sector.eu_count || 0) + (sector.un_count || 0);
                     return (
                       <div key={i}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-zinc-700">{sector.sector}</span>
-                          <span className="text-xs font-mono text-zinc-400 font-bold">{total}</span>
-                        </div>
-                        <div className="flex h-5 rounded overflow-hidden bg-zinc-100">
-                          {sector.us_count > 0 && <div className="bg-red-500" style={{ width: `${(sector.us_count / sectorMax) * 100}%` }} title={`US: ${sector.us_count}`} />}
-                          {sector.eu_count > 0 && <div className="bg-blue-500" style={{ width: `${(sector.eu_count / sectorMax) * 100}%` }} title={`EU: ${sector.eu_count}`} />}
-                          {sector.un_count > 0 && <div className="bg-amber-500" style={{ width: `${(sector.un_count / sectorMax) * 100}%` }} title={`UN: ${sector.un_count}`} />}
+                        <div className="flex items-center justify-between mb-1"><span className="text-sm text-zinc-300">{sector.sector}</span><span className="text-xs font-mono text-zinc-500 font-bold">{total}</span></div>
+                        <div className="flex h-4 rounded overflow-hidden bg-white/5">
+                          {sector.us_count > 0 && <div className="bg-red-500" style={{ width: `${(sector.us_count / sectorMax) * 100}%` }} />}
+                          {sector.eu_count > 0 && <div className="bg-blue-500" style={{ width: `${(sector.eu_count / sectorMax) * 100}%` }} />}
+                          {sector.un_count > 0 && <div className="bg-amber-500" style={{ width: `${(sector.un_count / sectorMax) * 100}%` }} />}
                         </div>
                       </div>
                     );
@@ -329,21 +363,19 @@ export default function Dashboard() {
               </div>
             )}
             {recentPackages.length > 0 && (
-              <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm" data-testid="recent-packages">
-                <div className="p-4 border-b border-zinc-100">
-                  <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-bold">Recent Sanctions Packages</span>
-                </div>
-                <div className="divide-y divide-zinc-100 max-h-[420px] overflow-y-auto">
+              <div className="bg-[#162640] border border-white/10 rounded-xl overflow-hidden" data-testid="recent-packages">
+                <div className="p-4 border-b border-white/5"><span className="text-xs font-mono text-zinc-500 uppercase tracking-wider font-bold">Recent Sanctions Packages</span></div>
+                <div className="divide-y divide-white/5 max-h-[420px] overflow-y-auto">
                   {recentPackages.map((pkg, i) => {
-                    const ic = pkg.issuer === 'US' ? 'text-red-600 bg-red-50 border-red-200' : pkg.issuer === 'EU' ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-amber-600 bg-amber-50 border-amber-200';
+                    const ic = pkg.issuer === 'US' ? 'text-red-400 bg-red-500/15 border-red-500/30' : pkg.issuer === 'EU' ? 'text-blue-400 bg-blue-500/15 border-blue-500/30' : 'text-amber-400 bg-amber-500/15 border-amber-500/30';
                     return (
-                      <div key={i} className="px-5 py-3.5 hover:bg-zinc-50 transition-colors">
+                      <div key={i} className="px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded border ${ic}`}>{pkg.issuer}</span>
-                          <span className="text-xs font-mono text-zinc-400">{pkg.date}</span>
+                          <span className="text-xs font-mono text-zinc-500">{pkg.date}</span>
                         </div>
-                        <p className="text-sm text-zinc-800 font-medium mb-1">{pkg.title}</p>
-                        <div className="flex items-center gap-3 text-xs font-mono text-zinc-400">
+                        <p className="text-sm text-zinc-200 font-medium mb-1">{pkg.title}</p>
+                        <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
                           {pkg.persons_added > 0 && <span className="flex items-center gap-1"><Users className="w-3 h-3" /> +{pkg.persons_added}</span>}
                           {pkg.entities_added > 0 && <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> +{pkg.entities_added}</span>}
                         </div>
@@ -355,34 +387,33 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-
           {/* Source Links */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm">
-            <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-bold mb-3 block">Official Sanctions Lists</span>
+          <div className="bg-[#162640] border border-white/10 rounded-xl p-5">
+            <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider font-bold mb-3 block">Official Sanctions Lists</span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <a href="https://ofac.treasury.gov/sanctions-programs-and-country-information/iran-sanctions" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 border border-red-200 bg-red-50 rounded-lg hover:shadow-md transition-shadow group" data-testid="source-link-us">
-                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-heading font-black text-sm">US</span></div>
-                <div className="flex-1"><p className="text-sm font-bold text-zinc-800 group-hover:text-red-700">US Treasury / OFAC</p><p className="text-xs text-zinc-500">Iran Sanctions Programs</p></div>
-                <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-red-600" />
+              <a href="https://ofac.treasury.gov/sanctions-programs-and-country-information/iran-sanctions" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 border border-red-500/20 bg-red-500/5 rounded-lg hover:bg-red-500/10 transition-colors group">
+                <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-heading font-black text-xs">US</span></div>
+                <div><p className="text-sm font-bold text-zinc-200">US Treasury / OFAC</p><p className="text-[10px] text-zinc-500">Iran Sanctions</p></div>
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-600 ml-auto" />
               </a>
-              <a href="https://www.consilium.europa.eu/en/policies/sanctions-against-iran/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 border border-blue-200 bg-blue-50 rounded-lg hover:shadow-md transition-shadow group" data-testid="source-link-eu">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-heading font-black text-sm">EU</span></div>
-                <div className="flex-1"><p className="text-sm font-bold text-zinc-800 group-hover:text-blue-700">EU Council</p><p className="text-xs text-zinc-500">Sanctions Against Iran</p></div>
-                <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-blue-600" />
+              <a href="https://www.consilium.europa.eu/en/policies/sanctions-against-iran/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 border border-blue-500/20 bg-blue-500/5 rounded-lg hover:bg-blue-500/10 transition-colors group">
+                <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-heading font-black text-xs">EU</span></div>
+                <div><p className="text-sm font-bold text-zinc-200">EU Council</p><p className="text-[10px] text-zinc-500">Sanctions Against Iran</p></div>
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-600 ml-auto" />
               </a>
-              <a href="https://www.un.org/securitycouncil/sanctions/1737" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 border border-amber-200 bg-amber-50 rounded-lg hover:shadow-md transition-shadow group" data-testid="source-link-un">
-                <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-heading font-black text-sm">UN</span></div>
-                <div className="flex-1"><p className="text-sm font-bold text-zinc-800 group-hover:text-amber-700">UN Security Council</p><p className="text-xs text-zinc-500">1737 Committee (Snapback)</p></div>
-                <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-amber-600" />
+              <a href="https://www.un.org/securitycouncil/sanctions/1737" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 border border-amber-500/20 bg-amber-500/5 rounded-lg hover:bg-amber-500/10 transition-colors group">
+                <div className="w-9 h-9 bg-amber-600 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-heading font-black text-xs">UN</span></div>
+                <div><p className="text-sm font-bold text-zinc-200">UN 1737 Committee</p><p className="text-[10px] text-zinc-500">Snapback</p></div>
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-600 ml-auto" />
               </a>
             </div>
           </div>
         </section>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs font-mono text-zinc-400">Sources: IMF, World Bank, IHR/ECPM, HRW, HRANA, US Treasury/OFAC, EU Council, UN 1737 Committee, NetBlocks</p>
-          <p className="text-xs font-mono text-zinc-400">{data.rss_items_analyzed} items + {data.telegram_messages_analyzed} messages</p>
+        <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-mono text-zinc-600">Sources: IMF, World Bank, IHR/ECPM, HRW, HRANA, NetBlocks, Crisis Group, US Treasury/OFAC, EU Council, UN 1737, OPEC, FDD/UANI</p>
+          <p className="text-xs font-mono text-zinc-600">{data.rss_items_analyzed} items + {data.telegram_messages_analyzed} messages</p>
         </div>
       </main>
     </div>

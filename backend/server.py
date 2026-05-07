@@ -1242,7 +1242,13 @@ Max 10 HR timeline events. Based ONLY on provided sources."""
         hri["political_prisoners"] = "15,000+"
         hri["political_prisoners_source"] = "HRW / HRANA (2026)"
         hri["political_prisoners_detail"] = "53,000+ arrests documented post-Jan 2026 protests. 2,800+ named detainees."
+        hri["internet_blackout_days"] = "68+"
+        hri["internet_connectivity"] = "4%"
+        hri["internet_source"] = "NetBlocks (May 2026)"
+        hri["internet_detail"] = "Longest nationwide internet shutdown ever recorded. Near-total since Feb 28. $1.8B economic cost."
         dashboard_data["human_rights_index"] = hri
+        dashboard_data["internet_blackout_days"] = 68
+        dashboard_data["protests_source"] = "HRA News / VahidOnline (Jan-May 2026)"
         
         # CALL 2: Economic indicators only — sanctions are hardcoded from official sources
         chat2 = LlmChat(
@@ -1260,8 +1266,9 @@ VERIFIED ECONOMIC DATA (use these as baseline — from IMF, World Bank, independ
 - IRR/USD parallel market: ~1,400,000-1,500,000 IRR per USD (early 2026, 44% YoY depreciation — source: World Bank, investing.com)
 - Inflation: 62.2% YoY in Feb 2026 (food: 99%) — source: World Bank. IMF forecasts 68.9%.
 - GDP: -2.7% in 2025/26 fiscal year — source: World Bank.
-- Oil exports: Reduced ~100k bpd late 2025 due to sanctions enforcement — source: IMF/AA.
-- Brent crude: Check latest from news context.
+- Oil exports: ~1.1-1.4 mbpd in 2026 (down from 2.0 mbpd peak in 2025). March 2026: 1.136 mbpd. Revenue ~$3.6B/month — source: tanker-tracking (FDD/UANI/OilPrice).
+- Brent crude: ~$106-107/bbl. Iranian crude trades at $10-20 discount due to sanctions — source: trading economics.
+- US naval blockade since April 12, 2026 has severely restricted Iranian exports through Strait of Hormuz.
 
 Return ONLY this JSON:
 {{"economic_indicators": {{
