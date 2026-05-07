@@ -63,6 +63,8 @@ export default function Admin() {
   const [showCreateArticle, setShowCreateArticle] = useState(false);
   const [previewLang, setPreviewLang] = useState(null);
   const [newsletterPreview, setNewsletterPreview] = useState(null);
+  const [customSubject, setCustomSubject] = useState('');
+  const [customContent, setCustomContent] = useState('');
   const [subscribers, setSubscribers] = useState([]);
   const [newArticle, setNewArticle] = useState({
     title_en: '', title_fr: '', title_fa: '',
@@ -861,12 +863,33 @@ export default function Admin() {
 
           {/* Newsletter Tab */}
           <TabsContent value="newsletter" className="space-y-4">
+            {/* Add Subscriber Manually */}
             <div className="bg-white border border-zinc-200 p-6">
-              <h3 className="font-heading font-bold text-lg mb-4">Send Newsletter</h3>
-              <p className="text-sm text-zinc-500 mb-6">Generate and send a newsletter to all subscribers who opted in. Includes the latest weekly brief, featured news, and new studies.</p>
-              
+              <h3 className="font-heading font-bold text-lg mb-4">Add Subscriber</h3>
+              <form className="flex gap-2" onSubmit={async (e) => {
+                e.preventDefault();
+                const email = e.target.email.value.trim();
+                if (!email) return;
+                try {
+                  await axios.post(`${API}/subscribers/add`, { email, newsletter: true }, axiosConfig);
+                  toast.success(`Added: ${email}`);
+                  e.target.reset();
+                  fetchSubscribers();
+                } catch (err) {
+                  toast.error(err.response?.data?.detail || 'Failed to add');
+                }
+              }}>
+                <Input name="email" type="email" placeholder="email@example.com" className="rounded-none flex-1" required />
+                <Button type="submit" className="rounded-none bg-[#1E3A5F]">Add</Button>
+              </form>
+            </div>
+
+            {/* Auto-Generated Newsletter */}
+            <div className="bg-white border border-zinc-200 p-6">
+              <h3 className="font-heading font-bold text-lg mb-2">Auto Newsletter</h3>
+              <p className="text-sm text-zinc-500 mb-4">Auto-generated from latest weekly brief + featured articles.</p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <Button 
                     className="w-full rounded-none bg-[#1E3A5F]"
                     onClick={async () => {
@@ -882,7 +905,6 @@ export default function Admin() {
                   >
                     Generate Newsletter Preview
                   </Button>
-                  
                   <Button 
                     className="w-full rounded-none bg-[#3DB883] hover:bg-[#2D9E6E]"
                     onClick={async () => {
@@ -891,46 +913,95 @@ export default function Admin() {
                         toast.success(`Weekly brief generated (ID: ${res.data.article_id})`);
                         fetchArticles();
                       } catch (e) {
-                        toast.error('Failed to generate brief: ' + (e.response?.data?.detail || e.message));
+                        toast.error('Failed: ' + (e.response?.data?.detail || e.message));
                       }
                     }}
                     data-testid="generate-brief-btn"
                   >
                     Generate Weekly Brief Now
                   </Button>
-                  
                   {newsletterPreview && (
                     <Button 
                       className="w-full rounded-none bg-red-600 hover:bg-red-700 text-white"
                       onClick={async () => {
-                        if (!window.confirm(`Send newsletter to all subscribers?`)) return;
+                        if (!window.confirm(`Send auto newsletter to ${subscribers.filter(s => s.newsletter).length} subscribers?`)) return;
                         try {
                           const res = await axios.post(`${API}/newsletter/send`, {
                             subject: newsletterPreview.subject,
                             html_content: newsletterPreview.html_content
                           }, axiosConfig);
-                          toast.success(`Newsletter sent to ${res.data.sent} subscribers`);
+                          toast.success(`Sent to ${res.data.sent} subscribers`);
                         } catch (e) {
-                          toast.error('Failed to send: ' + (e.response?.data?.detail || e.message));
+                          toast.error('Failed: ' + (e.response?.data?.detail || e.message));
                         }
                       }}
                       data-testid="send-newsletter-btn"
                     >
-                      Send to All Subscribers ({subscribers.filter(s => s.newsletter).length})
+                      Send Auto Newsletter ({subscribers.filter(s => s.newsletter).length} subscribers)
                     </Button>
                   )}
                 </div>
-                
-                {/* Preview */}
                 <div className="border border-zinc-200 rounded overflow-hidden">
-                  <div className="bg-zinc-100 p-2 border-b border-zinc-200">
-                    <span className="text-xs font-mono text-zinc-500">PREVIEW</span>
-                  </div>
-                  <div className="p-4 max-h-[500px] overflow-y-auto">
+                  <div className="bg-zinc-100 p-2 border-b border-zinc-200"><span className="text-xs font-mono text-zinc-500">PREVIEW</span></div>
+                  <div className="p-4 max-h-[400px] overflow-y-auto">
                     {newsletterPreview ? (
                       <div dangerouslySetInnerHTML={{ __html: newsletterPreview.html_content }} />
                     ) : (
-                      <p className="text-zinc-400 text-sm text-center py-10">Click "Generate Newsletter Preview" to see the email</p>
+                      <p className="text-zinc-400 text-sm text-center py-10">Click "Generate Newsletter Preview"</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Newsletter */}
+            <div className="bg-white border border-zinc-200 p-6">
+              <h3 className="font-heading font-bold text-lg mb-2">Custom Message</h3>
+              <p className="text-sm text-zinc-500 mb-4">Write and send your own newsletter (e.g. launch announcement). Supports HTML.</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Input 
+                    placeholder="Subject line" 
+                    className="rounded-none"
+                    value={customSubject}
+                    onChange={(e) => setCustomSubject(e.target.value)}
+                    data-testid="custom-subject"
+                  />
+                  <Textarea
+                    placeholder="Write your message here... HTML is supported (e.g. <h2>Title</h2><p>Content</p>)"
+                    className="rounded-none font-mono text-sm"
+                    rows={8}
+                    value={customContent}
+                    onChange={(e) => setCustomContent(e.target.value)}
+                    data-testid="custom-content"
+                  />
+                  <Button 
+                    className="w-full rounded-none bg-red-600 hover:bg-red-700 text-white"
+                    disabled={!customSubject || !customContent}
+                    onClick={async () => {
+                      if (!window.confirm(`Send custom newsletter "${customSubject}" to ${subscribers.filter(s => s.newsletter).length} subscribers?`)) return;
+                      try {
+                        const res = await axios.post(`${API}/newsletter/custom`, {
+                          subject: customSubject,
+                          content: customContent
+                        }, axiosConfig);
+                        toast.success(`Sent to ${res.data.sent}/${res.data.total} subscribers`);
+                      } catch (e) {
+                        toast.error('Failed: ' + (e.response?.data?.detail || e.message));
+                      }
+                    }}
+                    data-testid="send-custom-btn"
+                  >
+                    Send Custom Newsletter ({subscribers.filter(s => s.newsletter).length} subscribers)
+                  </Button>
+                </div>
+                <div className="border border-zinc-200 rounded overflow-hidden">
+                  <div className="bg-zinc-100 p-2 border-b border-zinc-200"><span className="text-xs font-mono text-zinc-500">PREVIEW</span></div>
+                  <div className="p-4 max-h-[400px] overflow-y-auto prose prose-sm max-w-none">
+                    {customContent ? (
+                      <div dangerouslySetInnerHTML={{ __html: customContent }} />
+                    ) : (
+                      <p className="text-zinc-400 text-sm text-center py-10">Your message preview will appear here</p>
                     )}
                   </div>
                 </div>

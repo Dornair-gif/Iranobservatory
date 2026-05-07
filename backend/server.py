@@ -1070,7 +1070,155 @@ async def subscribe(request: Request):
         "created_at": datetime.now(timezone.utc)
     }
     await db.subscribers.insert_one(subscriber)
+    
+    # Send confirmation email if newsletter signup
+    if newsletter:
+        try:
+            resend_key = os.environ.get("RESEND_API_KEY")
+            if resend_key:
+                import resend
+                resend.api_key = resend_key
+                sender = os.environ.get("SENDER_EMAIL", "newsletter@iranobservatory.org")
+                base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org')
+                logo_url = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png"
+                
+                confirm_html = f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;background:#fff;">
+  <div style="background:#fff;padding:28px 40px 0;text-align:center;"><img src="{logo_url}" alt="Iran Observatory" style="height:50px;" /></div>
+  <div style="background:#1E3A5F;padding:16px 40px;text-align:center;"><p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">Subscription Confirmed</p></div>
+  <div style="padding:32px 40px;">
+    <h2 style="color:#1E3A5F;font-size:22px;margin:0 0 16px;">Welcome to Iran Observatory</h2>
+    <p style="color:#555;font-size:15px;line-height:1.7;">Thank you for subscribing to our newsletter. You will receive:</p>
+    <ul style="color:#555;font-size:14px;line-height:2;">
+      <li><strong>Weekly Intelligence Brief</strong> every Monday</li>
+      <li><strong>Featured articles</strong> and analysis highlights</li>
+      <li><strong>New studies</strong> when published</li>
+    </ul>
+    <p style="color:#555;font-size:14px;line-height:1.7;margin-top:16px;">Visit our website: <a href="{base_url}" style="color:#3DB883;">{base_url}</a></p>
+  </div>
+  <div style="padding:20px 40px;background:#f8f9fb;text-align:center;">
+    <p style="color:#999;font-size:11px;margin:0;">Iran Observatory | Independent analysis on Iran</p>
+    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/unsubscribe?email={email}" style="color:#999;">Unsubscribe</a></p>
+  </div>
+</div></body></html>"""
+                
+                await asyncio.to_thread(resend.Emails.send, {
+                    "from": sender,
+                    "to": [email],
+                    "subject": "Welcome to Iran Observatory Newsletter",
+                    "html": confirm_html
+                })
+                logger.info(f"Confirmation email sent to {email}")
+        except Exception as e:
+            logger.warning(f"Failed to send confirmation email: {e}")
+    
     return {"message": "Subscribed successfully"}
+
+# Unsubscribe endpoint
+@api_router.get("/unsubscribe")
+async def unsubscribe_page(email: str = ""):
+    """Simple unsubscribe — removes newsletter flag."""
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid email")
+    result = await db.subscribers.update_one(
+        {"email": email.strip().lower()},
+        {"$set": {"newsletter": False}}
+    )
+    html = f"""<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px;">
+    <h2 style="color:#1E3A5F;">Unsubscribed</h2>
+    <p style="color:#666;">You have been unsubscribed from Iran Observatory newsletter.</p>
+    <p style="color:#999;font-size:12px;margin-top:20px;">You can re-subscribe anytime at <a href="https://iranobservatory.org" style="color:#3DB883;">iranobservatory.org</a></p>
+    </body></html>"""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
+# Admin: manually add subscriber
+@api_router.post("/subscribers/add")
+async def admin_add_subscriber(request: Request):
+    await get_current_user(request)
+    body = await request.json()
+    email = body.get("email", "").strip().lower()
+    newsletter = body.get("newsletter", True)
+    
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Valid email required")
+    
+    existing = await db.subscribers.find_one({"email": email})
+    if existing:
+        await db.subscribers.update_one({"_id": existing["_id"]}, {"$set": {"newsletter": newsletter}})
+        return {"message": "Subscriber updated"}
+    
+    await db.subscribers.insert_one({
+        "email": email,
+        "newsletter": newsletter,
+        "downloads": [],
+        "created_at": datetime.now(timezone.utc)
+    })
+    return {"message": "Subscriber added"}
+
+# Admin: send custom newsletter
+@api_router.post("/newsletter/custom")
+async def send_custom_newsletter(request: Request):
+    """Admin: Send a custom newsletter with user-written content."""
+    await get_current_user(request)
+    body = await request.json()
+    subject = body.get("subject", "")
+    content = body.get("content", "")
+    
+    if not subject or not content:
+        raise HTTPException(status_code=400, detail="Subject and content required")
+    
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        raise HTTPException(status_code=500, detail="RESEND_API_KEY not configured")
+    
+    import resend
+    resend.api_key = resend_key
+    sender = os.environ.get("SENDER_EMAIL", "newsletter@iranobservatory.org")
+    base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org')
+    logo_url = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png"
+    helloasso_url = "https://www.helloasso.com/associations/dorna/formulaires/2"
+    
+    html = f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<div style="max-width:640px;margin:0 auto;background:#fff;">
+  <div style="background:#fff;padding:28px 40px 0;text-align:center;"><img src="{logo_url}" alt="Iran Observatory" style="height:50px;margin-bottom:16px;" /></div>
+  <div style="background:#1E3A5F;padding:20px 40px;text-align:center;">
+    <div style="width:60px;height:3px;background:#3DB883;margin:0 auto 12px;"></div>
+    <p style="color:white;margin:0;font-size:18px;font-weight:bold;">{subject}</p>
+  </div>
+  <div style="padding:32px 40px;">
+    {content}
+  </div>
+  <div style="background:linear-gradient(135deg,#1E3A5F 0%,#2a4d75 100%);padding:24px 40px;text-align:center;">
+    <p style="color:rgba(255,255,255,0.85);font-size:13px;margin:0 0 12px;">Support Iran Observatory's independence</p>
+    <a href="{helloasso_url}" style="display:inline-block;background:#3DB883;color:white;padding:8px 24px;font-size:11px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;font-weight:bold;border-radius:20px;">Support Us</a>
+  </div>
+  <div style="padding:20px 40px;background:#f8f9fb;text-align:center;">
+    <p style="color:#1E3A5F;font-size:12px;font-weight:bold;margin:0 0 4px;">Iran Observatory</p>
+    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/unsubscribe?email={{{{email}}}}" style="color:#999;">Unsubscribe</a></p>
+  </div>
+</div></body></html>"""
+    
+    subscribers = await db.subscribers.find({"newsletter": True}, {"_id": 0, "email": 1}).to_list(10000)
+    if not subscribers:
+        return {"status": "no_subscribers", "sent": 0}
+    
+    sent_count = 0
+    errors = []
+    for sub in subscribers:
+        try:
+            email_html = html.replace("{{email}}", sub["email"])
+            await asyncio.to_thread(resend.Emails.send, {
+                "from": sender,
+                "to": [sub["email"]],
+                "subject": subject,
+                "html": email_html
+            })
+            sent_count += 1
+        except Exception as e:
+            errors.append(f"{sub['email']}: {str(e)}")
+    
+    return {"status": "sent", "sent": sent_count, "total": len(subscribers), "errors": errors[:10]}
 
 @api_router.get("/subscribers")
 async def get_subscribers(request: Request):
@@ -1697,11 +1845,13 @@ async def send_newsletter(request: Request):
     errors = []
     for sub in subscribers:
         try:
+            # Replace unsubscribe placeholder with actual email
+            personalized_html = html_content.replace("{{email}}", sub["email"])
             params = {
                 "from": sender,
                 "to": [sub["email"]],
                 "subject": subject,
-                "html": html_content
+                "html": personalized_html
             }
             await asyncio.to_thread(resend.Emails.send, params)
             sent_count += 1
@@ -1868,7 +2018,7 @@ async def generate_newsletter(request: Request):
       <a href="{base_url}/articles" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Articles</a>
       <a href="{base_url}/studies" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Studies & Briefs</a>
     </div>
-    <p style="color:#bbb;font-size:10px;margin:0;">You received this because you subscribed to Iran Observatory newsletter.</p>
+    <p style="color:#bbb;font-size:10px;margin:0;">You received this because you subscribed to Iran Observatory newsletter.<br><a href="{base_url}/api/unsubscribe?email={{{{email}}}}" style="color:#999;">Unsubscribe</a></p>
   </div>
 
 </div>
