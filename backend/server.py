@@ -1682,7 +1682,7 @@ async def send_newsletter(request: Request):
     
     import resend
     resend.api_key = resend_key
-    sender = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+    sender = os.environ.get("SENDER_EMAIL", "newsletter@iranobservatory.org")
     
     # Get all subscribers who expect newsletter
     subscribers = await db.subscribers.find(
