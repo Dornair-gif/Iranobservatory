@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowRight, ExternalLink, BookOpen, FileText, Radio } from 'lucide-react';
+import { ArrowRight, ExternalLink, BookOpen, FileText, Radio, Eye, Activity } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
@@ -13,26 +13,29 @@ export default function Home() {
   const { t, language, setLanguage } = useLanguage();
   const [articles, setArticles] = useState([]);
   const [studies, setStudies] = useState([]);
+  const [briefing, setBriefing] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        // Fetch all published articles
         const articlesRes = await axios.get(`${API}/articles?status=published&lang=${language}`);
         const allArticles = articlesRes.data;
-        
-        // Separate news from studies/analyses
         const newsArticles = allArticles.filter(a => !a.content_type || a.content_type === 'news');
-        const studiesAndAnalyses = allArticles.filter(a => a.content_type === 'study' || a.content_type === 'analysis');
-        
+        const studiesAndAnalyses = allArticles.filter(a => a.content_type === 'study' || a.content_type === 'analysis' || a.content_type === 'brief');
         setArticles(newsArticles);
         setStudies(studiesAndAnalyses);
       } catch (e) {
         console.error('Failed to fetch content:', e);
-      } finally {
-        setLoading(false);
       }
+      // Fetch dashboard briefing
+      try {
+        const dashRes = await axios.get(`${API}/dashboard/indexes`);
+        if (dashRes.data?.situation_summary) {
+          setBriefing(dashRes.data);
+        }
+      } catch (e) {}
+      setLoading(false);
     };
     fetchContent();
   }, [language]);
@@ -98,50 +101,47 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#3DB883]" />
       </section>
 
-      {/* Main Content */}
+      {/* Main Content — Articles + Briefing Sidebar */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" id="latest">
-        {/* Section Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-[#1E3A5F]">
-            {t('latestNews')}
-          </h2>
-          <Link 
-            to="/articles" 
-            className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#1E3A5F] hover:text-[#3DB883] transition-colors"
-            data-testid="view-all-articles-link"
-          >
-            {language === 'fr' ? 'Tous les articles' : 'All Articles'}
-            <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ArticleCardSkeleton featured />
-            <div className="space-y-4">
-              <ArticleCardSkeleton />
-              <ArticleCardSkeleton />
-              <ArticleCardSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* Left: Articles (2/3) */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-[#1E3A5F]">
+                {t('latestNews')}
+              </h2>
+              <Link 
+                to="/articles" 
+                className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#1E3A5F] hover:text-[#3DB883] transition-colors"
+                data-testid="view-all-articles-link"
+              >
+                {language === 'fr' ? 'Tous les articles' : 'All Articles'}
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+              </Link>
             </div>
-          </div>
-        ) : articles.length === 0 ? (
-          <div className="text-center py-16 border border-zinc-200 bg-zinc-50 rounded-xl">
-            <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
-              {t('noArticles')}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Featured Article — left half */}
-            {featuredArticle && (
-              <div className="animate-fade-up">
-                <ArticleCard article={featuredArticle} featured />
+
+            {loading ? (
+              <div className="space-y-4">
+                <ArticleCardSkeleton featured />
+                <ArticleCardSkeleton />
               </div>
-            )}
-            
-            {/* Side Articles — right half, horizontal compact cards */}
-            {sideArticles.length > 0 && (
-              <div className="flex flex-col gap-4 justify-between">
+            ) : articles.length === 0 ? (
+              <div className="text-center py-16 border border-zinc-200 bg-zinc-50 rounded-xl">
+                <p className="text-zinc-500 font-mono text-sm uppercase tracking-wider">
+                  {t('noArticles')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {/* Featured Article */}
+                {featuredArticle && (
+                  <div className="animate-fade-up">
+                    <ArticleCard article={featuredArticle} featured />
+                  </div>
+                )}
+                
+                {/* Side Articles */}
                 {sideArticles.map((article, index) => (
                   <Link 
                     key={article.id} 
@@ -162,7 +162,7 @@ export default function Home() {
                           {article.published_at ? new Date(article.published_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' }) : ''}
                         </span>
                       </div>
-                      <h3 className="font-heading font-bold text-base leading-snug mb-1.5 group-hover:text-[#1E3A5F] transition-colors line-clamp-2">
+                      <h3 className="font-heading font-bold text-lg leading-snug mb-1.5 group-hover:text-[#1E3A5F] transition-colors line-clamp-2">
                         {article[`title_${language}`] || article.title_en || article.title_fr}
                       </h3>
                       <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed">
@@ -171,8 +171,7 @@ export default function Home() {
                     </div>
                   </Link>
                 ))}
-                
-                {/* View All button at bottom of side column */}
+
                 <Link 
                   to="/articles" 
                   className="flex items-center justify-center gap-2 py-3 border border-[#1E3A5F] text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:bg-[#1E3A5F] hover:text-white transition-colors rounded-lg"
@@ -183,7 +182,61 @@ export default function Home() {
               </div>
             )}
           </div>
-        )}
+
+          {/* Right: Situation Briefing Sidebar (1/3) */}
+          <div className="space-y-6">
+            {/* Situation Briefing */}
+            {briefing?.situation_summary && (
+              <div className="bg-[#1E3A5F] text-white rounded-xl p-6 sticky top-4" data-testid="home-briefing">
+                <div className="flex items-center gap-2 mb-4">
+                  <Eye className="w-5 h-5 text-[#3DB883]" strokeWidth={1.5} />
+                  <h3 className="font-heading font-black text-xl tracking-tight">
+                    {language === 'fr' ? 'Situation' : 'Briefing'}
+                  </h3>
+                  <Activity className="w-3 h-3 text-[#3DB883] animate-pulse ml-auto" />
+                </div>
+                <ul className="space-y-3 mb-5">
+                  {(Array.isArray(briefing.situation_summary) ? briefing.situation_summary : [briefing.situation_summary]).slice(0, 4).map((b, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-200 leading-relaxed">
+                      <span className="text-[#3DB883] mt-0.5 flex-shrink-0 font-bold">&#8226;</span>
+                      <span className="line-clamp-3">{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link 
+                  to="/monitor" 
+                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#3DB883] text-white text-xs font-mono uppercase tracking-wider hover:bg-[#2D9E6E] transition-colors rounded"
+                  data-testid="home-monitor-link"
+                >
+                  {language === 'fr' ? 'Iran Monitor' : 'Iran Monitor'}
+                  <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+                </Link>
+              </div>
+            )}
+
+            {/* Weekly Briefs Link */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-5 h-5 text-amber-600" strokeWidth={1.5} />
+                <h3 className="font-heading font-bold text-lg text-[#1E3A5F]">
+                  {language === 'fr' ? 'Briefs Hebdo' : 'Weekly Briefs'}
+                </h3>
+              </div>
+              <p className="text-sm text-zinc-600 mb-4 leading-relaxed">
+                {language === 'fr' 
+                  ? 'Chaque lundi, un résumé analytique de la semaine sur l\'Iran.'
+                  : 'Every Monday, an analytical summary of the week on Iran.'}
+              </p>
+              <Link 
+                to="/studies" 
+                className="flex items-center gap-2 text-amber-700 font-mono text-xs uppercase tracking-wider hover:text-amber-900 transition-colors"
+              >
+                {language === 'fr' ? 'Voir les briefs' : 'View Briefs'}
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </Link>
+            </div>
+          </div>
+        </div>
       </main>
 
       {/* Live News Feed - Extended */}
@@ -193,10 +246,10 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <Radio className="w-8 h-8 text-[#3DB883]" strokeWidth={1.5} />
               <div>
-                <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-white">
+                <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-white">
                   {language === 'fr' ? 'Fil d\'Actualités en Direct' : language === 'fa' ? 'اخبار زنده' : 'Live News Feed'}
                 </h2>
-                <p className="text-zinc-400 text-sm mt-1">
+                <p className="text-zinc-400 text-base mt-1">
                   {language === 'fr' ? 'Suivez nos dernières publications sur les réseaux sociaux' : 
                    language === 'fa' ? 'آخرین پست‌های ما در شبکه‌های اجتماعی' : 
                    'Follow our latest posts from social media'}
@@ -237,7 +290,7 @@ export default function Home() {
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <BookOpen className="w-6 h-6 text-[#1E3A5F]" strokeWidth={1.5} />
-                <h2 className="font-heading font-black text-2xl sm:text-3xl tracking-tighter text-[#1E3A5F]">
+                <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-[#1E3A5F]">
                   {language === 'fr' ? 'Études & Analyses' : language === 'fa' ? 'مطالعات و تحلیل‌ها' : 'Studies & Analysis'}
                 </h2>
               </div>

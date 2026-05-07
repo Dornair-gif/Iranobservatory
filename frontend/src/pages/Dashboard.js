@@ -105,19 +105,19 @@ export default function Dashboard() {
 
         {/* BRIEFING */}
         {data.situation_summary && (
-          <section className="bg-white border border-zinc-200 rounded-xl p-6 lg:p-8 shadow-sm">
-            <h2 className="text-sm font-mono text-[#1E3A5F] uppercase tracking-widest mb-5 font-bold">
+          <section className="bg-white border-2 border-[#1E3A5F]/20 rounded-xl p-6 lg:p-8 shadow-md">
+            <h2 className="text-base font-mono text-[#1E3A5F] uppercase tracking-widest mb-5 font-black">
               {language === 'fr' ? 'Briefing' : 'Situation Briefing'}
             </h2>
-            <ul className="space-y-3">
+            <ul className="space-y-4">
               {(Array.isArray(data.situation_summary) ? data.situation_summary : [data.situation_summary]).map((b, i) => (
-                <li key={i} className="flex items-start gap-3 text-[17px] text-zinc-700 leading-relaxed">
-                  <span className="text-[#1E3A5F] mt-0.5 flex-shrink-0 text-xl font-bold">&#8226;</span>{b}
+                <li key={i} className="flex items-start gap-3 text-[17px] text-zinc-800 leading-relaxed font-medium">
+                  <span className="text-[#1E3A5F] mt-0.5 flex-shrink-0 text-xl font-black">&#8226;</span>{b}
                 </li>
               ))}
             </ul>
             {data.updated_context && (
-              <p className="mt-5 pt-5 border-t border-zinc-100 text-base text-zinc-500 leading-relaxed italic">{data.updated_context}</p>
+              <p className="mt-5 pt-5 border-t border-zinc-200 text-base text-zinc-500 leading-relaxed italic">{data.updated_context}</p>
             )}
           </section>
         )}
