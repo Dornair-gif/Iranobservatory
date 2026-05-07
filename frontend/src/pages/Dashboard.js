@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Activity, AlertTriangle, DollarSign, Users, Scale, 
   Shield, Wifi, WifiOff, TrendingUp, TrendingDown,
-  Eye, Calendar, ExternalLink, Skull, Lock, Megaphone, Anchor, Waves
+  Eye, Calendar, ExternalLink, Skull, Lock, Megaphone, Anchor, Waves, Heart
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import SEO from '../components/SEO';
@@ -524,16 +524,21 @@ export default function Dashboard() {
         </div>
 
         {/* Support Banner */}
-        <div className="mt-6 py-4 border-t border-white/5 text-center">
-          <p className="text-sm text-zinc-500">
-            {language === 'fr' 
-              ? 'Si ce briefing vous est utile, soutenez l\'indépendance de l\'Iran Observatory.'
-              : 'If this briefing is useful to your work, consider supporting Iran Observatory\'s independence.'}
-            {' '}
-            <a href="https://www.helloasso.com/associations/dorna/formulaires/2" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-[#2D9E6E] transition-colors underline underline-offset-2">
-              {language === 'fr' ? 'Soutenir' : 'Support us'}
-            </a>
-          </p>
+        <div className="mt-6 bg-gradient-to-r from-[#162640] via-[#1E3A5F] to-[#162640] border border-[#3DB883]/20 rounded-xl py-5 px-6 flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#3DB883]/15 flex items-center justify-center flex-shrink-0">
+              <Heart className="w-4.5 h-4.5 text-[#3DB883]" strokeWidth={1.5} />
+            </div>
+            <p className="text-sm text-zinc-300">
+              {language === 'fr' 
+                ? 'Si ce briefing vous est utile, soutenez l\'indépendance de l\'Iran Observatory.'
+                : 'If this briefing is useful to your work, consider supporting Iran Observatory\'s independence.'}
+            </p>
+          </div>
+          <a href="https://www.helloasso.com/associations/dorna/formulaires/2" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2 bg-[#3DB883] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2D9E6E] transition-colors rounded-full flex-shrink-0 shadow-lg shadow-[#3DB883]/20">
+            <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
+            {language === 'fr' ? 'Soutenir' : 'Support us'}
+          </a>
         </div>
       </main>
     </div>

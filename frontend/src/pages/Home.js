@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowRight, ExternalLink, BookOpen, FileText, Radio, Eye, Activity } from 'lucide-react';
+import { ArrowRight, ExternalLink, BookOpen, FileText, Radio, Eye, Activity, Heart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
@@ -352,14 +352,20 @@ export default function Home() {
       )}
 
       {/* Support Banner */}
-      <div className="bg-[#f8f9fb] border-t border-zinc-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-center gap-3 text-center">
-          <p className="text-sm text-zinc-500">
-            {language === 'fr' 
-              ? 'Si ces analyses vous sont utiles, soutenez l\'indépendance de l\'Iran Observatory.'
-              : 'If this work is useful to you, consider supporting Iran Observatory\'s independence.'}
-          </p>
-          <a href="https://www.helloasso.com/associations/dorna/formulaires/2" target="_blank" rel="noopener noreferrer" className="text-sm font-mono text-[#3DB883] hover:text-[#2D9E6E] transition-colors underline underline-offset-2 flex-shrink-0">
+      <div className="bg-gradient-to-r from-[#1E3A5F] via-[#2a4d75] to-[#1E3A5F]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#3DB883]/20 flex items-center justify-center flex-shrink-0">
+              <Heart className="w-5 h-5 text-[#3DB883]" strokeWidth={1.5} />
+            </div>
+            <p className="text-base text-white/90 font-medium">
+              {language === 'fr' 
+                ? 'Si ces analyses vous sont utiles, soutenez l\'indépendance de l\'Iran Observatory.'
+                : 'If this work is useful to you, consider supporting Iran Observatory\'s independence.'}
+            </p>
+          </div>
+          <a href="https://www.helloasso.com/associations/dorna/formulaires/2" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#3DB883] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2D9E6E] transition-colors rounded-full flex-shrink-0 shadow-lg shadow-[#3DB883]/20">
+            <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
             {language === 'fr' ? 'Soutenir' : 'Support us'}
           </a>
         </div>
