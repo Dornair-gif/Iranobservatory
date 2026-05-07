@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowRight, ExternalLink, BookOpen, FileText, Radio, Eye, Activity, Heart } from 'lucide-react';
+import { ArrowRight, ExternalLink, BookOpen, FileText, Radio, Eye, Activity, Heart, Mail } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
@@ -15,6 +15,8 @@ export default function Home() {
   const [studies, setStudies] = useState([]);
   const [briefing, setBriefing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [nlEmail, setNlEmail] = useState('');
+  const [nlStatus, setNlStatus] = useState(null);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -368,6 +370,74 @@ export default function Home() {
             <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
             {language === 'fr' ? 'Soutenir' : 'Support us'}
           </a>
+        </div>
+      </div>
+
+      {/* Newsletter Signup */}
+      <div className="bg-[#f8f9fb] border-t border-zinc-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="max-w-xl mx-auto text-center">
+            <div className="w-12 h-12 rounded-full bg-[#1E3A5F]/10 flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-6 h-6 text-[#1E3A5F]" strokeWidth={1.5} />
+            </div>
+            <h3 className="font-heading font-black text-2xl text-[#1E3A5F] tracking-tight mb-2">
+              {language === 'fr' ? 'Restez informé' : 'Stay Informed'}
+            </h3>
+            <p className="text-sm text-zinc-500 mb-5">
+              {language === 'fr' 
+                ? 'Recevez notre brief hebdomadaire et les articles clés directement dans votre boîte mail.'
+                : 'Get our weekly intelligence brief and featured articles delivered to your inbox.'}
+            </p>
+            {nlStatus === 'success' ? (
+              <div className="flex items-center justify-center gap-2 py-3 text-[#3DB883] font-mono text-sm">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                {language === 'fr' ? 'Inscription confirmée !' : 'You\'re subscribed!'}
+              </div>
+            ) : (
+              <form 
+                className="flex gap-2 max-w-md mx-auto"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!nlEmail || !nlEmail.includes('@')) return;
+                  try {
+                    await axios.post(`${API}/subscribers`, { email: nlEmail, newsletter: true });
+                    setNlStatus('success');
+                    setNlEmail('');
+                  } catch (err) {
+                    if (err.response?.status === 409) {
+                      setNlStatus('success');
+                    } else {
+                      setNlStatus('error');
+                    }
+                  }
+                }}
+                data-testid="newsletter-signup"
+              >
+                <input
+                  type="email"
+                  value={nlEmail}
+                  onChange={(e) => setNlEmail(e.target.value)}
+                  placeholder={language === 'fr' ? 'Votre email' : 'Your email address'}
+                  className="flex-1 px-4 py-3 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:border-[#1E3A5F] focus:ring-1 focus:ring-[#1E3A5F]"
+                  required
+                  data-testid="newsletter-email-input"
+                />
+                <button 
+                  type="submit"
+                  className="px-6 py-3 bg-[#1E3A5F] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2a4d75] transition-colors rounded-lg flex-shrink-0"
+                  data-testid="newsletter-submit-btn"
+                >
+                  {language === 'fr' ? 'S\'inscrire' : 'Subscribe'}
+                </button>
+              </form>
+            )}
+            {nlStatus === 'error' && (
+              <p className="text-red-500 text-xs mt-2">{language === 'fr' ? 'Erreur, veuillez réessayer.' : 'Error, please try again.'}</p>
+            )}
+            <p className="text-[10px] text-zinc-400 mt-3">
+              {language === 'fr' ? 'Pas de spam. Désinscription à tout moment.' : 'No spam. Unsubscribe anytime.'}
+            </p>
+          </div>
         </div>
       </div>
 

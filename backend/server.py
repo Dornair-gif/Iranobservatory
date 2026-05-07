@@ -1686,7 +1686,7 @@ async def send_newsletter(request: Request):
     
     # Get all subscribers who expect newsletter
     subscribers = await db.subscribers.find(
-        {"expects_newsletter": True},
+        {"newsletter": True},
         {"_id": 0, "email": 1}
     ).to_list(10000)
     
@@ -1744,8 +1744,10 @@ async def generate_newsletter(request: Request):
 <div style="max-width:640px;margin:0 auto;background:#ffffff;">
 
   <!-- Header -->
-  <div style="background:#1E3A5F;padding:32px 40px;text-align:center;">
-    <img src="{logo_url}" alt="Iran Observatory" style="height:50px;margin-bottom:12px;" />
+  <div style="background:#ffffff;padding:28px 40px 0;text-align:center;">
+    <img src="{logo_url}" alt="Iran Observatory" style="height:55px;margin-bottom:16px;" />
+  </div>
+  <div style="background:#1E3A5F;padding:20px 40px;text-align:center;">
     <div style="width:60px;height:3px;background:#3DB883;margin:0 auto 12px;"></div>
     <p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">Weekly Newsletter</p>
     <p style="color:rgba(255,255,255,0.5);margin:6px 0 0;font-size:11px;">{today_str}</p>
