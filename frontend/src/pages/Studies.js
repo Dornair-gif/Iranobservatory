@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowRight, BookOpen, Calendar, FileText } from 'lucide-react';
+import { ArrowRight, BookOpen, Calendar, FileText, FileDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
@@ -125,9 +125,22 @@ export default function Studies() {
                         <p className="text-sm text-zinc-500 line-clamp-3 leading-relaxed">
                           {getArticleField(brief, 'summary')}
                         </p>
-                        <div className="flex items-center gap-1 text-amber-600 font-mono text-xs uppercase tracking-wider mt-4">
-                          {t('readMore')}
-                          <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                        <div className="flex items-center gap-3 mt-4">
+                          <span className="flex items-center gap-1 text-amber-600 font-mono text-xs uppercase tracking-wider">
+                            {t('readMore')}
+                            <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                          </span>
+                          <a 
+                            href={`${API}/articles/${brief.id}/pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:text-[#3DB883] transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`brief-pdf-${brief.id}`}
+                          >
+                            <FileDown className="w-3 h-3" strokeWidth={1.5} />
+                            PDF
+                          </a>
                         </div>
                       </div>
                     </Link>

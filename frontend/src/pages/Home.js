@@ -79,10 +79,10 @@ export default function Home() {
             <h1 className="font-heading font-black text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-none mb-4 animate-fade-up-delay-1">
               {t('siteName')}
             </h1>
-            <p className="text-lg sm:text-xl text-zinc-200 mb-4 animate-fade-up-delay-2">
+            <p className="text-xl sm:text-2xl lg:text-3xl text-white font-heading font-bold mb-4 animate-fade-up-delay-2 tracking-tight leading-snug">
               {t('tagline')}
             </p>
-            <p className="text-base text-[#3DB883] font-medium mb-8 animate-fade-up-delay-2 italic">
+            <p className="text-lg sm:text-xl text-[#3DB883] font-bold mb-8 animate-fade-up-delay-2">
               "{t('motto')}"
             </p>
             <div className="flex flex-wrap gap-4 animate-fade-up-delay-3">

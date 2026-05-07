@@ -970,6 +970,72 @@ async def serve_file(filename: str):
     media_types = {'pdf': 'application/pdf', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp', 'gif': 'image/gif'}
     return FileResponse(file_path, media_type=media_types.get(ext, 'application/octet-stream'), filename=filename)
 
+# Generate PDF from article HTML content
+@api_router.get("/articles/{article_id}/pdf")
+async def generate_article_pdf(article_id: str):
+    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    # Check if PDF already cached
+    safe_name = f"brief-{article_id}.pdf"
+    pdf_path = UPLOAD_DIR / safe_name
+    if pdf_path.exists():
+        return FileResponse(pdf_path, media_type="application/pdf", filename=f"{article.get('title_en', 'brief')[:50]}.pdf")
+    
+    title = article.get("title_en", "") or article.get("title_fr", "")
+    content = article.get("content_en", "") or article.get("content_fr", "")
+    summary = article.get("summary_en", "") or article.get("summary_fr", "")
+    
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a2e; margin: 40px; line-height: 1.7; }}
+  .header {{ border-bottom: 3px solid #1E3A5F; padding-bottom: 20px; margin-bottom: 30px; }}
+  .header h1 {{ color: #1E3A5F; font-size: 28px; margin: 0 0 8px; }}
+  .header .org {{ color: #3DB883; font-size: 12px; text-transform: uppercase; letter-spacing: 3px; }}
+  .header .date {{ color: #888; font-size: 12px; }}
+  .summary {{ background: #f0f5fa; padding: 16px 20px; border-left: 4px solid #1E3A5F; margin-bottom: 24px; font-style: italic; color: #444; }}
+  h2 {{ color: #1E3A5F; font-size: 20px; border-bottom: 1px solid #e0e0e0; padding-bottom: 6px; margin-top: 28px; }}
+  h3 {{ color: #1E3A5F; font-size: 16px; margin-top: 20px; }}
+  p {{ color: #333; margin-bottom: 12px; }}
+  ul, ol {{ color: #333; padding-left: 24px; }}
+  li {{ margin-bottom: 6px; }}
+  a {{ color: #1E3A5F; }}
+  table {{ width: 100%; border-collapse: collapse; margin: 16px 0; }}
+  td, th {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+  th {{ background: #f0f5fa; color: #1E3A5F; font-weight: bold; }}
+  .footer {{ margin-top: 40px; padding-top: 16px; border-top: 2px solid #1E3A5F; color: #888; font-size: 11px; text-align: center; }}
+  img {{ max-width: 100%; }}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="org">Iran Observatory &mdash; Observatoire de l'Iran</div>
+    <h1>{title}</h1>
+    <div class="date">{article.get('created_at', '').strftime('%B %d, %Y') if hasattr(article.get('created_at', ''), 'strftime') else ''}</div>
+  </div>
+  <div class="summary">{summary}</div>
+  {content}
+  <div class="footer">
+    Iran Observatory | iranobservatory.org<br>
+    Independent platform for fact-based analysis on Iran
+  </div>
+</body>
+</html>"""
+    
+    try:
+        from weasyprint import HTML as WeasyHTML
+        pdf_bytes = await asyncio.to_thread(lambda: WeasyHTML(string=html).write_pdf())
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_bytes)
+        return FileResponse(pdf_path, media_type="application/pdf", filename=f"{title[:50]}.pdf")
+    except Exception as e:
+        logger.error(f"PDF generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
 # Subscriber / Email collection endpoints
 @api_router.post("/subscribers")
 async def subscribe(request: Request):

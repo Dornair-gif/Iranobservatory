@@ -175,6 +175,33 @@ export default function Article() {
           </div>
         )}
 
+        {/* Brief PDF Download — auto-generated */}
+        {article.content_type === 'brief' && !article.pdf_url && (
+          <div className="mt-10 p-6 sm:p-8 bg-amber-50 border border-amber-200 rounded-xl" data-testid="brief-pdf-download">
+            <div className="flex items-start gap-4">
+              <FileDown className="w-8 h-8 text-amber-600 flex-shrink-0 mt-1" strokeWidth={1.5} />
+              <div className="flex-1">
+                <h3 className="font-heading font-bold text-lg text-[#1E3A5F] mb-1">
+                  {language === 'fr' ? 'Télécharger le brief en PDF' : 'Download Brief as PDF'}
+                </h3>
+                <p className="text-sm text-zinc-500 mb-3">
+                  {language === 'fr' ? 'Version PDF formatée pour impression et partage' : 'Formatted PDF version for print and sharing'}
+                </p>
+                <a
+                  href={`${API}/articles/${id}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A5F] text-white text-sm font-mono uppercase tracking-wider hover:bg-[#2a4d75] transition-colors rounded"
+                  data-testid="brief-pdf-btn"
+                >
+                  <FileDown className="w-4 h-4" strokeWidth={1.5} />
+                  {language === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* PDF Download Section */}
         {article.pdf_url && (
           <div className="mt-10 p-6 sm:p-8 bg-[#f0f5fa] border border-[#1E3A5F]/10" data-testid="pdf-download-section">
