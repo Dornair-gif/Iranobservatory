@@ -882,6 +882,89 @@ async def update_article(article_id: str, data: ArticleUpdate, request: Request)
     
     return {"message": "Article updated"}
 
+@api_router.delete("/articles/{article_id}")
+async def delete_article(article_id: str, request: Request):
+    await get_current_user(request)
+    result = await db.articles.delete_one({"_id": ObjectId(article_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return {"message": "Article deleted"}
+
+# Dynamic sitemap.xml
+@api_router.get("/sitemap.xml")
+async def sitemap():
+    from fastapi.responses import Response
+    base_url = "https://iranobservatory.org"
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    urls = [
+        {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
+        {"loc": f"{base_url}/articles", "changefreq": "daily", "priority": "0.9"},
+        {"loc": f"{base_url}/studies", "changefreq": "weekly", "priority": "0.9"},
+        {"loc": f"{base_url}/monitor", "changefreq": "daily", "priority": "0.9"},
+    ]
+    
+    # Add all published articles
+    articles = await db.articles.find(
+        {"status": "published"},
+        {"_id": 1, "updated_at": 1, "content_type": 1}
+    ).sort("created_at", -1).to_list(500)
+    
+    for article in articles:
+        aid = str(article["_id"])
+        lastmod = article.get("updated_at", "").strftime("%Y-%m-%d") if hasattr(article.get("updated_at", ""), "strftime") else now
+        priority = "0.8" if article.get("content_type") in ("study", "analysis", "brief") else "0.7"
+        urls.append({"loc": f"{base_url}/article/{aid}", "lastmod": lastmod, "changefreq": "monthly", "priority": priority})
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for u in urls:
+        xml += '  <url>\n'
+        xml += f'    <loc>{u["loc"]}</loc>\n'
+        if u.get("lastmod"):
+            xml += f'    <lastmod>{u["lastmod"]}</lastmod>\n'
+        xml += f'    <changefreq>{u["changefreq"]}</changefreq>\n'
+        xml += f'    <priority>{u["priority"]}</priority>\n'
+        xml += '  </url>\n'
+    xml += '</urlset>'
+    
+    return Response(content=xml, media_type="application/xml")
+
+# SEO: Pre-render meta tags for social sharing and crawlers
+@api_router.get("/og/article/{article_id}")
+async def article_og_meta(article_id: str):
+    """Return pre-rendered HTML with meta tags for an article — for link previews and SEO crawlers."""
+    from fastapi.responses import HTMLResponse
+    article = await db.articles.find_one({"_id": ObjectId(article_id)}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404)
+    
+    title = article.get("title_en", "") or article.get("title_fr", "")
+    desc = article.get("summary_en", "") or article.get("summary_fr", "")
+    image = article.get("image_url", "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png")
+    url = f"https://iranobservatory.org/article/{article_id}"
+    
+    html = f"""<!DOCTYPE html><html><head>
+<title>{title} | Iran Observatory</title>
+<meta name="description" content="{desc[:160]}" />
+<link rel="canonical" href="{url}" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="{url}" />
+<meta property="og:title" content="{title}" />
+<meta property="og:description" content="{desc[:160]}" />
+<meta property="og:image" content="{image}" />
+<meta property="og:site_name" content="Iran Observatory" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{title}" />
+<meta name="twitter:description" content="{desc[:160]}" />
+<meta name="twitter:image" content="{image}" />
+<script type="application/ld+json">
+{{"@context":"https://schema.org","@type":"Article","headline":"{title}","description":"{desc[:160]}","image":"{image}","url":"{url}","publisher":{{"@type":"Organization","name":"Iran Observatory"}}}}
+</script>
+<meta http-equiv="refresh" content="0;url={url}" />
+</head><body><p>Redirecting to <a href="{url}">{title}</a></p></body></html>"""
+    return HTMLResponse(content=html)
+
 @api_router.post("/articles/{article_id}/publish")
 async def publish_article(article_id: str, request: Request):
     await get_current_user(request)
@@ -986,49 +1069,76 @@ async def generate_article_pdf(article_id: str):
     title = article.get("title_en", "") or article.get("title_fr", "")
     content = article.get("content_en", "") or article.get("content_fr", "")
     summary = article.get("summary_en", "") or article.get("summary_fr", "")
-    
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  body {{ font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a2e; margin: 40px; line-height: 1.7; }}
-  .header {{ border-bottom: 3px solid #1E3A5F; padding-bottom: 20px; margin-bottom: 30px; }}
-  .header h1 {{ color: #1E3A5F; font-size: 28px; margin: 0 0 8px; }}
-  .header .org {{ color: #3DB883; font-size: 12px; text-transform: uppercase; letter-spacing: 3px; }}
-  .header .date {{ color: #888; font-size: 12px; }}
-  .summary {{ background: #f0f5fa; padding: 16px 20px; border-left: 4px solid #1E3A5F; margin-bottom: 24px; font-style: italic; color: #444; }}
-  h2 {{ color: #1E3A5F; font-size: 20px; border-bottom: 1px solid #e0e0e0; padding-bottom: 6px; margin-top: 28px; }}
-  h3 {{ color: #1E3A5F; font-size: 16px; margin-top: 20px; }}
-  p {{ color: #333; margin-bottom: 12px; }}
-  ul, ol {{ color: #333; padding-left: 24px; }}
-  li {{ margin-bottom: 6px; }}
-  a {{ color: #1E3A5F; }}
-  table {{ width: 100%; border-collapse: collapse; margin: 16px 0; }}
-  td, th {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-  th {{ background: #f0f5fa; color: #1E3A5F; font-weight: bold; }}
-  .footer {{ margin-top: 40px; padding-top: 16px; border-top: 2px solid #1E3A5F; color: #888; font-size: 11px; text-align: center; }}
-  img {{ max-width: 100%; }}
-</style>
-</head>
-<body>
-  <div class="header">
-    <div class="org">Iran Observatory &mdash; Observatoire de l'Iran</div>
-    <h1>{title}</h1>
-    <div class="date">{article.get('created_at', '').strftime('%B %d, %Y') if hasattr(article.get('created_at', ''), 'strftime') else ''}</div>
-  </div>
-  <div class="summary">{summary}</div>
-  {content}
-  <div class="footer">
-    Iran Observatory | iranobservatory.org<br>
-    Independent platform for fact-based analysis on Iran
-  </div>
-</body>
-</html>"""
+    date_str = article.get('created_at', '').strftime('%B %d, %Y') if hasattr(article.get('created_at', ''), 'strftime') else ''
     
     try:
-        from weasyprint import HTML as WeasyHTML
-        pdf_bytes = await asyncio.to_thread(lambda: WeasyHTML(string=html).write_pdf())
+        import re, io, html as html_mod
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.colors import HexColor
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+        from reportlab.lib.units import mm
+        
+        def strip_html(html_str):
+            text = re.sub(r'<br\s*/?>', '\n', html_str)
+            text = re.sub(r'</(p|div|h[1-6]|li|tr)>', '\n', text)
+            text = re.sub(r'<li[^>]*>', '  \u2022 ', text)
+            text = re.sub(r'<[^>]+>', '', text)
+            text = html_mod.unescape(text)
+            return re.sub(r'\n{3,}', '\n\n', text).strip()
+        
+        sections = []
+        h2_parts = re.split(r'<h2[^>]*>(.*?)</h2>', content, flags=re.DOTALL)
+        if len(h2_parts) > 1:
+            for i in range(1, len(h2_parts), 2):
+                heading = strip_html(h2_parts[i])
+                body = strip_html(h2_parts[i + 1]) if i + 1 < len(h2_parts) else ''
+                sections.append((heading, body))
+        else:
+            sections.append(('', strip_html(content)))
+        
+        def gen_pdf():
+            buf = io.BytesIO()
+            doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm)
+            
+            styles = getSampleStyleSheet()
+            styles.add(ParagraphStyle('OrgName', parent=styles['Normal'], fontSize=10, textColor=HexColor('#3DB883'), spaceAfter=2, fontName='Helvetica-Bold'))
+            styles.add(ParagraphStyle('DateLine', parent=styles['Normal'], fontSize=8, textColor=HexColor('#999999'), spaceAfter=4))
+            styles.add(ParagraphStyle('BriefTitle', parent=styles['Title'], fontSize=20, textColor=HexColor('#1E3A5F'), spaceAfter=8, fontName='Helvetica-Bold'))
+            styles.add(ParagraphStyle('Summary', parent=styles['Normal'], fontSize=11, textColor=HexColor('#555555'), spaceAfter=12, fontName='Helvetica-Oblique', backColor=HexColor('#f5f7fa'), borderPadding=8))
+            styles.add(ParagraphStyle('SectionHead', parent=styles['Heading2'], fontSize=14, textColor=HexColor('#1E3A5F'), spaceBefore=12, spaceAfter=6, fontName='Helvetica-Bold'))
+            styles.add(ParagraphStyle('BodyPara', parent=styles['Normal'], fontSize=10, textColor=HexColor('#333333'), spaceAfter=6, leading=15))
+            styles.add(ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, textColor=HexColor('#999999'), alignment=1))
+            
+            story = []
+            story.append(Paragraph('IRAN OBSERVATORY', styles['OrgName']))
+            story.append(Paragraph(f'Independent Insights into Iran | {date_str}', styles['DateLine']))
+            story.append(HRFlowable(width='100%', color=HexColor('#1E3A5F'), thickness=1.5, spaceAfter=10))
+            story.append(Paragraph(title, styles['BriefTitle']))
+            if summary:
+                story.append(Paragraph(summary, styles['Summary']))
+            story.append(Spacer(1, 6))
+            
+            for heading, body in sections:
+                if heading:
+                    story.append(Paragraph(heading, styles['SectionHead']))
+                    story.append(HRFlowable(width='100%', color=HexColor('#e0e0e0'), thickness=0.5, spaceAfter=4))
+                if body:
+                    for para in body.split('\n'):
+                        para = para.strip()
+                        if para:
+                            story.append(Paragraph(para, styles['BodyPara']))
+                    story.append(Spacer(1, 4))
+            
+            story.append(Spacer(1, 12))
+            story.append(HRFlowable(width='100%', color=HexColor('#1E3A5F'), thickness=1, spaceAfter=6))
+            story.append(Paragraph('Iran Observatory | iranobservatory.org', styles['Footer']))
+            story.append(Paragraph('Independent platform for fact-based analysis on Iran', styles['Footer']))
+            
+            doc.build(story)
+            return buf.getvalue()
+        
+        pdf_bytes = await asyncio.to_thread(gen_pdf)
         with open(pdf_path, "wb") as f:
             f.write(pdf_bytes)
         return FileResponse(pdf_path, media_type="application/pdf", filename=f"{title[:50]}.pdf")

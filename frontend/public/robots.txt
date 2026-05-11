@@ -5,14 +5,15 @@ User-agent: *
 Allow: /
 Allow: /articles
 Allow: /studies
+Allow: /monitor
 Allow: /article/*
 
 Disallow: /admin
 Disallow: /login
 Disallow: /api/
 
-# Sitemap
-Sitemap: https://iranobservatory.org/sitemap.xml
+# Sitemaps
+Sitemap: https://iranobservatory.org/api/sitemap.xml
 
-# Crawl-delay for politeness
+# Crawl-delay
 Crawl-delay: 1

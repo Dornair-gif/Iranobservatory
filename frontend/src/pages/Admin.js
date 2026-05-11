@@ -509,6 +509,14 @@ export default function Admin() {
                         >
                           <Send className="w-3 h-3" strokeWidth={1.5} />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-none border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={() => handleDeleteArticle(article.id)}
+                        >
+                          <Trash2 className="w-3 h-3" strokeWidth={1.5} />
+                        </Button>
                       </div>
                     </div>
                   ))}
