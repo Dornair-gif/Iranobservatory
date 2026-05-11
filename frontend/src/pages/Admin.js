@@ -66,6 +66,9 @@ export default function Admin() {
   const [customSubject, setCustomSubject] = useState('');
   const [customContent, setCustomContent] = useState('');
   const [subscribers, setSubscribers] = useState([]);
+  const [founder, setFounder] = useState({ enabled: false, intro_text: '', photo_url: '', name: '', title: '', signature_url: '' });
+  const [savingFounder, setSavingFounder] = useState(false);
+  const [uploadingFounderPhoto, setUploadingFounderPhoto] = useState(false);
   const [newArticle, setNewArticle] = useState({
     title_en: '', title_fr: '', title_fa: '',
     content_en: '', content_fr: '', content_fa: '',
@@ -82,6 +85,7 @@ export default function Admin() {
       fetchFeeds();
       fetchRssItems();
       fetchSubscribers();
+      fetchFounder();
     }
   }, [user]);
 
@@ -151,6 +155,59 @@ export default function Admin() {
       setSubscribers(response.data);
     } catch (e) {
       console.error('Failed to fetch subscribers:', e);
+    }
+  };
+
+  const fetchFounder = async () => {
+    try {
+      const response = await axios.get(`${API}/settings/founder`, axiosConfig);
+      setFounder({
+        enabled: !!response.data.enabled,
+        intro_text: response.data.intro_text || '',
+        photo_url: response.data.photo_url || '',
+        name: response.data.name || '',
+        title: response.data.title || '',
+        signature_url: response.data.signature_url || ''
+      });
+    } catch (e) {
+      console.error('Failed to fetch founder settings:', e);
+    }
+  };
+
+  const saveFounder = async () => {
+    setSavingFounder(true);
+    try {
+      await axios.put(`${API}/settings/founder`, founder, axiosConfig);
+      toast.success('Founder introduction saved');
+    } catch (e) {
+      toast.error('Failed to save founder settings');
+    } finally {
+      setSavingFounder(false);
+    }
+  };
+
+  const handleFounderPhotoUpload = async (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const ext = file.name.toLowerCase().split('.').pop();
+    if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+      toast.error('Only image files allowed');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    setUploadingFounderPhoto(true);
+    try {
+      const response = await axios.post(`${API}/upload/image`, formData, {
+        ...axiosConfig,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFounder(prev => ({ ...prev, [field]: response.data.image_url }));
+      toast.success('Photo uploaded');
+    } catch (err) {
+      toast.error('Failed to upload photo');
+    } finally {
+      setUploadingFounderPhoto(false);
     }
   };
 
@@ -895,6 +952,146 @@ export default function Admin() {
                 <Textarea name="emails" placeholder={"email1@example.com\nemail2@example.com\nemail3@example.com"} className="rounded-none font-mono text-sm" rows={4} />
                 <Button type="submit" className="rounded-none bg-[#1E3A5F]">Add All</Button>
               </form>
+            </div>
+
+            {/* Founder Introduction */}
+            <div className="bg-white border border-zinc-200 p-6" data-testid="founder-intro-section">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-heading font-bold text-lg">Founder Introduction</h3>
+                <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={founder.enabled}
+                    onChange={(e) => setFounder(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="rounded-none"
+                    data-testid="founder-enabled-checkbox"
+                  />
+                  <span>Include in auto newsletter</span>
+                </label>
+              </div>
+              <p className="text-sm text-zinc-500 mb-4">Personal note from the founder shown at the top of the weekly newsletter.</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Name</Label>
+                      <Input
+                        placeholder="e.g. Jane Doe"
+                        className="rounded-none mt-1"
+                        value={founder.name}
+                        onChange={(e) => setFounder(prev => ({ ...prev, name: e.target.value }))}
+                        data-testid="founder-name"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Title</Label>
+                      <Input
+                        placeholder="e.g. Director"
+                        className="rounded-none mt-1"
+                        value={founder.title}
+                        onChange={(e) => setFounder(prev => ({ ...prev, title: e.target.value }))}
+                        data-testid="founder-title"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-zinc-500 uppercase tracking-wider">Introduction Text</Label>
+                    <Textarea
+                      placeholder="Dear readers,&#10;&#10;This week we focus on..."
+                      className="rounded-none mt-1 font-mono text-sm"
+                      rows={5}
+                      value={founder.intro_text}
+                      onChange={(e) => setFounder(prev => ({ ...prev, intro_text: e.target.value }))}
+                      data-testid="founder-intro-text"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-zinc-500 uppercase tracking-wider">Photo</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      {founder.photo_url && (
+                        <img src={founder.photo_url} alt="founder" className="w-14 h-14 rounded-full object-cover border border-zinc-200" data-testid="founder-photo-preview" />
+                      )}
+                      <label className="flex-1 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFounderPhotoUpload(e, 'photo_url')}
+                          data-testid="founder-photo-upload"
+                        />
+                        <div className="border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 text-center">
+                          {uploadingFounderPhoto ? 'Uploading...' : (founder.photo_url ? 'Replace photo' : 'Upload photo')}
+                        </div>
+                      </label>
+                      {founder.photo_url && (
+                        <button type="button" onClick={() => setFounder(prev => ({ ...prev, photo_url: '' }))} className="text-xs text-red-600 hover:underline" data-testid="founder-photo-remove">Remove</button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-zinc-500 uppercase tracking-wider">Signature image (optional)</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      {founder.signature_url && (
+                        <img src={founder.signature_url} alt="signature" className="h-10 object-contain border border-zinc-200 bg-white px-2" data-testid="founder-signature-preview" />
+                      )}
+                      <label className="flex-1 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFounderPhotoUpload(e, 'signature_url')}
+                          data-testid="founder-signature-upload"
+                        />
+                        <div className="border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 text-center">
+                          {founder.signature_url ? 'Replace signature' : 'Upload signature'}
+                        </div>
+                      </label>
+                      {founder.signature_url && (
+                        <button type="button" onClick={() => setFounder(prev => ({ ...prev, signature_url: '' }))} className="text-xs text-red-600 hover:underline" data-testid="founder-signature-remove">Remove</button>
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">If no signature image, the name will appear in italic below the message.</p>
+                  </div>
+                  <Button
+                    className="w-full rounded-none bg-[#1E3A5F]"
+                    onClick={saveFounder}
+                    disabled={savingFounder}
+                    data-testid="save-founder-btn"
+                  >
+                    {savingFounder ? 'Saving...' : 'Save Founder Introduction'}
+                  </Button>
+                </div>
+                <div className="border border-zinc-200 bg-zinc-50 p-4">
+                  <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-3">Preview</p>
+                  {(founder.intro_text || founder.photo_url || founder.name) ? (
+                    <div className="bg-white p-4 border border-zinc-200">
+                      <div className="flex items-start gap-3">
+                        {founder.photo_url && (
+                          <img src={founder.photo_url} alt={founder.name} className="w-16 h-16 rounded-full object-cover border-2 border-[#3DB883]" />
+                        )}
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest text-[#3DB883] font-bold">A note from the founder</p>
+                          {founder.name && <p className="text-sm font-bold text-[#1E3A5F] mt-1">{founder.name}</p>}
+                          {founder.title && <p className="text-xs text-zinc-500">{founder.title}</p>}
+                        </div>
+                      </div>
+                      {founder.intro_text && (
+                        <div className="mt-3 text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{founder.intro_text}</div>
+                      )}
+                      {founder.signature_url ? (
+                        <img src={founder.signature_url} alt="signature" className="h-10 mt-2 object-contain" />
+                      ) : (
+                        founder.name && <p className="text-sm italic text-[#1E3A5F] mt-2" style={{ fontFamily: 'Georgia, serif' }}>— {founder.name}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-400 text-sm text-center py-10">Fill in the fields to see preview</p>
+                  )}
+                  <p className="text-xs text-zinc-500 mt-3">
+                    {founder.enabled ? '✓ Will appear in auto newsletter' : 'Not currently included — toggle "Include" to enable'}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Auto-Generated Newsletter */}

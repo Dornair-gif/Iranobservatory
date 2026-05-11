@@ -1,0 +1,37 @@
+{
+  "summary": "Backend-only regression for GridFS uploads, file serving, unsubscribe, founder settings, and newsletter HTML. 24/24 pytest cases pass. All review items verified: image/PDF roundtrip via GridFS, Content-Type headers correct, non-existent file returns 404, unsubscribe flips newsletter flag and rejects bad input with 400, /api/unsubscribe present in newsletter HTML, height:100px present in newsletter, founder block toggles correctly with enabled flag and contains 'A note from the founder' + intro + name, all admin endpoints reject unauthenticated requests with 401, regression endpoints (login, /api/articles, /api/subscribers, /api/auth/me) all OK.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/upload/image and /api/upload/pdf", "issue": "BACKEND_URL env var is not set in backend/.env, so the returned image_url / pdf_url are relative paths like '/api/files/<uuid>.png'. This works in-app (frontend ingress routes /api to backend) but BREAKS in email clients (newsletter founder photo, article images embedded in emails) because mail clients cannot resolve a relative URL. Recommend setting BACKEND_URL=FRONTEND_URL in backend/.env so absolute URLs are returned, OR prefixing FRONTEND_URL when rendering URLs inside email HTML."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: Set BACKEND_URL in backend/.env (e.g., same value as FRONTEND_URL) so /api/upload/image and /api/upload/pdf return absolute URLs. Without it, founder photos uploaded via /api/upload/image will render as broken images in dispatched newsletters because relative '/api/files/...' URLs do not resolve inside email clients.",
+    "OPTIONAL code-quality: CORS middleware is configured with both an explicit origin AND '*' in allow_origins while allow_credentials=True (server.py ~2284). Browsers will reject this combination for credentialed requests; the explicit FRONTEND_URL alone is sufficient.",
+    "OPTIONAL: server.py is 2393 lines; consider splitting into modules (auth, articles, files, newsletter, subscribers, rss, settings) for maintainability."
+  ],
+  "critical_code_review_comments": [
+    "server.py:1059 upload_image and 1031 upload_pdf use os.environ.get('BACKEND_URL', '') -- this env var is missing, returning relative URLs that won't render in email.",
+    "server.py:2284 CORS allow_origins mixes an explicit origin with '*' while allow_credentials=True; browser will reject. Remove '*'.",
+    "server.py:1264 subscribe welcome email correctly uses {base_url}/api/unsubscribe (good).",
+    "server.py:2091 newsletter logo uses height:100px (verified).",
+    "server.py:1097-1099 serve_file falls back to local disk for legacy files only -- acceptable; new uploads go to GridFS as required.",
+    "server.py monolithic (2393 lines) -- recommend modularization."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "N/A (not in scope)"},
+  "test_credentials": "admin@iranobservatory.org / IranObs2024! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created and then cleaned up subscribers with emails 'test_unsub_<rand>@example.com' and 'test_sub_render_<rand>@example.com'. Founder settings were left with enabled=true, name='Jane Founder', intro_text='A weekly word from the founder about Iran.', title='Director' from the last test -- main agent may want to reset these via PUT /api/settings/founder if shipping to production.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Reusable pytest suite at /app/backend/tests/backend_test.py (24 tests). Uses requests Session; uses a fresh_client fixture for unauth checks because the shared `api` session retains login cookies after /api/auth/login. Frontend external URL: https://iran-events-live.preview.emergentagent.com. The minimal in-test PNG and PDF builders avoid Pillow/reportlab deps. The cleanup fixture removes test_* subscribers at session end. Founder settings persist in Mongo and were last set with name='Jane Founder' (see seed_data_creation note).",
+  "rca of the issue": "N/A - no bugs reproduced. All requested features verified working end-to-end."
+}

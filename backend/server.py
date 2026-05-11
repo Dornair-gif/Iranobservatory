@@ -2,9 +2,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 import os
 import logging
 from pathlib import Path
@@ -23,6 +23,7 @@ import asyncio
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="uploads")
 
 # Create the main app
 app = FastAPI(title="Iran Observatory API")
@@ -1015,14 +1016,17 @@ async def upload_pdf(request: Request, file: UploadFile = File(...)):
     
     file_id = str(uuid.uuid4())
     safe_name = f"{file_id}.pdf"
-    file_path = UPLOAD_DIR / safe_name
     
     content = await file.read()
     if len(content) > 50 * 1024 * 1024:  # 50MB limit
         raise HTTPException(status_code=400, detail="File too large (max 50MB)")
     
-    with open(file_path, "wb") as f:
-        f.write(content)
+    # Store in GridFS (persistent across redeploys)
+    await fs_bucket.upload_from_stream(
+        safe_name,
+        content,
+        metadata={"content_type": "application/pdf", "original_filename": file.filename}
+    )
     
     backend_url = os.environ.get("BACKEND_URL", "")
     pdf_url = f"{backend_url}/api/files/{safe_name}"
@@ -1039,14 +1043,18 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
     
     file_id = str(uuid.uuid4())
     safe_name = f"{file_id}.{ext}"
-    file_path = UPLOAD_DIR / safe_name
     
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
     
-    with open(file_path, "wb") as f:
-        f.write(content)
+    media_types = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp', 'gif': 'image/gif'}
+    # Store in GridFS (persistent across redeploys)
+    await fs_bucket.upload_from_stream(
+        safe_name,
+        content,
+        metadata={"content_type": media_types.get(ext, 'application/octet-stream'), "original_filename": file.filename}
+    )
     
     backend_url = os.environ.get("BACKEND_URL", "")
     image_url = f"{backend_url}/api/files/{safe_name}"
@@ -1055,12 +1063,42 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
 
 @api_router.get("/files/{filename}")
 async def serve_file(filename: str):
-    file_path = UPLOAD_DIR / filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
     media_types = {'pdf': 'application/pdf', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp', 'gif': 'image/gif'}
-    return FileResponse(file_path, media_type=media_types.get(ext, 'application/octet-stream'), filename=filename)
+    media_type = media_types.get(ext, 'application/octet-stream')
+    
+    # Try GridFS first (new uploads)
+    try:
+        cursor = fs_bucket.find({"filename": filename}).sort("uploadDate", -1).limit(1)
+        gridfs_docs = await cursor.to_list(1)
+        if gridfs_docs:
+            grid_file = gridfs_docs[0]
+            stream = await fs_bucket.open_download_stream(grid_file["_id"])
+            
+            async def file_iterator():
+                while True:
+                    chunk = await stream.readchunk()
+                    if not chunk:
+                        break
+                    yield chunk
+            
+            return StreamingResponse(
+                file_iterator(),
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'inline; filename="{filename}"',
+                    "Cache-Control": "public, max-age=31536000"
+                }
+            )
+    except Exception as e:
+        logger.warning(f"GridFS lookup failed for {filename}: {e}")
+    
+    # Fallback to local disk (backwards compatibility for legacy files / cached brief PDFs)
+    file_path = UPLOAD_DIR / filename
+    if file_path.exists():
+        return FileResponse(file_path, media_type=media_type, filename=filename)
+    
+    raise HTTPException(status_code=404, detail="File not found")
 
 # Generate PDF from article HTML content
 @api_router.get("/articles/{article_id}/pdf")
@@ -1209,7 +1247,7 @@ async def subscribe(request: Request):
                 
                 confirm_html = f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;">
 <div style="max-width:600px;margin:0 auto;background:#fff;">
-  <div style="background:#fff;padding:28px 40px 0;text-align:center;"><img src="{logo_url}" alt="Iran Observatory" style="height:50px;" /></div>
+  <div style="background:#fff;padding:32px 40px 8px;text-align:center;"><img src="{logo_url}" alt="Iran Observatory" style="height:90px;max-height:90px;display:inline-block;" /></div>
   <div style="background:#1E3A5F;padding:16px 40px;text-align:center;"><p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">Subscription Confirmed</p></div>
   <div style="padding:32px 40px;">
     <h2 style="color:#1E3A5F;font-size:22px;margin:0 0 16px;">Welcome to Iran Observatory</h2>
@@ -1223,7 +1261,7 @@ async def subscribe(request: Request):
   </div>
   <div style="padding:20px 40px;background:#f8f9fb;text-align:center;">
     <p style="color:#999;font-size:11px;margin:0;">Iran Observatory | Independent analysis on Iran</p>
-    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/unsubscribe?email={email}" style="color:#999;">Unsubscribe</a></p>
+    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/api/unsubscribe?email={email}" style="color:#999;">Unsubscribe</a></p>
   </div>
 </div></body></html>"""
                 
@@ -1281,6 +1319,33 @@ async def admin_add_subscriber(request: Request):
     })
     return {"message": "Subscriber added"}
 
+# Admin: founder introduction settings (for newsletter personalization)
+@api_router.get("/settings/founder")
+async def get_founder_settings(request: Request):
+    await get_current_user(request)
+    doc = await db.settings.find_one({"key": "founder_intro"}, {"_id": 0, "key": 0})
+    return doc or {"enabled": False, "intro_text": "", "photo_url": "", "name": "", "title": "", "signature_url": ""}
+
+@api_router.put("/settings/founder")
+async def update_founder_settings(request: Request):
+    await get_current_user(request)
+    body = await request.json()
+    update = {
+        "enabled": bool(body.get("enabled", False)),
+        "intro_text": (body.get("intro_text") or "").strip(),
+        "photo_url": (body.get("photo_url") or "").strip(),
+        "name": (body.get("name") or "").strip(),
+        "title": (body.get("title") or "").strip(),
+        "signature_url": (body.get("signature_url") or "").strip(),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    await db.settings.update_one(
+        {"key": "founder_intro"},
+        {"$set": update},
+        upsert=True
+    )
+    return {"message": "Founder settings saved", **update, "updated_at": update["updated_at"].isoformat()}
+
 # Admin: send custom newsletter
 @api_router.post("/newsletter/custom")
 async def send_custom_newsletter(request: Request):
@@ -1306,7 +1371,7 @@ async def send_custom_newsletter(request: Request):
     
     html = f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;">
 <div style="max-width:640px;margin:0 auto;background:#fff;">
-  <div style="background:#fff;padding:28px 40px 0;text-align:center;"><img src="{logo_url}" alt="Iran Observatory" style="height:50px;margin-bottom:16px;" /></div>
+  <div style="background:#fff;padding:32px 40px 8px;text-align:center;"><img src="{logo_url}" alt="Iran Observatory" style="height:100px;max-height:100px;margin-bottom:18px;display:inline-block;" /></div>
   <div style="background:#1E3A5F;padding:20px 40px;text-align:center;">
     <div style="width:60px;height:3px;background:#3DB883;margin:0 auto 12px;"></div>
     <p style="color:white;margin:0;font-size:18px;font-weight:bold;">{subject}</p>
@@ -1320,7 +1385,7 @@ async def send_custom_newsletter(request: Request):
   </div>
   <div style="padding:20px 40px;background:#f8f9fb;text-align:center;">
     <p style="color:#1E3A5F;font-size:12px;font-weight:bold;margin:0 0 4px;">Iran Observatory</p>
-    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/unsubscribe?email={{{{email}}}}" style="color:#999;">Unsubscribe</a></p>
+    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/api/unsubscribe?email={{{{email}}}}" style="color:#999;">Unsubscribe</a></p>
   </div>
 </div></body></html>"""
     
@@ -2012,6 +2077,9 @@ async def generate_newsletter(request: Request):
     helloasso_url = "https://www.helloasso.com/associations/dorna/formulaires/2"
     today_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
     
+    # Fetch founder intro settings (optional)
+    founder = await db.settings.find_one({"key": "founder_intro"}, {"_id": 0, "key": 0}) or {}
+    
     html = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -2019,13 +2087,56 @@ async def generate_newsletter(request: Request):
 <div style="max-width:640px;margin:0 auto;background:#ffffff;">
 
   <!-- Header -->
-  <div style="background:#ffffff;padding:28px 40px 0;text-align:center;">
-    <img src="{logo_url}" alt="Iran Observatory" style="height:55px;margin-bottom:16px;" />
+  <div style="background:#ffffff;padding:32px 40px 8px;text-align:center;">
+    <img src="{logo_url}" alt="Iran Observatory" style="height:100px;max-height:100px;margin-bottom:18px;display:inline-block;" />
   </div>
   <div style="background:#1E3A5F;padding:20px 40px;text-align:center;">
     <div style="width:60px;height:3px;background:#3DB883;margin:0 auto 12px;"></div>
     <p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">Weekly Newsletter</p>
     <p style="color:rgba(255,255,255,0.5);margin:6px 0 0;font-size:11px;">{today_str}</p>
+  </div>
+"""
+    
+    # Founder Introduction block (if enabled & has content)
+    if founder.get("enabled") and (founder.get("intro_text") or founder.get("photo_url")):
+        intro_text = founder.get("intro_text", "").replace("\n", "<br>")
+        photo_url_f = founder.get("photo_url", "")
+        name_f = founder.get("name", "")
+        title_f = founder.get("title", "")
+        signature_url_f = founder.get("signature_url", "")
+        
+        photo_html = ""
+        if photo_url_f:
+            photo_html = f'<img src="{photo_url_f}" alt="{name_f}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #3DB883;display:block;" />'
+        
+        signature_html = ""
+        if signature_url_f:
+            signature_html = f'<img src="{signature_url_f}" alt="Signature" style="max-height:48px;margin-top:6px;display:block;" />'
+        elif name_f:
+            signature_html = f'<p style="color:#1E3A5F;font-size:15px;margin:8px 0 0;font-style:italic;font-family:Georgia,serif;">— {name_f}</p>'
+        
+        name_title_html = ""
+        if name_f:
+            name_title_html = f'<p style="color:#1E3A5F;font-size:14px;margin:0;font-weight:bold;">{name_f}</p>'
+            if title_f:
+                name_title_html += f'<p style="color:#888;font-size:12px;margin:2px 0 0;">{title_f}</p>'
+        
+        html += f"""
+  <!-- Founder Introduction -->
+  <div style="padding:28px 40px;background:#fafbfc;border-bottom:1px solid #eaedf0;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+      <td width="100" style="vertical-align:top;padding-right:20px;">
+        {photo_html}
+      </td>
+      <td style="vertical-align:top;">
+        <p style="color:#3DB883;margin:0 0 6px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;">A note from the founder</p>
+        {name_title_html}
+      </td>
+    </tr></table>
+    <div style="margin-top:16px;color:#444;font-size:14px;line-height:1.7;">
+      {intro_text}
+    </div>
+    {signature_html}
   </div>
 """
     
