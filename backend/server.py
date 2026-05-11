@@ -1028,8 +1028,8 @@ async def upload_pdf(request: Request, file: UploadFile = File(...)):
         metadata={"content_type": "application/pdf", "original_filename": file.filename}
     )
     
-    backend_url = os.environ.get("BACKEND_URL", "")
-    pdf_url = f"{backend_url}/api/files/{safe_name}"
+    public_url = os.environ.get("BACKEND_URL") or os.environ.get("FRONTEND_URL", "")
+    pdf_url = f"{public_url}/api/files/{safe_name}"
     
     return {"pdf_url": pdf_url, "filename": file.filename}
 
@@ -1056,8 +1056,8 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
         metadata={"content_type": media_types.get(ext, 'application/octet-stream'), "original_filename": file.filename}
     )
     
-    backend_url = os.environ.get("BACKEND_URL", "")
-    image_url = f"{backend_url}/api/files/{safe_name}"
+    public_url = os.environ.get("BACKEND_URL") or os.environ.get("FRONTEND_URL", "")
+    image_url = f"{public_url}/api/files/{safe_name}"
     
     return {"image_url": image_url, "filename": file.filename}
 

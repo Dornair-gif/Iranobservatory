@@ -52,6 +52,8 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 ## Prioritized Backlog
 
 ### P0 (Completed)
+- **GridFS file persistence (May 2026)**: All admin uploads (study images, PDFs, founder photos) now stored in MongoDB GridFS instead of local disk → survives container redeploys
+- **Unsubscribe link fixed (May 2026)**: All newsletter templates (welcome, custom, auto) now point to `/api/unsubscribe` (was broken `/unsubscribe` frontend route)
 - RSS image sync: Articles use original RSS source images
 - Favicon: Custom radar icon deployed
 - AI-powered RSS filtering + reject mechanism
@@ -70,6 +72,8 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - Sources: RSS feeds + Telegram channels (t.me/hranews, t.me/VahidOnline)
 
 ### P1 (Completed)
+- **Newsletter Founder Introduction (May 2026)**: Admin can save founder name, title, intro text, photo, signature image — auto-injected at top of weekly newsletter when "Include" toggle is enabled (`/api/settings/founder`)
+- **Newsletter logo enlarged (May 2026)**: 55px → 100px for better branding visibility
 - Studies & Briefs page: Filter tabs (All / Studies & Analysis / Weekly Briefs)
 - Weekly Brief auto-generation: Every Monday 6-8 AM UTC, GPT-5.2 generates HTML brief as draft
 - Newsletter system: Admin can generate newsletter HTML + send to opted-in subscribers (requires RESEND_API_KEY)
