@@ -997,6 +997,15 @@ async def delete_article(article_id: str, request: Request):
 UPLOAD_DIR = Path("/app/backend/uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+# Ensure logo is available for PDF generation
+import urllib.request
+_logo_path = UPLOAD_DIR / "logo.png"
+if not _logo_path.exists():
+    try:
+        urllib.request.urlretrieve("https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png", str(_logo_path))
+    except Exception:
+        pass
+
 @api_router.post("/upload/pdf")
 async def upload_pdf(request: Request, file: UploadFile = File(...)):
     await get_current_user(request)
@@ -1111,6 +1120,12 @@ async def generate_article_pdf(article_id: str):
             styles.add(ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, textColor=HexColor('#999999'), alignment=1))
             
             story = []
+            # Logo
+            logo_path = UPLOAD_DIR / "logo.png"
+            if logo_path.exists():
+                from reportlab.platypus import Image as RLImage
+                story.append(RLImage(str(logo_path), width=50*mm, height=15*mm, kind='proportional'))
+                story.append(Spacer(1, 4))
             story.append(Paragraph('IRAN OBSERVATORY', styles['OrgName']))
             story.append(Paragraph(f'Independent Insights into Iran | {date_str}', styles['DateLine']))
             story.append(HRFlowable(width='100%', color=HexColor('#1E3A5F'), thickness=1.5, spaceAfter=10))
