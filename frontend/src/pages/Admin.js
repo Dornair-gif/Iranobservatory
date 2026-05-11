@@ -871,24 +871,29 @@ export default function Admin() {
 
           {/* Newsletter Tab */}
           <TabsContent value="newsletter" className="space-y-4">
-            {/* Add Subscriber Manually */}
+            {/* Add Subscribers */}
             <div className="bg-white border border-zinc-200 p-6">
-              <h3 className="font-heading font-bold text-lg mb-4">Add Subscriber</h3>
-              <form className="flex gap-2" onSubmit={async (e) => {
+              <h3 className="font-heading font-bold text-lg mb-2">Add Subscribers</h3>
+              <p className="text-sm text-zinc-500 mb-4">Paste multiple emails (one per line, or comma/semicolon separated)</p>
+              <form className="space-y-3" onSubmit={async (e) => {
                 e.preventDefault();
-                const email = e.target.email.value.trim();
-                if (!email) return;
-                try {
-                  await axios.post(`${API}/subscribers/add`, { email, newsletter: true }, axiosConfig);
-                  toast.success(`Added: ${email}`);
-                  e.target.reset();
-                  fetchSubscribers();
-                } catch (err) {
-                  toast.error(err.response?.data?.detail || 'Failed to add');
+                const raw = e.target.emails.value.trim();
+                if (!raw) return;
+                const emails = raw.split(/[\n,;]+/).map(s => s.trim().toLowerCase()).filter(s => s && s.includes('@'));
+                if (!emails.length) { toast.error('No valid emails found'); return; }
+                let added = 0, skipped = 0;
+                for (const email of emails) {
+                  try {
+                    await axios.post(`${API}/subscribers/add`, { email, newsletter: true }, axiosConfig);
+                    added++;
+                  } catch { skipped++; }
                 }
+                toast.success(`Added ${added} subscriber${added !== 1 ? 's' : ''}${skipped ? `, ${skipped} skipped` : ''}`);
+                e.target.reset();
+                fetchSubscribers();
               }}>
-                <Input name="email" type="email" placeholder="email@example.com" className="rounded-none flex-1" required />
-                <Button type="submit" className="rounded-none bg-[#1E3A5F]">Add</Button>
+                <Textarea name="emails" placeholder={"email1@example.com\nemail2@example.com\nemail3@example.com"} className="rounded-none font-mono text-sm" rows={4} />
+                <Button type="submit" className="rounded-none bg-[#1E3A5F]">Add All</Button>
               </form>
             </div>
 
