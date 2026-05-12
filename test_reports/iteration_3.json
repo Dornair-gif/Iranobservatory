@@ -1,0 +1,44 @@
+{
+  "summary": "Backend regression for multilingual newsletter (Option A — per-subscriber language preference, default 'fr'). 43/43 pytest cases pass (24 legacy regression + 19 new multilingual). All review items verified: public subscribe persists 'language' (defaults to fr), existing-subscriber language update via re-POST works, admin /subscribers/add validates language and defaults fr, PATCH /subscribers/{id} accepts language+newsletter and rejects invalid language with 400, GET /subscribers always returns 'language' (default 'fr' for legacy docs). Founder settings GET returns full per-language shape {name_xx, title_xx, intro_text_xx} with legacy fallback (legacy single 'name'/'title'/'intro_text' surface in name_fr+name_en); PUT persists every per-language field; empty body saves empty strings. Newsletter generation localized for fr/en/fa: French has 'Newsletter hebdomadaire', 'Brief hebdomadaire', 'Le mot du fondateur', dir=ltr, height:100px, French date format ('12 mai 2026'); English has 'Weekly Newsletter', 'Weekly Brief', 'A note from the founder', dir=ltr; Persian has dir=rtl, 'بریف هفتگی', 'یادداشت بنیان‌گذار'. Fallback chain verified: intro_text_fa empty -> generator falls back to fr. /api/newsletter/send-multilingual returns {status, total_sent, by_language:{fr,en,fa}} where each entry has {total, sent}; FR segment correctly includes legacy subscribers (missing/null/empty language). Resend was invoked with real key against test_ml_*@example.com fake addresses — endpoint still responded 200 with proper by_language counts (sent counts depend on Resend's tolerance for fake recipients).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/subscribers POST (public)", "issue": "If body.language is missing on an EXISTING subscriber, the language field is left untouched (correct). However if an EMPTY string 'language':'' is passed, it is silently ignored (also fine). No bug, just a doc note for the main agent: only en/fr/fa values trigger an update on existing rows."},
+      {"endpoint": "/api/newsletter/send-multilingual", "issue": "Endpoint blocks until every Resend HTTP call completes (sequential await asyncio.to_thread for each subscriber × 3 languages). With a large subscriber list this could exceed ingress/proxy timeouts. Consider batching or background task. Functional response is correct."},
+      {"endpoint": "/api/settings/founder PUT", "issue": "No server-side validation that fa fields are non-empty when only-fa language subscribers exist. Today it relies on the fallback chain in _pick_field. Acceptable, but worth surfacing in admin UI."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_multilingual.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_multilingual.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: send-multilingual currently sends sequentially. For scale, batch Resend calls or move to a background task with a status endpoint.",
+    "OPTIONAL: warn in admin UI when enabled=True but intro_text_fa / name_fa are blank (silent fallback to fr may surprise Persian subscribers).",
+    "CARRIED-OVER from iteration_2: BACKEND_URL env var still missing -> /api/upload/image returns relative URLs that break in email clients. Set BACKEND_URL=FRONTEND_URL in backend/.env.",
+    "CARRIED-OVER from iteration_2: CORS middleware mixes explicit FRONTEND_URL with '*' while allow_credentials=True; remove '*'.",
+    "CARRIED-OVER from iteration_2: server.py is now 2641 lines (monolithic). Modularize (auth, articles, files, newsletter/i18n, subscribers, rss, settings)."
+  ],
+  "critical_code_review_comments": [
+    "server.py:1325 PATCH /subscribers/{id} uses ObjectId(sub_id) without try/except — a malformed id will raise a 500 instead of a clean 400. Wrap in try/except InvalidId.",
+    "server.py:1188 POST /subscribers does NOT validate body.language for new (non-existing) signup beyond .lower() — anything is accepted then stored. Should restrict to {en,fr,fa} like /subscribers/add does (server.py:1300-1302).",
+    "server.py:2449 send-multilingual loops `for sub in subs` and awaits Resend sequentially — see action item above.",
+    "server.py:2150 _pick_field fallback order is (lang -> fr -> en -> fa). When lang=='fa' and intro_text_fa is empty it falls back to fr first, which matches the requested behaviour. Confirmed by test_fa_intro_fallback_to_fr.",
+    "server.py:1348 GET /settings/founder has legacy fallback only for name/title/intro_text but NOT for legacy 'photo_url' missing — that's actually fine because new schema also uses 'photo_url' (shared).",
+    "server.py monolithic (2641 lines, grew by ~250 in this iteration) — modularize."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_multilingual.py (new — 19 tests)",
+    "/app/backend/tests/backend_test.py (updated 3 founder-related tests to per-language schema; login timeout bumped to 60s)"
+  ],
+  "success_rate": {"backend": "100% (43/43)", "frontend": "N/A (not in scope)"},
+  "test_credentials": "admin@iranobservatory.org / IranObs2024! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created test_ml_*@example.com subscribers (fr/en/fa/legacy/admin variants) and cleaned them up via module-scoped pymongo teardown (deletes anything matching ^test_ml_). Founder settings were last set with enabled=True, name_fr='Jane Founder', intro_text_fr='Un mot hebdomadaire du fondateur sur l'Iran.' — main agent should reset founder settings before shipping. db.settings.founder_intro was also briefly written in legacy single-field shape and then overwritten by subsequent per-language PUTs.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Full suite at /app/backend/tests/ runs in ~60s and contains 43 tests. backend_test.py was updated for per-language founder schema. test_multilingual.py uses pymongo directly (MONGO_URL/DB_NAME from env) to insert legacy subscribers without a language field. Public URL: https://iran-events-live.preview.emergentagent.com. Note that send-multilingual will actually hit Resend with a real key — keep test recipients to @example.com so Resend rejects them but the endpoint still returns 200 with proper by_language counts.",
+  "rca of the issue": "N/A — no regressions found. Multilingual feature is fully wired backend-side."
+}

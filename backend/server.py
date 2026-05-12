@@ -1203,6 +1203,13 @@ async def subscribe(request: Request):
                 {"_id": existing["_id"]},
                 {"$set": {"newsletter": True}}
             )
+        # Update language if provided
+        new_lang = (body.get("language") or "").lower()
+        if new_lang in ("en", "fr", "fa") and existing.get("language") != new_lang:
+            await db.subscribers.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {"language": new_lang}}
+            )
         # Log the download
         if article_id:
             await db.subscribers.update_one(
@@ -1214,6 +1221,7 @@ async def subscribe(request: Request):
     subscriber = {
         "email": email,
         "newsletter": newsletter,
+        "language": (body.get("language") or "fr").lower(),
         "downloads": [{"article_id": article_id, "date": datetime.now(timezone.utc).isoformat()}] if article_id else [],
         "created_at": datetime.now(timezone.utc)
     }
@@ -1230,33 +1238,35 @@ async def subscribe(request: Request):
                 base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org')
                 logo_url = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png"
                 
-                confirm_html = f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+                sub_lang = (body.get("language") or "fr").lower()
+                if sub_lang not in NEWSLETTER_I18N:
+                    sub_lang = "fr"
+                tl = NEWSLETTER_I18N[sub_lang]
+                bullets_html = "".join(f"<li>{b}</li>" for b in tl["welcome_bullets"])
+                
+                confirm_html = f"""<!DOCTYPE html><html dir="{tl['dir']}" lang="{sub_lang}"><body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;" dir="{tl['dir']}">
 <div style="max-width:600px;margin:0 auto;background:#fff;">
   <div style="background:#fff;padding:32px 40px 8px;text-align:center;"><img src="{logo_url}" alt="Iran Observatory" style="height:90px;max-height:90px;display:inline-block;" /></div>
-  <div style="background:#1E3A5F;padding:16px 40px;text-align:center;"><p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">Subscription Confirmed</p></div>
-  <div style="padding:32px 40px;">
-    <h2 style="color:#1E3A5F;font-size:22px;margin:0 0 16px;">Welcome to Iran Observatory</h2>
-    <p style="color:#555;font-size:15px;line-height:1.7;">Thank you for subscribing to our newsletter. You will receive:</p>
-    <ul style="color:#555;font-size:14px;line-height:2;">
-      <li><strong>Weekly Intelligence Brief</strong> every Monday</li>
-      <li><strong>Featured articles</strong> and analysis highlights</li>
-      <li><strong>New studies</strong> when published</li>
-    </ul>
-    <p style="color:#555;font-size:14px;line-height:1.7;margin-top:16px;">Visit our website: <a href="{base_url}" style="color:#3DB883;">{base_url}</a></p>
+  <div style="background:#1E3A5F;padding:16px 40px;text-align:center;"><p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">{tl['welcome_badge']}</p></div>
+  <div style="padding:32px 40px;text-align:{('right' if tl['dir']=='rtl' else 'left')};">
+    <h2 style="color:#1E3A5F;font-size:22px;margin:0 0 16px;">{tl['welcome_heading']}</h2>
+    <p style="color:#555;font-size:15px;line-height:1.7;">{tl['welcome_intro']}</p>
+    <ul style="color:#555;font-size:14px;line-height:2;">{bullets_html}</ul>
+    <p style="color:#555;font-size:14px;line-height:1.7;margin-top:16px;">{tl['welcome_visit']} <a href="{base_url}" style="color:#3DB883;">{base_url}</a></p>
   </div>
   <div style="padding:20px 40px;background:#f8f9fb;text-align:center;">
-    <p style="color:#999;font-size:11px;margin:0;">Iran Observatory | Independent analysis on Iran</p>
-    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/api/unsubscribe?email={email}" style="color:#999;">Unsubscribe</a></p>
+    <p style="color:#999;font-size:11px;margin:0;">{tl['site_brand']}</p>
+    <p style="color:#bbb;font-size:10px;margin:8px 0 0;"><a href="{base_url}/api/unsubscribe?email={email}" style="color:#999;">{tl['unsubscribe']}</a></p>
   </div>
 </div></body></html>"""
                 
                 await asyncio.to_thread(resend.Emails.send, {
                     "from": sender,
                     "to": [email],
-                    "subject": "Welcome to Iran Observatory Newsletter",
+                    "subject": tl["welcome_subject"],
                     "html": confirm_html
                 })
-                logger.info(f"Confirmation email sent to {email}")
+                logger.info(f"Confirmation email sent to {email} ({sub_lang})")
         except Exception as e:
             logger.warning(f"Failed to send confirmation email: {e}")
     
@@ -1287,29 +1297,76 @@ async def admin_add_subscriber(request: Request):
     body = await request.json()
     email = body.get("email", "").strip().lower()
     newsletter = body.get("newsletter", True)
+    language = (body.get("language") or "fr").lower()
+    if language not in ("en", "fr", "fa"):
+        language = "fr"
     
     if not email or "@" not in email:
         raise HTTPException(status_code=400, detail="Valid email required")
     
     existing = await db.subscribers.find_one({"email": email})
     if existing:
-        await db.subscribers.update_one({"_id": existing["_id"]}, {"$set": {"newsletter": newsletter}})
+        await db.subscribers.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {"newsletter": newsletter, "language": language}}
+        )
         return {"message": "Subscriber updated"}
     
     await db.subscribers.insert_one({
         "email": email,
         "newsletter": newsletter,
+        "language": language,
         "downloads": [],
         "created_at": datetime.now(timezone.utc)
     })
     return {"message": "Subscriber added"}
 
+# Admin: update subscriber language
+@api_router.patch("/subscribers/{sub_id}")
+async def update_subscriber(sub_id: str, request: Request):
+    await get_current_user(request)
+    body = await request.json()
+    update = {}
+    if "language" in body:
+        lang = (body.get("language") or "").lower()
+        if lang not in ("en", "fr", "fa"):
+            raise HTTPException(status_code=400, detail="language must be one of en/fr/fa")
+        update["language"] = lang
+    if "newsletter" in body:
+        update["newsletter"] = bool(body["newsletter"])
+    if not update:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    result = await db.subscribers.update_one(
+        {"_id": ObjectId(sub_id)},
+        {"$set": update}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+    return {"message": "Subscriber updated", **update}
+
 # Admin: founder introduction settings (for newsletter personalization)
 @api_router.get("/settings/founder")
 async def get_founder_settings(request: Request):
     await get_current_user(request)
-    doc = await db.settings.find_one({"key": "founder_intro"}, {"_id": 0, "key": 0})
-    return doc or {"enabled": False, "intro_text": "", "photo_url": "", "name": "", "title": "", "signature_url": ""}
+    doc = await db.settings.find_one({"key": "founder_intro"}, {"_id": 0, "key": 0}) or {}
+    # Backfill defaults so the frontend always sees the same shape
+    legacy_name = doc.get("name", "")
+    legacy_title = doc.get("title", "")
+    legacy_intro = doc.get("intro_text", "")
+    return {
+        "enabled": bool(doc.get("enabled", False)),
+        "photo_url": doc.get("photo_url", ""),
+        "signature_url": doc.get("signature_url", ""),
+        "name_fr": doc.get("name_fr", legacy_name),
+        "name_en": doc.get("name_en", legacy_name),
+        "name_fa": doc.get("name_fa", ""),
+        "title_fr": doc.get("title_fr", legacy_title),
+        "title_en": doc.get("title_en", legacy_title),
+        "title_fa": doc.get("title_fa", ""),
+        "intro_text_fr": doc.get("intro_text_fr", legacy_intro),
+        "intro_text_en": doc.get("intro_text_en", legacy_intro),
+        "intro_text_fa": doc.get("intro_text_fa", ""),
+    }
 
 @api_router.put("/settings/founder")
 async def update_founder_settings(request: Request):
@@ -1317,11 +1374,17 @@ async def update_founder_settings(request: Request):
     body = await request.json()
     update = {
         "enabled": bool(body.get("enabled", False)),
-        "intro_text": (body.get("intro_text") or "").strip(),
         "photo_url": (body.get("photo_url") or "").strip(),
-        "name": (body.get("name") or "").strip(),
-        "title": (body.get("title") or "").strip(),
         "signature_url": (body.get("signature_url") or "").strip(),
+        "name_fr": (body.get("name_fr") or "").strip(),
+        "name_en": (body.get("name_en") or "").strip(),
+        "name_fa": (body.get("name_fa") or "").strip(),
+        "title_fr": (body.get("title_fr") or "").strip(),
+        "title_en": (body.get("title_en") or "").strip(),
+        "title_fa": (body.get("title_fa") or "").strip(),
+        "intro_text_fr": (body.get("intro_text_fr") or "").strip(),
+        "intro_text_en": (body.get("intro_text_en") or "").strip(),
+        "intro_text_fa": (body.get("intro_text_fa") or "").strip(),
         "updated_at": datetime.now(timezone.utc)
     }
     await db.settings.update_one(
@@ -1329,7 +1392,7 @@ async def update_founder_settings(request: Request):
         {"$set": update},
         upsert=True
     )
-    return {"message": "Founder settings saved", **update, "updated_at": update["updated_at"].isoformat()}
+    return {"message": "Founder settings saved"}
 
 # Admin: send custom newsletter
 @api_router.post("/newsletter/custom")
@@ -1403,6 +1466,7 @@ async def get_subscribers(request: Request):
         "id": str(s["_id"]),
         "email": s["email"],
         "newsletter": s.get("newsletter", False),
+        "language": s.get("language") or "fr",
         "downloads_count": len(s.get("downloads", [])),
         "created_at": s.get("created_at").isoformat() if s.get("created_at") else ""
     } for s in subs]
@@ -1986,7 +2050,348 @@ async def weekly_brief_scheduler():
             logger.error(f"Weekly brief scheduler error: {e}")
             await asyncio.sleep(3600)
 
-# ============ NEWSLETTER ============
+# ============ NEWSLETTER I18N + BUILDER ============
+NEWSLETTER_I18N = {
+    "fr": {
+        "dir": "ltr",
+        "label_weekly": "Newsletter hebdomadaire",
+        "label_brief": "Brief hebdomadaire",
+        "label_articles": "Articles à la une",
+        "label_studies": "Nouvelles études",
+        "read_brief": "Lire le brief complet →",
+        "view_articles": "Voir tous les articles →",
+        "view_studies": "Voir les études →",
+        "support_text": "Si ce brief est utile à votre travail,<br>soutenez l'indépendance d'Iran Observatory.",
+        "support_btn": "♡ Nous soutenir",
+        "tagline": "Plateforme indépendante d'analyse factuelle sur l'Iran",
+        "site_brand": "Iran Observatory | Observatoire de l'Iran",
+        "footer_links": {"Site web": "", "Iran Monitor": "/monitor", "Articles": "/articles", "Études & Briefs": "/studies"},
+        "footer_note": "Vous recevez cet email car vous êtes inscrit à la newsletter d'Iran Observatory.",
+        "unsubscribe": "Se désinscrire",
+        "founder_label": "Le mot du fondateur",
+        "default_brief_title": "Brief hebdomadaire",
+        "subject_prefix": "Iran Observatory — ",
+        "subject_default": "Newsletter hebdomadaire",
+        "welcome_subject": "Bienvenue à la newsletter d'Iran Observatory",
+        "welcome_heading": "Bienvenue à Iran Observatory",
+        "welcome_intro": "Merci de votre inscription à notre newsletter. Vous recevrez :",
+        "welcome_bullets": [
+            "<strong>Le Brief hebdomadaire</strong> chaque lundi",
+            "<strong>Les articles à la une</strong> et les analyses clés",
+            "<strong>Les nouvelles études</strong> dès leur publication"
+        ],
+        "welcome_visit": "Visitez notre site :",
+        "welcome_badge": "Inscription confirmée",
+    },
+    "en": {
+        "dir": "ltr",
+        "label_weekly": "Weekly Newsletter",
+        "label_brief": "Weekly Brief",
+        "label_articles": "Featured Articles",
+        "label_studies": "New Studies",
+        "read_brief": "Read Full Brief →",
+        "view_articles": "View All Articles →",
+        "view_studies": "View Studies →",
+        "support_text": "If this briefing is useful to your work,<br>consider supporting Iran Observatory's independence.",
+        "support_btn": "♡ Support Us",
+        "tagline": "Independent platform for fact-based analysis on Iran",
+        "site_brand": "Iran Observatory | Observatoire de l'Iran",
+        "footer_links": {"Website": "", "Iran Monitor": "/monitor", "Articles": "/articles", "Studies & Briefs": "/studies"},
+        "footer_note": "You received this because you subscribed to Iran Observatory newsletter.",
+        "unsubscribe": "Unsubscribe",
+        "founder_label": "A note from the founder",
+        "default_brief_title": "Weekly Brief",
+        "subject_prefix": "Iran Observatory — ",
+        "subject_default": "Weekly Newsletter",
+        "welcome_subject": "Welcome to Iran Observatory Newsletter",
+        "welcome_heading": "Welcome to Iran Observatory",
+        "welcome_intro": "Thank you for subscribing to our newsletter. You will receive:",
+        "welcome_bullets": [
+            "<strong>Weekly Intelligence Brief</strong> every Monday",
+            "<strong>Featured articles</strong> and analysis highlights",
+            "<strong>New studies</strong> when published"
+        ],
+        "welcome_visit": "Visit our website:",
+        "welcome_badge": "Subscription Confirmed",
+    },
+    "fa": {
+        "dir": "rtl",
+        "label_weekly": "خبرنامه هفتگی",
+        "label_brief": "بریف هفتگی",
+        "label_articles": "مقالات منتخب",
+        "label_studies": "مطالعات جدید",
+        "read_brief": "← خواندن بریف کامل",
+        "view_articles": "← مشاهده همه مقالات",
+        "view_studies": "← مشاهده مطالعات",
+        "support_text": "اگر این بریف برای کار شما مفید است،<br>از استقلال ایران آبزرواتوری حمایت کنید.",
+        "support_btn": "♡ حمایت از ما",
+        "tagline": "پلتفرم مستقل تحلیل مبتنی بر واقعیت درباره ایران",
+        "site_brand": "ایران آبزرواتوری | Iran Observatory",
+        "footer_links": {"وب‌سایت": "", "ایران مانیتور": "/monitor", "مقالات": "/articles", "مطالعات و بریف‌ها": "/studies"},
+        "footer_note": "شما این ایمیل را دریافت می‌کنید چون مشترک خبرنامه ایران آبزرواتوری هستید.",
+        "unsubscribe": "لغو اشتراک",
+        "founder_label": "یادداشت بنیان‌گذار",
+        "default_brief_title": "بریف هفتگی",
+        "subject_prefix": "Iran Observatory — ",
+        "subject_default": "خبرنامه هفتگی",
+        "welcome_subject": "به خبرنامه ایران آبزرواتوری خوش آمدید",
+        "welcome_heading": "به ایران آبزرواتوری خوش آمدید",
+        "welcome_intro": "از اشتراک شما در خبرنامه ما متشکریم. شما دریافت خواهید کرد:",
+        "welcome_bullets": [
+            "<strong>بریف هفتگی</strong> هر دوشنبه",
+            "<strong>مقالات منتخب</strong> و تحلیل‌های کلیدی",
+            "<strong>مطالعات جدید</strong> هنگام انتشار"
+        ],
+        "welcome_visit": "وب‌سایت ما را ببینید:",
+        "welcome_badge": "اشتراک تأیید شد",
+    },
+}
+
+def _pick_field(doc: dict, base: str, lang: str) -> str:
+    """Pick localized field with fallback chain: lang -> fr -> en -> fa -> empty."""
+    for lc in (lang, "fr", "en", "fa"):
+        val = (doc.get(f"{base}_{lc}") or "").strip()
+        if val:
+            return val
+    return ""
+
+async def _build_newsletter_html(lang: str) -> dict:
+    """Build a localized weekly newsletter HTML for the given language ('fr'/'en'/'fa')."""
+    if lang not in NEWSLETTER_I18N:
+        lang = "fr"
+    t = NEWSLETTER_I18N[lang]
+    
+    latest_brief = await db.articles.find_one(
+        {"content_type": "brief", "status": "published"},
+        {"_id": 0},
+        sort=[("created_at", -1)]
+    )
+    
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    featured_news = await db.articles.find(
+        {"status": "published", "content_type": "news", "created_at": {"$gte": one_week_ago}},
+        {"_id": 0, "title_en": 1, "title_fr": 1, "title_fa": 1, "summary_en": 1, "summary_fr": 1, "summary_fa": 1, "image_url": 1}
+    ).sort("created_at", -1).limit(5).to_list(5)
+    
+    latest_studies = await db.articles.find(
+        {"status": "published", "content_type": {"$in": ["study", "analysis"]}, "created_at": {"$gte": one_week_ago}},
+        {"_id": 0, "title_en": 1, "title_fr": 1, "title_fa": 1, "summary_en": 1, "summary_fr": 1, "summary_fa": 1}
+    ).sort("created_at", -1).limit(3).to_list(3)
+    
+    base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org')
+    logo_url = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png"
+    helloasso_url = "https://www.helloasso.com/associations/dorna/formulaires/2"
+    
+    # Localized date
+    now = datetime.now(timezone.utc)
+    if lang == "fr":
+        fr_months = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."]
+        today_str = f"{now.day} {fr_months[now.month-1]} {now.year}"
+    elif lang == "fa":
+        today_str = now.strftime("%Y-%m-%d")
+    else:
+        today_str = now.strftime("%B %d, %Y")
+    
+    founder = await db.settings.find_one({"key": "founder_intro"}, {"_id": 0, "key": 0}) or {}
+    
+    body_dir = t["dir"]
+    text_align = "right" if body_dir == "rtl" else "left"
+    
+    html = f"""<!DOCTYPE html>
+<html dir="{body_dir}" lang="{lang}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;" dir="{body_dir}">
+<div style="max-width:640px;margin:0 auto;background:#ffffff;">
+
+  <!-- Header -->
+  <div style="background:#ffffff;padding:32px 40px 8px;text-align:center;">
+    <img src="{logo_url}" alt="Iran Observatory" style="height:100px;max-height:100px;margin-bottom:18px;display:inline-block;" />
+  </div>
+  <div style="background:#1E3A5F;padding:20px 40px;text-align:center;">
+    <div style="width:60px;height:3px;background:#3DB883;margin:0 auto 12px;"></div>
+    <p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">{t['label_weekly']}</p>
+    <p style="color:rgba(255,255,255,0.5);margin:6px 0 0;font-size:11px;">{today_str}</p>
+  </div>
+"""
+    
+    # Founder Introduction block (per-language)
+    intro_text_lang = _pick_field(founder, "intro_text", lang)
+    name_lang = _pick_field(founder, "name", lang)
+    title_lang = _pick_field(founder, "title", lang)
+    photo_url_f = founder.get("photo_url", "")
+    signature_url_f = founder.get("signature_url", "")
+    
+    if founder.get("enabled") and (intro_text_lang or photo_url_f):
+        intro_text_html = intro_text_lang.replace("\n", "<br>")
+        
+        photo_html = ""
+        if photo_url_f:
+            photo_html = f'<img src="{photo_url_f}" alt="{name_lang}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #3DB883;display:block;" />'
+        
+        signature_html = ""
+        if signature_url_f:
+            signature_html = f'<img src="{signature_url_f}" alt="Signature" style="max-height:48px;margin-top:6px;display:block;" />'
+        elif name_lang:
+            signature_html = f'<p style="color:#1E3A5F;font-size:15px;margin:8px 0 0;font-style:italic;font-family:Georgia,serif;">— {name_lang}</p>'
+        
+        name_title_html = ""
+        if name_lang:
+            name_title_html = f'<p style="color:#1E3A5F;font-size:14px;margin:0;font-weight:bold;">{name_lang}</p>'
+            if title_lang:
+                name_title_html += f'<p style="color:#888;font-size:12px;margin:2px 0 0;">{title_lang}</p>'
+        
+        # In RTL, swap photo to right side via direction
+        html += f"""
+  <!-- Founder Introduction -->
+  <div style="padding:28px 40px;background:#fafbfc;border-bottom:1px solid #eaedf0;text-align:{text_align};" dir="{body_dir}">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" dir="{body_dir}"><tr>
+      <td width="100" style="vertical-align:top;{'padding-left:20px' if body_dir == 'rtl' else 'padding-right:20px'};">
+        {photo_html}
+      </td>
+      <td style="vertical-align:top;text-align:{text_align};">
+        <p style="color:#3DB883;margin:0 0 6px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;">{t['founder_label']}</p>
+        {name_title_html}
+      </td>
+    </tr></table>
+    <div style="margin-top:16px;color:#444;font-size:14px;line-height:1.7;text-align:{text_align};">
+      {intro_text_html}
+    </div>
+    {signature_html}
+  </div>
+"""
+    
+    # Weekly Brief section
+    if latest_brief:
+        brief_title = _pick_field(latest_brief, "title", lang) or t["default_brief_title"]
+        brief_summary = _pick_field(latest_brief, "summary", lang)
+        brief_content = latest_brief.get(f"content_{lang}", "") or latest_brief.get("content_fr", "") or latest_brief.get("content_en", "")
+        import re
+        highlights = []
+        li_matches = re.findall(r'<li[^>]*>(.*?)</li>', brief_content, re.DOTALL)
+        for li in li_matches[:4]:
+            clean = re.sub(r'<[^>]+>', '', li).strip()
+            if clean and len(clean) > 20:
+                highlights.append(clean[:200])
+        
+        border_side = "border-right" if body_dir == "rtl" else "border-left"
+        html += f"""
+  <!-- Weekly Brief -->
+  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;text-align:{text_align};" dir="{body_dir}">
+    <div style="display:inline-block;background:#FEF3C7;color:#92400E;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">{t['label_brief']}</div>
+    <h2 style="color:#1E3A5F;font-size:22px;margin:12px 0 10px;font-weight:800;line-height:1.3;">{brief_title}</h2>
+    <p style="color:#555;font-size:15px;line-height:1.7;margin:0 0 16px;">{brief_summary}</p>
+"""
+        if highlights:
+            html += f'<div style="background:#f8f9fb;{border_side}:4px solid #1E3A5F;padding:16px 20px;margin:0 0 16px;">'
+            for h in highlights:
+                html += f'<p style="color:#333;font-size:13px;line-height:1.6;margin:0 0 8px;">&#8226; {h}</p>'
+            html += '</div>'
+        
+        html += f"""
+    <a href="{base_url}/studies" style="display:inline-block;background:#1E3A5F;color:white;padding:10px 24px;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;border-radius:4px;">{t['read_brief']}</a>
+  </div>
+"""
+    
+    # Featured News section
+    if featured_news:
+        html += f"""
+  <!-- Featured News -->
+  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;text-align:{text_align};" dir="{body_dir}">
+    <div style="display:inline-block;background:#DBEAFE;color:#1E40AF;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">{t['label_articles']}</div>
+"""
+        pad_side = "padding-left" if body_dir == "rtl" else "padding-right"
+        for i, news in enumerate(featured_news):
+            title = _pick_field(news, "title", lang)
+            summary = _pick_field(news, "summary", lang)[:150]
+            img = news.get("image_url", "")
+            border = 'border-bottom:1px solid #f0f2f5;' if i < len(featured_news) - 1 else ''
+            
+            if img:
+                html += f"""
+    <div style="padding:16px 0;{border}">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" dir="{body_dir}"><tr>
+        <td width="100" style="vertical-align:top;{pad_side}:16px;">
+          <img src="{img}" alt="" style="width:100px;height:75px;object-fit:cover;border-radius:6px;" />
+        </td>
+        <td style="vertical-align:top;text-align:{text_align};">
+          <p style="font-weight:bold;margin:0 0 4px;font-size:15px;color:#1a1a2e;line-height:1.3;">{title}</p>
+          <p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{summary}...</p>
+        </td>
+      </tr></table>
+    </div>
+"""
+            else:
+                html += f"""
+    <div style="padding:16px 0;{border}">
+      <p style="font-weight:bold;margin:0 0 4px;font-size:15px;color:#1a1a2e;line-height:1.3;">{title}</p>
+      <p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{summary}...</p>
+    </div>
+"""
+        html += f"""
+    <div style="padding-top:8px;">
+      <a href="{base_url}/articles" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;">{t['view_articles']}</a>
+    </div>
+  </div>
+"""
+    
+    # Studies section
+    if latest_studies:
+        html += f"""
+  <!-- New Studies -->
+  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;text-align:{text_align};" dir="{body_dir}">
+    <div style="display:inline-block;background:#F3E8FF;color:#6B21A8;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">{t['label_studies']}</div>
+"""
+        for study in latest_studies:
+            title = _pick_field(study, "title", lang)
+            summary = _pick_field(study, "summary", lang)[:120]
+            html += f"""
+    <div style="padding:10px 0;">
+      <p style="font-weight:bold;margin:0 0 2px;font-size:14px;color:#1a1a2e;">{title}</p>
+      <p style="color:#888;font-size:12px;margin:0;">{summary}</p>
+    </div>
+"""
+        html += f"""
+    <div style="padding-top:8px;">
+      <a href="{base_url}/studies" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;">{t['view_studies']}</a>
+    </div>
+  </div>
+"""
+    
+    # Support Banner
+    html += f"""
+  <!-- Support Banner -->
+  <div style="background:linear-gradient(135deg,#1E3A5F 0%,#2a4d75 100%);padding:28px 40px;text-align:center;">
+    <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:0 0 16px;line-height:1.5;">{t['support_text']}</p>
+    <a href="{helloasso_url}" style="display:inline-block;background:#3DB883;color:white;padding:10px 28px;font-size:11px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;font-weight:bold;border-radius:20px;">{t['support_btn']}</a>
+  </div>
+
+  <!-- Footer -->
+  <div style="padding:24px 40px;background:#f8f9fb;text-align:center;">
+    <p style="color:#1E3A5F;font-size:13px;font-weight:bold;margin:0 0 4px;">{t['site_brand']}</p>
+    <p style="color:#999;font-size:11px;margin:0 0 8px;">{t['tagline']}</p>
+    <div style="margin:12px 0;">
+"""
+    for label, path in t['footer_links'].items():
+        html += f'      <a href="{base_url}{path}" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">{label}</a>\n'
+    
+    html += f"""    </div>
+    <p style="color:#bbb;font-size:10px;margin:0;">{t['footer_note']}<br><a href="{base_url}/api/unsubscribe?email={{{{email}}}}" style="color:#999;">{t['unsubscribe']}</a></p>
+  </div>
+
+</div>
+</body>
+</html>"""
+    
+    # Subject
+    if latest_brief:
+        brief_title = _pick_field(latest_brief, "title", lang) or t["default_brief_title"]
+        subject = f"{t['subject_prefix']}{brief_title}"
+    else:
+        subject = f"{t['subject_prefix']}{t['subject_default']}"
+    
+    return {"subject": subject, "html_content": html, "language": lang}
+
+# ============ NEWSLETTER ENDPOINTS ============
 @api_router.post("/newsletter/send")
 async def send_newsletter(request: Request):
     """Admin endpoint: Send newsletter to all subscribers."""
@@ -2036,218 +2441,76 @@ async def send_newsletter(request: Request):
     return {"status": "sent", "sent": sent_count, "errors": errors[:10]}
 
 @api_router.post("/newsletter/generate")
-async def generate_newsletter(request: Request):
-    """Generate a professional newsletter HTML from latest brief + featured articles."""
+async def generate_newsletter(request: Request, lang: str = "fr"):
+    """Generate a localized newsletter HTML preview. lang: fr/en/fa (default fr)."""
+    await get_current_user(request)
+    return await _build_newsletter_html(lang)
+
+@api_router.post("/newsletter/send-multilingual")
+async def send_newsletter_multilingual(request: Request):
+    """Generate per-language newsletters and send each one to subscribers in that language.
+    Subscribers without an explicit language are treated as 'fr' (French default)."""
     await get_current_user(request)
     
-    latest_brief = await db.articles.find_one(
-        {"content_type": "brief", "status": "published"},
-        {"_id": 0},
-        sort=[("created_at", -1)]
-    )
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        raise HTTPException(status_code=500, detail="Email service not configured (RESEND_API_KEY)")
     
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-    featured_news = await db.articles.find(
-        {"status": "published", "content_type": "news", "created_at": {"$gte": one_week_ago}},
-        {"_id": 0, "title_en": 1, "title_fr": 1, "summary_en": 1, "summary_fr": 1, "image_url": 1}
-    ).sort("created_at", -1).limit(5).to_list(5)
+    import resend
+    resend.api_key = resend_key
+    sender = os.environ.get("SENDER_EMAIL", "newsletter@iranobservatory.org")
     
-    latest_studies = await db.articles.find(
-        {"status": "published", "content_type": {"$in": ["study", "analysis"]}, "created_at": {"$gte": one_week_ago}},
-        {"_id": 0, "title_en": 1, "title_fr": 1, "summary_en": 1, "summary_fr": 1}
-    ).sort("created_at", -1).limit(3).to_list(3)
+    results = {}
+    total_sent = 0
+    all_errors = []
     
-    base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org')
-    logo_url = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png"
-    helloasso_url = "https://www.helloasso.com/associations/dorna/formulaires/2"
-    today_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
-    
-    # Fetch founder intro settings (optional)
-    founder = await db.settings.find_one({"key": "founder_intro"}, {"_id": 0, "key": 0}) or {}
-    
-    html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f0f2f5;font-family:'Helvetica Neue',Arial,sans-serif;">
-<div style="max-width:640px;margin:0 auto;background:#ffffff;">
-
-  <!-- Header -->
-  <div style="background:#ffffff;padding:32px 40px 8px;text-align:center;">
-    <img src="{logo_url}" alt="Iran Observatory" style="height:100px;max-height:100px;margin-bottom:18px;display:inline-block;" />
-  </div>
-  <div style="background:#1E3A5F;padding:20px 40px;text-align:center;">
-    <div style="width:60px;height:3px;background:#3DB883;margin:0 auto 12px;"></div>
-    <p style="color:#3DB883;margin:0;font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:bold;">Weekly Newsletter</p>
-    <p style="color:rgba(255,255,255,0.5);margin:6px 0 0;font-size:11px;">{today_str}</p>
-  </div>
-"""
-    
-    # Founder Introduction block (if enabled & has content)
-    if founder.get("enabled") and (founder.get("intro_text") or founder.get("photo_url")):
-        intro_text = founder.get("intro_text", "").replace("\n", "<br>")
-        photo_url_f = founder.get("photo_url", "")
-        name_f = founder.get("name", "")
-        title_f = founder.get("title", "")
-        signature_url_f = founder.get("signature_url", "")
+    for lang in ("fr", "en", "fa"):
+        # Query subscribers for this language. For 'fr', include legacy subscribers with missing language.
+        if lang == "fr":
+            query = {
+                "newsletter": True,
+                "$or": [
+                    {"language": "fr"},
+                    {"language": {"$exists": False}},
+                    {"language": None},
+                    {"language": ""}
+                ]
+            }
+        else:
+            query = {"newsletter": True, "language": lang}
         
-        photo_html = ""
-        if photo_url_f:
-            photo_html = f'<img src="{photo_url_f}" alt="{name_f}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #3DB883;display:block;" />'
+        subs = await db.subscribers.find(query, {"_id": 0, "email": 1}).to_list(10000)
+        if not subs:
+            results[lang] = {"total": 0, "sent": 0}
+            continue
         
-        signature_html = ""
-        if signature_url_f:
-            signature_html = f'<img src="{signature_url_f}" alt="Signature" style="max-height:48px;margin-top:6px;display:block;" />'
-        elif name_f:
-            signature_html = f'<p style="color:#1E3A5F;font-size:15px;margin:8px 0 0;font-style:italic;font-family:Georgia,serif;">— {name_f}</p>'
+        built = await _build_newsletter_html(lang)
+        subject = built["subject"]
+        html_content = built["html_content"]
         
-        name_title_html = ""
-        if name_f:
-            name_title_html = f'<p style="color:#1E3A5F;font-size:14px;margin:0;font-weight:bold;">{name_f}</p>'
-            if title_f:
-                name_title_html += f'<p style="color:#888;font-size:12px;margin:2px 0 0;">{title_f}</p>'
+        sent_count = 0
+        for sub in subs:
+            try:
+                personalized_html = html_content.replace("{{email}}", sub["email"])
+                await asyncio.to_thread(resend.Emails.send, {
+                    "from": sender,
+                    "to": [sub["email"]],
+                    "subject": subject,
+                    "html": personalized_html
+                })
+                sent_count += 1
+            except Exception as e:
+                all_errors.append(f"[{lang}] {sub['email']}: {str(e)}")
         
-        html += f"""
-  <!-- Founder Introduction -->
-  <div style="padding:28px 40px;background:#fafbfc;border-bottom:1px solid #eaedf0;">
-    <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-      <td width="100" style="vertical-align:top;padding-right:20px;">
-        {photo_html}
-      </td>
-      <td style="vertical-align:top;">
-        <p style="color:#3DB883;margin:0 0 6px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;">A note from the founder</p>
-        {name_title_html}
-      </td>
-    </tr></table>
-    <div style="margin-top:16px;color:#444;font-size:14px;line-height:1.7;">
-      {intro_text}
-    </div>
-    {signature_html}
-  </div>
-"""
+        results[lang] = {"total": len(subs), "sent": sent_count}
+        total_sent += sent_count
     
-    # Weekly Brief section
-    if latest_brief:
-        brief_title = latest_brief.get('title_en', 'Weekly Brief')
-        brief_summary = latest_brief.get('summary_en', '')
-        brief_content = latest_brief.get('content_en', '')
-        # Extract first 3 bullet points or paragraphs from content
-        import re
-        highlights = []
-        li_matches = re.findall(r'<li[^>]*>(.*?)</li>', brief_content, re.DOTALL)
-        for li in li_matches[:4]:
-            clean = re.sub(r'<[^>]+>', '', li).strip()
-            if clean and len(clean) > 20:
-                highlights.append(clean[:200])
-        
-        html += f"""
-  <!-- Weekly Brief -->
-  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;">
-    <div style="display:inline-block;background:#FEF3C7;color:#92400E;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">Weekly Brief</div>
-    <h2 style="color:#1E3A5F;font-size:22px;margin:12px 0 10px;font-weight:800;line-height:1.3;">{brief_title}</h2>
-    <p style="color:#555;font-size:15px;line-height:1.7;margin:0 0 16px;">{brief_summary}</p>
-"""
-        if highlights:
-            html += '<div style="background:#f8f9fb;border-left:4px solid #1E3A5F;padding:16px 20px;margin:0 0 16px;">'
-            for h in highlights:
-                html += f'<p style="color:#333;font-size:13px;line-height:1.6;margin:0 0 8px;">&#8226; {h}</p>'
-            html += '</div>'
-        
-        html += f"""
-    <a href="{base_url}/studies" style="display:inline-block;background:#1E3A5F;color:white;padding:10px 24px;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;border-radius:4px;">Read Full Brief &rarr;</a>
-  </div>
-"""
-    
-    # Featured News section
-    if featured_news:
-        html += """
-  <!-- Featured News -->
-  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;">
-    <div style="display:inline-block;background:#DBEAFE;color:#1E40AF;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">Featured Articles</div>
-"""
-        for i, news in enumerate(featured_news):
-            title = news.get("title_en", "")
-            summary = news.get("summary_en", "")[:150]
-            img = news.get("image_url", "")
-            border = 'border-bottom:1px solid #f0f2f5;' if i < len(featured_news) - 1 else ''
-            
-            if img:
-                html += f"""
-    <div style="padding:16px 0;{border}">
-      <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-        <td width="100" style="vertical-align:top;padding-right:16px;">
-          <img src="{img}" alt="" style="width:100px;height:75px;object-fit:cover;border-radius:6px;" />
-        </td>
-        <td style="vertical-align:top;">
-          <p style="font-weight:bold;margin:0 0 4px;font-size:15px;color:#1a1a2e;line-height:1.3;">{title}</p>
-          <p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{summary}...</p>
-        </td>
-      </tr></table>
-    </div>
-"""
-            else:
-                html += f"""
-    <div style="padding:16px 0;{border}">
-      <p style="font-weight:bold;margin:0 0 4px;font-size:15px;color:#1a1a2e;line-height:1.3;">{title}</p>
-      <p style="color:#666;font-size:13px;margin:0;line-height:1.5;">{summary}...</p>
-    </div>
-"""
-        html += f"""
-    <div style="padding-top:8px;">
-      <a href="{base_url}/articles" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;">View All Articles &rarr;</a>
-    </div>
-  </div>
-"""
-    
-    # Studies section
-    if latest_studies:
-        html += """
-  <!-- New Studies -->
-  <div style="padding:32px 40px;border-bottom:1px solid #eaedf0;">
-    <div style="display:inline-block;background:#F3E8FF;color:#6B21A8;padding:4px 12px;font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:bold;border-radius:3px;margin-bottom:16px;">New Studies</div>
-"""
-        for study in latest_studies:
-            title = study.get("title_en", "")
-            summary = study.get("summary_en", "")[:120]
-            html += f"""
-    <div style="padding:10px 0;">
-      <p style="font-weight:bold;margin:0 0 2px;font-size:14px;color:#1a1a2e;">{title}</p>
-      <p style="color:#888;font-size:12px;margin:0;">{summary}</p>
-    </div>
-"""
-        html += f"""
-    <div style="padding-top:8px;">
-      <a href="{base_url}/studies" style="color:#3DB883;font-size:12px;text-transform:uppercase;letter-spacing:1px;text-decoration:none;font-weight:bold;">View Studies &rarr;</a>
-    </div>
-  </div>
-"""
-    
-    # Support Banner
-    html += f"""
-  <!-- Support Banner -->
-  <div style="background:linear-gradient(135deg,#1E3A5F 0%,#2a4d75 100%);padding:28px 40px;text-align:center;">
-    <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:0 0 16px;line-height:1.5;">If this briefing is useful to your work, consider supporting<br>Iran Observatory's independence.</p>
-    <a href="{helloasso_url}" style="display:inline-block;background:#3DB883;color:white;padding:10px 28px;font-size:11px;text-transform:uppercase;letter-spacing:2px;text-decoration:none;font-weight:bold;border-radius:20px;">&#9825; Support Us</a>
-  </div>
-
-  <!-- Footer -->
-  <div style="padding:24px 40px;background:#f8f9fb;text-align:center;">
-    <p style="color:#1E3A5F;font-size:13px;font-weight:bold;margin:0 0 4px;">Iran Observatory | Observatoire de l'Iran</p>
-    <p style="color:#999;font-size:11px;margin:0 0 8px;">Independent platform for fact-based analysis on Iran</p>
-    <div style="margin:12px 0;">
-      <a href="{base_url}" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Website</a>
-      <a href="{base_url}/monitor" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Iran Monitor</a>
-      <a href="{base_url}/articles" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Articles</a>
-      <a href="{base_url}/studies" style="color:#1E3A5F;font-size:11px;text-decoration:none;margin:0 8px;">Studies & Briefs</a>
-    </div>
-    <p style="color:#bbb;font-size:10px;margin:0;">You received this because you subscribed to Iran Observatory newsletter.<br><a href="{base_url}/api/unsubscribe?email={{{{email}}}}" style="color:#999;">Unsubscribe</a></p>
-  </div>
-
-</div>
-</body>
-</html>"""
-    
-    subject = f"Iran Observatory — {latest_brief.get('title_en', 'Weekly Newsletter')}" if latest_brief else "Iran Observatory — Weekly Newsletter"
-    return {"subject": subject, "html_content": html}
+    return {
+        "status": "sent" if total_sent > 0 else "no_subscribers",
+        "total_sent": total_sent,
+        "by_language": results,
+        "errors": all_errors[:20]
+    }
 
 # Admin endpoint to manually trigger brief generation
 @api_router.post("/briefs/generate")

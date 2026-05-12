@@ -63,10 +63,18 @@ export default function Admin() {
   const [showCreateArticle, setShowCreateArticle] = useState(false);
   const [previewLang, setPreviewLang] = useState(null);
   const [newsletterPreview, setNewsletterPreview] = useState(null);
+  const [newsletterPreviewLang, setNewsletterPreviewLang] = useState('fr');
+  const [sendingNewsletter, setSendingNewsletter] = useState(false);
   const [customSubject, setCustomSubject] = useState('');
   const [customContent, setCustomContent] = useState('');
   const [subscribers, setSubscribers] = useState([]);
-  const [founder, setFounder] = useState({ enabled: false, intro_text: '', photo_url: '', name: '', title: '', signature_url: '' });
+  const [founder, setFounder] = useState({
+    enabled: false, photo_url: '', signature_url: '',
+    name_fr: '', name_en: '', name_fa: '',
+    title_fr: '', title_en: '', title_fa: '',
+    intro_text_fr: '', intro_text_en: '', intro_text_fa: ''
+  });
+  const [founderTab, setFounderTab] = useState('fr');
   const [savingFounder, setSavingFounder] = useState(false);
   const [uploadingFounderPhoto, setUploadingFounderPhoto] = useState(false);
   const [newArticle, setNewArticle] = useState({
@@ -161,13 +169,20 @@ export default function Admin() {
   const fetchFounder = async () => {
     try {
       const response = await axios.get(`${API}/settings/founder`, axiosConfig);
+      const d = response.data || {};
       setFounder({
-        enabled: !!response.data.enabled,
-        intro_text: response.data.intro_text || '',
-        photo_url: response.data.photo_url || '',
-        name: response.data.name || '',
-        title: response.data.title || '',
-        signature_url: response.data.signature_url || ''
+        enabled: !!d.enabled,
+        photo_url: d.photo_url || '',
+        signature_url: d.signature_url || '',
+        name_fr: d.name_fr || '',
+        name_en: d.name_en || '',
+        name_fa: d.name_fa || '',
+        title_fr: d.title_fr || '',
+        title_en: d.title_en || '',
+        title_fa: d.title_fa || '',
+        intro_text_fr: d.intro_text_fr || '',
+        intro_text_en: d.intro_text_en || '',
+        intro_text_fa: d.intro_text_fa || ''
       });
     } catch (e) {
       console.error('Failed to fetch founder settings:', e);
@@ -892,15 +907,20 @@ export default function Admin() {
               <div className="border-b border-zinc-200 p-4 flex items-center justify-between">
                 <div>
                   <h3 className="font-heading font-bold">Email Subscribers</h3>
-                  <p className="text-xs text-zinc-500 mt-1">Users who provided their email to download PDFs</p>
+                  <p className="text-xs text-zinc-500 mt-1">Users who subscribed to the newsletter or downloaded PDFs</p>
                 </div>
-                <span className="font-mono text-sm text-zinc-500">{subscribers.length} contacts</span>
+                <div className="flex items-center gap-3 text-xs font-mono text-zinc-500">
+                  <span>{subscribers.length} total</span>
+                  <span className="text-blue-700">FR {subscribers.filter(s => (s.language || 'fr') === 'fr').length}</span>
+                  <span className="text-green-700">EN {subscribers.filter(s => s.language === 'en').length}</span>
+                  <span className="text-purple-700">FA {subscribers.filter(s => s.language === 'fa').length}</span>
+                </div>
               </div>
               <div className="divide-y divide-zinc-100 max-h-[600px] overflow-y-auto">
                 {subscribers.map(sub => (
                   <div key={sub.id} className="p-4 flex items-center justify-between" data-testid={`subscriber-${sub.id}`}>
-                    <div>
-                      <p className="font-medium text-sm">{sub.email}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{sub.email}</p>
                       <div className="flex items-center gap-3 mt-1">
                         {sub.newsletter && (
                           <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-mono uppercase">Newsletter</span>
@@ -909,18 +929,39 @@ export default function Admin() {
                         <span className="text-[10px] font-mono text-zinc-400">{new Date(sub.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-zinc-400 hover:text-red-500"
-                      onClick={() => handleDeleteSubscriber(sub.id)}
-                    >
-                      <Trash2 className="w-3 h-3" strokeWidth={1.5} />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={sub.language || 'fr'}
+                        onChange={async (e) => {
+                          const newLang = e.target.value;
+                          try {
+                            await axios.patch(`${API}/subscribers/${sub.id}`, { language: newLang }, axiosConfig);
+                            setSubscribers(prev => prev.map(s => s.id === sub.id ? { ...s, language: newLang } : s));
+                            toast.success(`Language set to ${newLang.toUpperCase()}`);
+                          } catch {
+                            toast.error('Failed to update language');
+                          }
+                        }}
+                        className="text-xs font-mono border border-zinc-200 rounded px-2 py-1 bg-white"
+                        data-testid={`subscriber-lang-${sub.id}`}
+                      >
+                        <option value="fr">FR</option>
+                        <option value="en">EN</option>
+                        <option value="fa">FA</option>
+                      </select>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-zinc-400 hover:text-red-500"
+                        onClick={() => handleDeleteSubscriber(sub.id)}
+                      >
+                        <Trash2 className="w-3 h-3" strokeWidth={1.5} />
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 {subscribers.length === 0 && (
-                  <p className="p-8 text-center text-zinc-500 text-sm">No subscribers yet. Emails will appear here when users download PDFs.</p>
+                  <p className="p-8 text-center text-zinc-500 text-sm">No subscribers yet. Emails will appear here when users subscribe or download PDFs.</p>
                 )}
               </div>
             </div>
@@ -931,30 +972,39 @@ export default function Admin() {
             {/* Add Subscribers */}
             <div className="bg-white border border-zinc-200 p-6">
               <h3 className="font-heading font-bold text-lg mb-2">Add Subscribers</h3>
-              <p className="text-sm text-zinc-500 mb-4">Paste multiple emails (one per line, or comma/semicolon separated)</p>
+              <p className="text-sm text-zinc-500 mb-4">Paste multiple emails (one per line, or comma/semicolon separated). All emails added in one batch get the same language.</p>
               <form className="space-y-3" onSubmit={async (e) => {
                 e.preventDefault();
                 const raw = e.target.emails.value.trim();
+                const lang = e.target.bulk_lang.value;
                 if (!raw) return;
                 const emails = raw.split(/[\n,;]+/).map(s => s.trim().toLowerCase()).filter(s => s && s.includes('@'));
                 if (!emails.length) { toast.error('No valid emails found'); return; }
                 let added = 0, skipped = 0;
                 for (const email of emails) {
                   try {
-                    await axios.post(`${API}/subscribers/add`, { email, newsletter: true }, axiosConfig);
+                    await axios.post(`${API}/subscribers/add`, { email, newsletter: true, language: lang }, axiosConfig);
                     added++;
                   } catch { skipped++; }
                 }
-                toast.success(`Added ${added} subscriber${added !== 1 ? 's' : ''}${skipped ? `, ${skipped} skipped` : ''}`);
+                toast.success(`Added ${added} ${lang.toUpperCase()} subscriber${added !== 1 ? 's' : ''}${skipped ? `, ${skipped} skipped` : ''}`);
                 e.target.reset();
                 fetchSubscribers();
               }}>
                 <Textarea name="emails" placeholder={"email1@example.com\nemail2@example.com\nemail3@example.com"} className="rounded-none font-mono text-sm" rows={4} />
-                <Button type="submit" className="rounded-none bg-[#1E3A5F]">Add All</Button>
+                <div className="flex items-center gap-3">
+                  <Label className="text-xs font-mono uppercase text-zinc-500">Language:</Label>
+                  <select name="bulk_lang" defaultValue="fr" className="text-sm font-mono border border-zinc-200 rounded px-3 py-2 bg-white" data-testid="bulk-add-lang">
+                    <option value="fr">Français (FR)</option>
+                    <option value="en">English (EN)</option>
+                    <option value="fa">فارسی (FA)</option>
+                  </select>
+                  <Button type="submit" className="rounded-none bg-[#1E3A5F] flex-1">Add All</Button>
+                </div>
               </form>
             </div>
 
-            {/* Founder Introduction */}
+            {/* Founder Introduction (multi-language) */}
             <div className="bg-white border border-zinc-200 p-6" data-testid="founder-intro-section">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-heading font-bold text-lg">Founder Introduction</h3>
@@ -969,119 +1019,148 @@ export default function Admin() {
                   <span>Include in auto newsletter</span>
                 </label>
               </div>
-              <p className="text-sm text-zinc-500 mb-4">Personal note from the founder shown at the top of the weekly newsletter.</p>
+              <p className="text-sm text-zinc-500 mb-4">Write your personal note in each language. Photo & signature are shared across all languages.</p>
+              
+              {/* Language tabs */}
+              <div className="flex gap-1 mb-4 border-b border-zinc-200">
+                {['fr', 'en', 'fa'].map(lng => (
+                  <button
+                    key={lng}
+                    type="button"
+                    onClick={() => setFounderTab(lng)}
+                    className={`px-4 py-2 text-xs font-mono uppercase tracking-wider border-b-2 transition-colors ${founderTab === lng ? 'border-[#1E3A5F] text-[#1E3A5F] font-bold' : 'border-transparent text-zinc-400 hover:text-zinc-600'}`}
+                    data-testid={`founder-tab-${lng}`}
+                  >
+                    {lng === 'fr' ? 'Français' : lng === 'en' ? 'English' : 'فارسی'}
+                  </button>
+                ))}
+              </div>
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Name</Label>
+                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Name ({founderTab.toUpperCase()})</Label>
                       <Input
-                        placeholder="e.g. Jane Doe"
+                        placeholder={founderTab === 'fa' ? 'مثلاً سارا دو' : 'e.g. Jane Doe'}
                         className="rounded-none mt-1"
-                        value={founder.name}
-                        onChange={(e) => setFounder(prev => ({ ...prev, name: e.target.value }))}
-                        data-testid="founder-name"
+                        dir={founderTab === 'fa' ? 'rtl' : 'ltr'}
+                        value={founder[`name_${founderTab}`] || ''}
+                        onChange={(e) => setFounder(prev => ({ ...prev, [`name_${founderTab}`]: e.target.value }))}
+                        data-testid={`founder-name-${founderTab}`}
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Title</Label>
+                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Title ({founderTab.toUpperCase()})</Label>
                       <Input
-                        placeholder="e.g. Director"
+                        placeholder={founderTab === 'fr' ? 'ex. Directrice' : founderTab === 'fa' ? 'مثلاً مدیر' : 'e.g. Director'}
                         className="rounded-none mt-1"
-                        value={founder.title}
-                        onChange={(e) => setFounder(prev => ({ ...prev, title: e.target.value }))}
-                        data-testid="founder-title"
+                        dir={founderTab === 'fa' ? 'rtl' : 'ltr'}
+                        value={founder[`title_${founderTab}`] || ''}
+                        onChange={(e) => setFounder(prev => ({ ...prev, [`title_${founderTab}`]: e.target.value }))}
+                        data-testid={`founder-title-${founderTab}`}
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs text-zinc-500 uppercase tracking-wider">Introduction Text</Label>
+                    <Label className="text-xs text-zinc-500 uppercase tracking-wider">Introduction Text ({founderTab.toUpperCase()})</Label>
                     <Textarea
-                      placeholder="Dear readers,&#10;&#10;This week we focus on..."
+                      placeholder={founderTab === 'fr' ? 'Chers lecteurs,\n\nCette semaine...' : founderTab === 'fa' ? 'خوانندگان عزیز،\n\nاین هفته...' : 'Dear readers,\n\nThis week...'}
                       className="rounded-none mt-1 font-mono text-sm"
+                      dir={founderTab === 'fa' ? 'rtl' : 'ltr'}
                       rows={5}
-                      value={founder.intro_text}
-                      onChange={(e) => setFounder(prev => ({ ...prev, intro_text: e.target.value }))}
-                      data-testid="founder-intro-text"
+                      value={founder[`intro_text_${founderTab}`] || ''}
+                      onChange={(e) => setFounder(prev => ({ ...prev, [`intro_text_${founderTab}`]: e.target.value }))}
+                      data-testid={`founder-intro-text-${founderTab}`}
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs text-zinc-500 uppercase tracking-wider">Photo</Label>
-                    <div className="flex items-center gap-3 mt-1">
-                      {founder.photo_url && (
-                        <img src={founder.photo_url} alt="founder" className="w-14 h-14 rounded-full object-cover border border-zinc-200" data-testid="founder-photo-preview" />
-                      )}
-                      <label className="flex-1 cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFounderPhotoUpload(e, 'photo_url')}
-                          data-testid="founder-photo-upload"
-                        />
-                        <div className="border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 text-center">
-                          {uploadingFounderPhoto ? 'Uploading...' : (founder.photo_url ? 'Replace photo' : 'Upload photo')}
-                        </div>
-                      </label>
-                      {founder.photo_url && (
-                        <button type="button" onClick={() => setFounder(prev => ({ ...prev, photo_url: '' }))} className="text-xs text-red-600 hover:underline" data-testid="founder-photo-remove">Remove</button>
-                      )}
+                  
+                  {/* Shared images */}
+                  <div className="pt-3 border-t border-zinc-100">
+                    <p className="text-xs font-mono text-zinc-400 uppercase tracking-wider mb-2">Shared across all languages</p>
+                    <div className="mb-3">
+                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Photo</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        {founder.photo_url && (
+                          <img src={founder.photo_url} alt="founder" className="w-14 h-14 rounded-full object-cover border border-zinc-200" data-testid="founder-photo-preview" />
+                        )}
+                        <label className="flex-1 cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFounderPhotoUpload(e, 'photo_url')}
+                            data-testid="founder-photo-upload"
+                          />
+                          <div className="border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 text-center">
+                            {uploadingFounderPhoto ? 'Uploading...' : (founder.photo_url ? 'Replace photo' : 'Upload photo')}
+                          </div>
+                        </label>
+                        {founder.photo_url && (
+                          <button type="button" onClick={() => setFounder(prev => ({ ...prev, photo_url: '' }))} className="text-xs text-red-600 hover:underline" data-testid="founder-photo-remove">Remove</button>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-zinc-500 uppercase tracking-wider">Signature image (optional)</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        {founder.signature_url && (
+                          <img src={founder.signature_url} alt="signature" className="h-10 object-contain border border-zinc-200 bg-white px-2" data-testid="founder-signature-preview" />
+                        )}
+                        <label className="flex-1 cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFounderPhotoUpload(e, 'signature_url')}
+                            data-testid="founder-signature-upload"
+                          />
+                          <div className="border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 text-center">
+                            {founder.signature_url ? 'Replace signature' : 'Upload signature'}
+                          </div>
+                        </label>
+                        {founder.signature_url && (
+                          <button type="button" onClick={() => setFounder(prev => ({ ...prev, signature_url: '' }))} className="text-xs text-red-600 hover:underline" data-testid="founder-signature-remove">Remove</button>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-400 mt-1">If no signature image, the localized name will appear in italic below the message.</p>
                     </div>
                   </div>
-                  <div>
-                    <Label className="text-xs text-zinc-500 uppercase tracking-wider">Signature image (optional)</Label>
-                    <div className="flex items-center gap-3 mt-1">
-                      {founder.signature_url && (
-                        <img src={founder.signature_url} alt="signature" className="h-10 object-contain border border-zinc-200 bg-white px-2" data-testid="founder-signature-preview" />
-                      )}
-                      <label className="flex-1 cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFounderPhotoUpload(e, 'signature_url')}
-                          data-testid="founder-signature-upload"
-                        />
-                        <div className="border border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 text-center">
-                          {founder.signature_url ? 'Replace signature' : 'Upload signature'}
-                        </div>
-                      </label>
-                      {founder.signature_url && (
-                        <button type="button" onClick={() => setFounder(prev => ({ ...prev, signature_url: '' }))} className="text-xs text-red-600 hover:underline" data-testid="founder-signature-remove">Remove</button>
-                      )}
-                    </div>
-                    <p className="text-xs text-zinc-400 mt-1">If no signature image, the name will appear in italic below the message.</p>
-                  </div>
+                  
                   <Button
                     className="w-full rounded-none bg-[#1E3A5F]"
                     onClick={saveFounder}
                     disabled={savingFounder}
                     data-testid="save-founder-btn"
                   >
-                    {savingFounder ? 'Saving...' : 'Save Founder Introduction'}
+                    {savingFounder ? 'Saving...' : 'Save Founder Introduction (all languages)'}
                   </Button>
                 </div>
+                
+                {/* Preview for current language */}
                 <div className="border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-3">Preview</p>
-                  {(founder.intro_text || founder.photo_url || founder.name) ? (
-                    <div className="bg-white p-4 border border-zinc-200">
-                      <div className="flex items-start gap-3">
+                  <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-3">Preview · {founderTab.toUpperCase()}</p>
+                  {(founder[`intro_text_${founderTab}`] || founder.photo_url || founder[`name_${founderTab}`]) ? (
+                    <div className="bg-white p-4 border border-zinc-200" dir={founderTab === 'fa' ? 'rtl' : 'ltr'} style={{ textAlign: founderTab === 'fa' ? 'right' : 'left' }}>
+                      <div className="flex items-start gap-3" style={{ flexDirection: founderTab === 'fa' ? 'row-reverse' : 'row' }}>
                         {founder.photo_url && (
-                          <img src={founder.photo_url} alt={founder.name} className="w-16 h-16 rounded-full object-cover border-2 border-[#3DB883]" />
+                          <img src={founder.photo_url} alt={founder[`name_${founderTab}`]} className="w-16 h-16 rounded-full object-cover border-2 border-[#3DB883] flex-shrink-0" />
                         )}
                         <div>
-                          <p className="text-[10px] uppercase tracking-widest text-[#3DB883] font-bold">A note from the founder</p>
-                          {founder.name && <p className="text-sm font-bold text-[#1E3A5F] mt-1">{founder.name}</p>}
-                          {founder.title && <p className="text-xs text-zinc-500">{founder.title}</p>}
+                          <p className="text-[10px] uppercase tracking-widest text-[#3DB883] font-bold">
+                            {founderTab === 'fr' ? 'Le mot du fondateur' : founderTab === 'fa' ? 'یادداشت بنیان‌گذار' : 'A note from the founder'}
+                          </p>
+                          {founder[`name_${founderTab}`] && <p className="text-sm font-bold text-[#1E3A5F] mt-1">{founder[`name_${founderTab}`]}</p>}
+                          {founder[`title_${founderTab}`] && <p className="text-xs text-zinc-500">{founder[`title_${founderTab}`]}</p>}
                         </div>
                       </div>
-                      {founder.intro_text && (
-                        <div className="mt-3 text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{founder.intro_text}</div>
+                      {founder[`intro_text_${founderTab}`] && (
+                        <div className="mt-3 text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{founder[`intro_text_${founderTab}`]}</div>
                       )}
                       {founder.signature_url ? (
                         <img src={founder.signature_url} alt="signature" className="h-10 mt-2 object-contain" />
                       ) : (
-                        founder.name && <p className="text-sm italic text-[#1E3A5F] mt-2" style={{ fontFamily: 'Georgia, serif' }}>— {founder.name}</p>
+                        founder[`name_${founderTab}`] && <p className="text-sm italic text-[#1E3A5F] mt-2" style={{ fontFamily: 'Georgia, serif' }}>— {founder[`name_${founderTab}`]}</p>
                       )}
                     </div>
                   ) : (
@@ -1094,26 +1173,49 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Auto-Generated Newsletter */}
+            {/* Auto-Generated Newsletter (multi-language) */}
             <div className="bg-white border border-zinc-200 p-6">
-              <h3 className="font-heading font-bold text-lg mb-2">Auto Newsletter</h3>
-              <p className="text-sm text-zinc-500 mb-4">Auto-generated from latest weekly brief + featured articles.</p>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-heading font-bold text-lg">Auto Newsletter</h3>
+                <div className="flex gap-1">
+                  {['fr', 'en', 'fa'].map(lng => (
+                    <button
+                      key={lng}
+                      type="button"
+                      onClick={async () => {
+                        setNewsletterPreviewLang(lng);
+                        try {
+                          const res = await axios.post(`${API}/newsletter/generate?lang=${lng}`, {}, axiosConfig);
+                          setNewsletterPreview(res.data);
+                        } catch {
+                          toast.error('Failed to generate newsletter');
+                        }
+                      }}
+                      className={`px-3 py-1 text-xs font-mono uppercase border ${newsletterPreviewLang === lng && newsletterPreview ? 'border-[#1E3A5F] bg-[#1E3A5F] text-white' : 'border-zinc-300 text-zinc-600 hover:bg-zinc-50'}`}
+                      data-testid={`preview-lang-${lng}`}
+                    >
+                      {lng === 'fa' ? 'فارسی' : lng.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-sm text-zinc-500 mb-4">Auto-generated from the latest weekly brief + featured articles + new studies. Pick a language to preview it. The "Send" button delivers all 3 versions, each to its language audience.</p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Button 
                     className="w-full rounded-none bg-[#1E3A5F]"
                     onClick={async () => {
                       try {
-                        const res = await axios.post(`${API}/newsletter/generate`, {}, axiosConfig);
+                        const res = await axios.post(`${API}/newsletter/generate?lang=${newsletterPreviewLang}`, {}, axiosConfig);
                         setNewsletterPreview(res.data);
-                        toast.success('Newsletter generated');
+                        toast.success(`Preview generated (${newsletterPreviewLang.toUpperCase()})`);
                       } catch (e) {
                         toast.error('Failed to generate newsletter');
                       }
                     }}
                     data-testid="generate-newsletter-btn"
                   >
-                    Generate Newsletter Preview
+                    Generate Preview ({newsletterPreviewLang.toUpperCase()})
                   </Button>
                   <Button 
                     className="w-full rounded-none bg-[#3DB883] hover:bg-[#2D9E6E]"
@@ -1130,34 +1232,57 @@ export default function Admin() {
                   >
                     Generate Weekly Brief Now
                   </Button>
-                  {newsletterPreview && (
-                    <Button 
-                      className="w-full rounded-none bg-red-600 hover:bg-red-700 text-white"
-                      onClick={async () => {
-                        if (!window.confirm(`Send auto newsletter to ${subscribers.filter(s => s.newsletter).length} subscribers?`)) return;
-                        try {
-                          const res = await axios.post(`${API}/newsletter/send`, {
-                            subject: newsletterPreview.subject,
-                            html_content: newsletterPreview.html_content
-                          }, axiosConfig);
-                          toast.success(`Sent to ${res.data.sent} subscribers`);
-                        } catch (e) {
-                          toast.error('Failed: ' + (e.response?.data?.detail || e.message));
-                        }
-                      }}
-                      data-testid="send-newsletter-btn"
-                    >
-                      Send Auto Newsletter ({subscribers.filter(s => s.newsletter).length} subscribers)
-                    </Button>
-                  )}
+                  {(() => {
+                    const fr = subscribers.filter(s => s.newsletter && (s.language || 'fr') === 'fr').length;
+                    const en = subscribers.filter(s => s.newsletter && s.language === 'en').length;
+                    const fa = subscribers.filter(s => s.newsletter && s.language === 'fa').length;
+                    const total = fr + en + fa;
+                    return (
+                      <>
+                        <div className="bg-zinc-50 border border-zinc-200 p-3 text-xs font-mono text-zinc-600">
+                          <p className="font-bold mb-1">Audience by language</p>
+                          <div className="flex gap-4">
+                            <span>🇫🇷 FR: <strong>{fr}</strong></span>
+                            <span>🇬🇧 EN: <strong>{en}</strong></span>
+                            <span>🇮🇷 FA: <strong>{fa}</strong></span>
+                          </div>
+                        </div>
+                        <Button 
+                          className="w-full rounded-none bg-red-600 hover:bg-red-700 text-white"
+                          disabled={sendingNewsletter || total === 0}
+                          onClick={async () => {
+                            if (!window.confirm(`Send the auto newsletter in all 3 languages?\n\nFR: ${fr} subscribers\nEN: ${en} subscribers\nFA: ${fa} subscribers\n\nTotal: ${total}`)) return;
+                            setSendingNewsletter(true);
+                            try {
+                              const res = await axios.post(`${API}/newsletter/send-multilingual`, {}, axiosConfig);
+                              const by = res.data.by_language || {};
+                              toast.success(`Sent ${res.data.total_sent} emails — FR:${by.fr?.sent || 0}, EN:${by.en?.sent || 0}, FA:${by.fa?.sent || 0}`);
+                            } catch (e) {
+                              toast.error('Failed: ' + (e.response?.data?.detail || e.message));
+                            } finally {
+                              setSendingNewsletter(false);
+                            }
+                          }}
+                          data-testid="send-newsletter-multilingual-btn"
+                        >
+                          {sendingNewsletter ? 'Sending...' : `Send Newsletter (All Languages, ${total} subscribers)`}
+                        </Button>
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="border border-zinc-200 rounded overflow-hidden">
-                  <div className="bg-zinc-100 p-2 border-b border-zinc-200"><span className="text-xs font-mono text-zinc-500">PREVIEW</span></div>
-                  <div className="p-4 max-h-[400px] overflow-y-auto">
+                  <div className="bg-zinc-100 p-2 border-b border-zinc-200 flex items-center justify-between">
+                    <span className="text-xs font-mono text-zinc-500">PREVIEW · {newsletterPreviewLang.toUpperCase()}</span>
+                    {newsletterPreview?.subject && (
+                      <span className="text-xs text-zinc-600 italic truncate max-w-[60%]">{newsletterPreview.subject}</span>
+                    )}
+                  </div>
+                  <div className="p-4 max-h-[500px] overflow-y-auto">
                     {newsletterPreview ? (
                       <div dangerouslySetInnerHTML={{ __html: newsletterPreview.html_content }} />
                     ) : (
-                      <p className="text-zinc-400 text-sm text-center py-10">Click "Generate Newsletter Preview"</p>
+                      <p className="text-zinc-400 text-sm text-center py-10">Click "Generate Preview" or pick a language tab</p>
                     )}
                   </div>
                 </div>

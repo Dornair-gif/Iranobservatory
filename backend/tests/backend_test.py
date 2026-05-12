@@ -258,16 +258,27 @@ class TestFounderSettings:
         r = api.get(f"{BASE_URL}/api/settings/founder", headers=auth_headers, timeout=20)
         assert r.status_code == 200
         data = r.json()
-        for k in ("enabled", "intro_text", "photo_url", "name", "title", "signature_url"):
+        for k in (
+            "enabled", "photo_url", "signature_url",
+            "name_fr", "name_en", "name_fa",
+            "title_fr", "title_en", "title_fa",
+            "intro_text_fr", "intro_text_en", "intro_text_fa",
+        ):
             assert k in data, f"missing field: {k}"
 
     def test_put_persists(self, api, auth_headers):
         payload = {
             "enabled": True,
-            "intro_text": "Welcome to our weekly intelligence brief.",
+            "intro_text_fr": "Bienvenue à notre brief hebdomadaire.",
+            "intro_text_en": "Welcome to our weekly intelligence brief.",
+            "intro_text_fa": "",
             "photo_url": "",
-            "name": "Test Founder",
-            "title": "Director",
+            "name_fr": "Test Fondateur",
+            "name_en": "Test Founder",
+            "name_fa": "",
+            "title_fr": "Directeur",
+            "title_en": "Director",
+            "title_fa": "",
             "signature_url": "",
         }
         r = api.put(
@@ -281,9 +292,9 @@ class TestFounderSettings:
         r = api.get(f"{BASE_URL}/api/settings/founder", headers=auth_headers, timeout=20)
         data = r.json()
         assert data["enabled"] is True
-        assert data["intro_text"] == payload["intro_text"]
-        assert data["name"] == payload["name"]
-        assert data["title"] == payload["title"]
+        assert data["intro_text_en"] == payload["intro_text_en"]
+        assert data["name_en"] == payload["name_en"]
+        assert data["title_en"] == payload["title_en"]
 
 
 # ----------------------------- newsletter generate --------------------------
@@ -292,10 +303,16 @@ class TestNewsletterGenerate:
     def _set_founder(self, api, auth_headers, **kwargs):
         payload = {
             "enabled": False,
-            "intro_text": "",
+            "intro_text_fr": "",
+            "intro_text_en": "",
+            "intro_text_fa": "",
             "photo_url": "",
-            "name": "",
-            "title": "",
+            "name_fr": "",
+            "name_en": "",
+            "name_fa": "",
+            "title_fr": "",
+            "title_en": "",
+            "title_fa": "",
             "signature_url": "",
         }
         payload.update(kwargs)
@@ -333,24 +350,26 @@ class TestNewsletterGenerate:
             f"{BASE_URL}/api/newsletter/generate", headers=auth_headers, timeout=60
         )
         html = r.json().get("html_content", "")
-        assert "A note from the founder" not in html
+        # Default lang is fr -> French founder label
+        assert "Le mot du fondateur" not in html
 
     def test_founder_block_enabled(self, api, auth_headers):
-        intro = "A weekly word from the founder about Iran."
+        intro = "Un mot hebdomadaire du fondateur sur l'Iran."
         name = "Jane Founder"
         self._set_founder(
             api,
             auth_headers,
             enabled=True,
-            intro_text=intro,
-            name=name,
-            title="Director",
+            intro_text_fr=intro,
+            name_fr=name,
+            title_fr="Directeur",
         )
         r = api.post(
             f"{BASE_URL}/api/newsletter/generate", headers=auth_headers, timeout=60
         )
         html = r.json().get("html_content", "")
-        assert "A note from the founder" in html
+        # Default lang is fr -> French founder label
+        assert "Le mot du fondateur" in html
         assert intro in html
         assert name in html
 

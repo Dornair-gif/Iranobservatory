@@ -395,12 +395,12 @@ export default function Home() {
               </div>
             ) : (
               <form 
-                className="flex gap-2 max-w-md mx-auto"
+                className="max-w-md mx-auto space-y-2"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (!nlEmail || !nlEmail.includes('@')) return;
                   try {
-                    await axios.post(`${API}/subscribers`, { email: nlEmail, newsletter: true });
+                    await axios.post(`${API}/subscribers`, { email: nlEmail, newsletter: true, language });
                     setNlStatus('success');
                     setNlEmail('');
                   } catch (err) {
@@ -413,22 +413,31 @@ export default function Home() {
                 }}
                 data-testid="newsletter-signup"
               >
-                <input
-                  type="email"
-                  value={nlEmail}
-                  onChange={(e) => setNlEmail(e.target.value)}
-                  placeholder={language === 'fr' ? 'Votre email' : 'Your email address'}
-                  className="flex-1 px-4 py-3 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:border-[#1E3A5F] focus:ring-1 focus:ring-[#1E3A5F]"
-                  required
-                  data-testid="newsletter-email-input"
-                />
-                <button 
-                  type="submit"
-                  className="px-6 py-3 bg-[#1E3A5F] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2a4d75] transition-colors rounded-lg flex-shrink-0"
-                  data-testid="newsletter-submit-btn"
-                >
-                  {language === 'fr' ? 'S\'inscrire' : 'Subscribe'}
-                </button>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={nlEmail}
+                    onChange={(e) => setNlEmail(e.target.value)}
+                    placeholder={language === 'fr' ? 'Votre email' : language === 'fa' ? 'ایمیل شما' : 'Your email address'}
+                    className="flex-1 px-4 py-3 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:border-[#1E3A5F] focus:ring-1 focus:ring-[#1E3A5F]"
+                    required
+                    data-testid="newsletter-email-input"
+                  />
+                  <button 
+                    type="submit"
+                    className="px-6 py-3 bg-[#1E3A5F] text-white font-mono text-xs uppercase tracking-wider hover:bg-[#2a4d75] transition-colors rounded-lg flex-shrink-0"
+                    data-testid="newsletter-submit-btn"
+                  >
+                    {language === 'fr' ? 'S\'inscrire' : language === 'fa' ? 'عضویت' : 'Subscribe'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-500 text-center">
+                  {language === 'fr' ? 'Vous recevrez la newsletter en français.' : language === 'fa' ? 'شما خبرنامه را به فارسی دریافت خواهید کرد.' : 'You\'ll receive the newsletter in English.'}
+                  {' '}
+                  <span className="text-zinc-400">
+                    {language === 'fr' ? '(Changez la langue en haut à droite)' : language === 'fa' ? '(زبان را از بالا سمت چپ تغییر دهید)' : '(Change language top-right)'}
+                  </span>
+                </p>
               </form>
             )}
             {nlStatus === 'error' && (
