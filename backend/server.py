@@ -1191,6 +1191,8 @@ async def subscribe(request: Request):
     email = body.get("email", "").strip().lower()
     newsletter = body.get("newsletter", False)
     article_id = body.get("article_id")
+    raw_lang = (body.get("language") or "").lower()
+    language = raw_lang if raw_lang in ("en", "fr", "fa") else "fr"
     
     if not email or "@" not in email:
         raise HTTPException(status_code=400, detail="Valid email required")
@@ -1221,7 +1223,7 @@ async def subscribe(request: Request):
     subscriber = {
         "email": email,
         "newsletter": newsletter,
-        "language": (body.get("language") or "fr").lower(),
+        "language": language,
         "downloads": [{"article_id": article_id, "date": datetime.now(timezone.utc).isoformat()}] if article_id else [],
         "created_at": datetime.now(timezone.utc)
     }
@@ -1336,8 +1338,12 @@ async def update_subscriber(sub_id: str, request: Request):
         update["newsletter"] = bool(body["newsletter"])
     if not update:
         raise HTTPException(status_code=400, detail="No valid fields to update")
+    try:
+        oid = ObjectId(sub_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid subscriber id")
     result = await db.subscribers.update_one(
-        {"_id": ObjectId(sub_id)},
+        {"_id": oid},
         {"$set": update}
     )
     if result.matched_count == 0:

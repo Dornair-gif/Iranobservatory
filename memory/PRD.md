@@ -72,6 +72,16 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - Sources: RSS feeds + Telegram channels (t.me/hranews, t.me/VahidOnline)
 
 ### P1 (Completed)
+- **Multilingual Newsletter (May 2026, Option A — per-subscriber language preference)**:
+  - Subscribers now have a `language` field (FR/EN/FA, default FR for legacy/new). Stored on `db.subscribers`.
+  - Public signup form on Home auto-uses the current site language.
+  - Admin → Subscribers tab: language column with inline dropdown to change each subscriber's language. Header shows breakdown FR/EN/FA counts.
+  - Admin → Newsletter tab → Founder Introduction: 3 language tabs (FR/EN/فارسی) for name, title, intro text. Photo & signature stay shared. Live preview per tab. Persian preview correctly switches to RTL.
+  - Admin → Newsletter tab → Auto Newsletter: language picker tabs to preview each version (FR/EN/فارسی), audience-by-language counter, and a single "Send Newsletter (All Languages)" button calling `/api/newsletter/send-multilingual` which generates 3 emails and dispatches each to its language segment.
+  - New endpoints: `POST /api/newsletter/generate?lang=xx`, `POST /api/newsletter/send-multilingual`, `PATCH /api/subscribers/{id}`.
+  - Welcome / confirmation email also localized (FR/EN/FA) based on the subscriber's chosen language at signup time.
+  - Backend safety: invalid language values fall back to 'fr' on POST; malformed subscriber ID returns 400 (not 500) on PATCH; FR segment query includes legacy subscribers with missing `language` field.
+  - Backend test coverage: 43/43 pytest cases pass (19 new + 24 legacy regression).
 - **Newsletter Founder Introduction (May 2026)**: Admin can save founder name, title, intro text, photo, signature image — auto-injected at top of weekly newsletter when "Include" toggle is enabled (`/api/settings/founder`)
 - **Newsletter logo enlarged (May 2026)**: 55px → 100px for better branding visibility
 - Studies & Briefs page: Filter tabs (All / Studies & Analysis / Weekly Briefs)
