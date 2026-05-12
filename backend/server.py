@@ -849,29 +849,14 @@ async def get_article(article_id: str):
 async def update_article(article_id: str, data: ArticleUpdate, request: Request):
     await get_current_user(request)
     
-    update_doc = {
-        "title_en": data.title_en,
-        "title_fr": data.title_fr,
-        "title_fa": data.title_fa,
-        "content_en": data.content_en,
-        "content_fr": data.content_fr,
-        "content_fa": data.content_fa,
-        "summary_en": data.summary_en,
-        "summary_fr": data.summary_fr,
-        "summary_fa": data.summary_fa,
-        "image_url": data.image_url,
-        "source_url": data.source_url,
-        "pdf_url": data.pdf_url,
-        "tags": data.tags,
-        "category": data.category,
-        "content_type": data.content_type,
-        "updated_at": datetime.now(timezone.utc)
-    }
+    # Only update fields the client explicitly sent. Fields omitted from the
+    # request payload must NOT be overwritten with their Pydantic defaults
+    # (this was wiping image_url, title, content_type, etc. on partial edits).
+    update_doc = data.model_dump(exclude_unset=True)
+    update_doc["updated_at"] = datetime.now(timezone.utc)
     
-    if data.status:
-        update_doc["status"] = data.status
-        if data.status == "published":
-            update_doc["published_at"] = datetime.now(timezone.utc)
+    if update_doc.get("status") == "published":
+        update_doc["published_at"] = datetime.now(timezone.utc)
     
     result = await db.articles.update_one(
         {"_id": ObjectId(article_id)},
