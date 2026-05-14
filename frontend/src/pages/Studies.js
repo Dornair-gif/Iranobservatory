@@ -8,11 +8,20 @@ import { API } from '../config/api';
 import { format } from 'date-fns';
 import { fr as frLocale, enUS } from 'date-fns/locale';
 
+function normalizeFileUrl(url) {
+  // Rewrite cross-environment absolute URLs to relative so they resolve to the
+  // current origin. This handles legacy article docs whose image_url points to
+  // the wrong environment (e.g., preview URL stored in production).
+  if (!url) return url;
+  const m = String(url).match(/^https?:\/\/[^/]+(\/api\/files\/[^?#]+)/);
+  return m ? m[1] : url;
+}
+
 function extractCoverImage(article, language) {
-  if (article.image_url) return article.image_url;
+  if (article.image_url) return normalizeFileUrl(article.image_url);
   const content = article[`content_${language}`] || article.content_en || article.content_fr || '';
   const match = content.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return match ? match[1] : null;
+  return match ? normalizeFileUrl(match[1]) : null;
 }
 
 export default function Studies() {
@@ -20,6 +29,22 @@ export default function Studies() {
   const [studies, setStudies] = useState([]);
   const [briefs, setBriefs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [brokenImages, setBrokenImages] = useState(new Set());
+  
+  const markImageBroken = (url) => {
+    setBrokenImages(prev => {
+      if (prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+  };
+  
+  const safeCover = (article) => {
+    const url = extractCoverImage(article, language);
+    if (!url) return null;
+    return brokenImages.has(url) ? null : url;
+  };
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -175,12 +200,13 @@ export default function Studies() {
                       data-testid="featured-study"
                     >
                       <div className="grid grid-cols-1 lg:grid-cols-5">
-                        {extractCoverImage(studies[0], language) ? (
+                        {safeCover(studies[0]) ? (
                           <div className="lg:col-span-2 aspect-[4/3] lg:aspect-auto overflow-hidden">
                             <img
-                              src={extractCoverImage(studies[0], language)}
+                              src={safeCover(studies[0])}
                               alt={getArticleField(studies[0], 'title')}
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              onError={() => markImageBroken(extractCoverImage(studies[0], language))}
                             />
                           </div>
                         ) : (
@@ -223,9 +249,9 @@ export default function Studies() {
                           className="group bg-white border border-zinc-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
                           data-testid={`study-card-${study.id}`}
                         >
-                          {extractCoverImage(study, language) ? (
+                          {safeCover(study) ? (
                             <div className="aspect-[16/9] overflow-hidden">
-                              <img src={extractCoverImage(study, language)} alt={getArticleField(study, 'title')} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                              <img src={safeCover(study)} alt={getArticleField(study, 'title')} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onError={() => markImageBroken(extractCoverImage(study, language))} />
                             </div>
                           ) : (
                             <div className="aspect-[16/9] bg-gradient-to-br from-[#1E3A5F] to-[#2a4d75] flex items-center justify-center">

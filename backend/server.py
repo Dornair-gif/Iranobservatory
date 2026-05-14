@@ -1013,8 +1013,9 @@ async def upload_pdf(request: Request, file: UploadFile = File(...)):
         metadata={"content_type": "application/pdf", "original_filename": file.filename}
     )
     
-    public_url = os.environ.get("BACKEND_URL") or os.environ.get("FRONTEND_URL", "")
-    pdf_url = f"{public_url}/api/files/{safe_name}"
+    # Return a RELATIVE URL so it resolves to the current origin (prod or preview),
+    # avoiding cross-environment URL mismatch when env vars are misconfigured.
+    pdf_url = f"/api/files/{safe_name}"
     
     return {"pdf_url": pdf_url, "filename": file.filename}
 
@@ -1041,8 +1042,9 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
         metadata={"content_type": media_types.get(ext, 'application/octet-stream'), "original_filename": file.filename}
     )
     
-    public_url = os.environ.get("BACKEND_URL") or os.environ.get("FRONTEND_URL", "")
-    image_url = f"{public_url}/api/files/{safe_name}"
+    # Return a RELATIVE URL so it resolves to the current origin (prod or preview),
+    # avoiding cross-environment URL mismatch when env vars are misconfigured.
+    image_url = f"/api/files/{safe_name}"
     
     return {"image_url": image_url, "filename": file.filename}
 
@@ -1084,6 +1086,69 @@ async def serve_file(filename: str):
         return FileResponse(file_path, media_type=media_type, filename=filename)
     
     raise HTTPException(status_code=404, detail="File not found")
+
+# Admin: scan & repair article image_urls that point to other environments.
+# Returns a list of fixed articles + their new (relative) URL. Also reports
+# articles whose underlying file is truly missing from GridFS so the admin
+# can re-upload them.
+@api_router.post("/admin/repair-image-urls")
+async def repair_image_urls(request: Request):
+    await get_current_user(request)
+    
+    import re as _re
+    fixed = []
+    still_broken = []
+    
+    # Match any absolute URL ending in /api/files/<filename>
+    pat = _re.compile(r"^https?://[^/]+(/api/files/[^/?#]+)")
+    
+    cursor = db.articles.find({"image_url": {"$nin": [None, ""]}}, {"_id": 1, "image_url": 1, "title_en": 1, "title_fr": 1, "content_type": 1})
+    async for art in cursor:
+        url = art.get("image_url") or ""
+        # Rewrite absolute → relative if it points to our /api/files/ path
+        m = pat.match(url)
+        new_url = url
+        was_rewritten = False
+        if m:
+            new_url = m.group(1)  # relative path
+            if new_url != url:
+                was_rewritten = True
+        
+        # Skip external CDN images (e.g. Twitter, RSS source images)
+        if not new_url.startswith("/api/files/"):
+            continue
+        
+        filename = new_url.rsplit("/", 1)[-1]
+        exists_in_gridfs = await db["uploads.files"].find_one({"filename": filename}, {"_id": 1}) is not None
+        
+        if was_rewritten:
+            await db.articles.update_one(
+                {"_id": art["_id"]},
+                {"$set": {"image_url": new_url}}
+            )
+            fixed.append({
+                "id": str(art["_id"]),
+                "title": art.get("title_en") or art.get("title_fr") or "(untitled)",
+                "content_type": art.get("content_type"),
+                "old_url": url,
+                "new_url": new_url,
+                "file_present": exists_in_gridfs
+            })
+        
+        if not exists_in_gridfs:
+            still_broken.append({
+                "id": str(art["_id"]),
+                "title": art.get("title_en") or art.get("title_fr") or "(untitled)",
+                "content_type": art.get("content_type"),
+                "image_url": new_url
+            })
+    
+    return {
+        "rewritten_count": len(fixed),
+        "rewritten": fixed,
+        "still_broken_count": len(still_broken),
+        "still_broken": still_broken
+    }
 
 # Generate PDF from article HTML content
 @api_router.get("/articles/{article_id}/pdf")
@@ -2224,8 +2289,13 @@ async def _build_newsletter_html(lang: str) -> dict:
     intro_text_lang = _pick_field(founder, "intro_text", lang)
     name_lang = _pick_field(founder, "name", lang)
     title_lang = _pick_field(founder, "title", lang)
-    photo_url_f = founder.get("photo_url", "")
-    signature_url_f = founder.get("signature_url", "")
+    photo_url_f = founder.get("photo_url", "") or ""
+    signature_url_f = founder.get("signature_url", "") or ""
+    # Emails need absolute URLs
+    if photo_url_f.startswith("/"):
+        photo_url_f = f"{base_url}{photo_url_f}"
+    if signature_url_f.startswith("/"):
+        signature_url_f = f"{base_url}{signature_url_f}"
     
     if founder.get("enabled") and (intro_text_lang or photo_url_f):
         intro_text_html = intro_text_lang.replace("\n", "<br>")
@@ -2309,7 +2379,10 @@ async def _build_newsletter_html(lang: str) -> dict:
         for i, news in enumerate(featured_news):
             title = _pick_field(news, "title", lang)
             summary = _pick_field(news, "summary", lang)[:150]
-            img = news.get("image_url", "")
+            img = news.get("image_url", "") or ""
+            # Emails need absolute URLs — prepend base_url to relative paths
+            if img.startswith("/"):
+                img = f"{base_url}{img}"
             border = 'border-bottom:1px solid #f0f2f5;' if i < len(featured_news) - 1 else ''
             
             if img:

@@ -616,6 +616,38 @@ export default function Admin() {
                 </div>
               </div>
             </div>
+            
+            {/* Tools: Repair broken image URLs */}
+            <div className="bg-white border border-zinc-200 p-4 mt-6">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h3 className="font-heading font-bold text-sm">Image URL Repair</h3>
+                  <p className="text-xs text-zinc-500 mt-1">Rewrites legacy article image_urls that point to the wrong environment (e.g., preview URL stored on production), and reports any files actually missing from storage.</p>
+                </div>
+                <Button
+                  className="rounded-none bg-[#1E3A5F] text-xs"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const res = await axios.post(`${API}/admin/repair-image-urls`, {}, axiosConfig);
+                      const { rewritten_count, still_broken_count, still_broken } = res.data;
+                      const titles = (still_broken || []).slice(0, 5).map(s => `- ${s.title} (${s.content_type})`).join('\n');
+                      const more = still_broken_count > 5 ? `\n...and ${still_broken_count - 5} more` : '';
+                      toast.success(`Rewrote ${rewritten_count} URL(s). ${still_broken_count} article(s) still need re-upload.`);
+                      if (still_broken_count > 0) {
+                        alert(`Articles whose cover image file is missing — re-upload required:\n\n${titles}${more}`);
+                      }
+                      fetchArticles();
+                    } catch (e) {
+                      toast.error('Failed: ' + (e.response?.data?.detail || e.message));
+                    }
+                  }}
+                  data-testid="repair-image-urls-btn"
+                >
+                  Run Image URL Repair
+                </Button>
+              </div>
+            </div>
           </TabsContent>
 
           {/* Articles Tab */}

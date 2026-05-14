@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
+import { normalizeFileUrl } from '../lib/imageUrl';
 import { formatDistanceToNow } from 'date-fns';
 import { fr as frLocale, enUS } from 'date-fns/locale';
 
@@ -142,9 +143,10 @@ export default function Articles() {
                 <div className="grid grid-cols-1 lg:grid-cols-2">
                   <div className="aspect-[16/10] lg:aspect-auto overflow-hidden">
                     <img
-                      src={featuredArticle.image_url || '/hero-tehran-milad-night.jpg'}
+                      src={normalizeFileUrl(featuredArticle.image_url) || '/hero-tehran-milad-night.jpg'}
                       alt={getArticleField(featuredArticle, 'title')}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { e.currentTarget.src = '/hero-tehran-milad-night.jpg'; }}
                     />
                   </div>
                   <div className="p-8 lg:p-10 flex flex-col justify-center">

@@ -1,15 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
+import { normalizeFileUrl } from '../lib/imageUrl';
+
+const FEATURED_FALLBACK = 'https://images.unsplash.com/photo-1767208212251-7b9b0bde15db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHw0fHx0ZWhyYW4lMjBza3lsaW5lfGVufDB8fHx8MTc3NTIwMjc0NHww&ixlib=rb-4.1.0&q=85';
 
 export function ArticleCard({ article, featured = false }) {
   const { language, t, getArticleField } = useLanguage();
+  const [imgFailed, setImgFailed] = useState(false);
   
   const title = getArticleField(article, 'title');
   const summary = getArticleField(article, 'summary');
+  const articleImg = normalizeFileUrl(article.image_url);
+  const cover = imgFailed || !articleImg ? null : articleImg;
   
   const locales = { en: enUS, fr: fr, fa: enUS };
   
@@ -29,9 +35,10 @@ export function ArticleCard({ article, featured = false }) {
       >
         <div className="relative h-full min-h-[360px] overflow-hidden">
           <img
-            src={article.image_url || 'https://images.unsplash.com/photo-1767208212251-7b9b0bde15db?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHw0fHx0ZWhyYW4lMjBza3lsaW5lfGVufDB8fHx8MTc3NTIwMjc0NHww&ixlib=rb-4.1.0&q=85'}
+            src={cover || FEATURED_FALLBACK}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setImgFailed(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1E3A5F]/80 via-[#1E3A5F]/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
@@ -59,12 +66,13 @@ export function ArticleCard({ article, featured = false }) {
       className="article-card group block bg-white border border-zinc-200 p-4 h-full flex flex-col"
       data-testid={`article-card-${article.id}`}
     >
-      {article.image_url && (
+      {cover && (
         <div className="relative aspect-[16/10] overflow-hidden mb-4 -mx-4 -mt-4">
           <img
-            src={article.image_url}
+            src={cover}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setImgFailed(true)}
           />
         </div>
       )}

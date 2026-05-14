@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
+import { normalizeFileUrl } from '../lib/imageUrl';
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
 
@@ -154,7 +155,7 @@ export default function Home() {
                   >
                     {article.image_url && (
                       <div className="w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden">
-                        <img src={article.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <img src={normalizeFileUrl(article.image_url)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }} />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">

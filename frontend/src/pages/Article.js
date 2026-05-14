@@ -9,6 +9,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
+import { normalizeFileUrl } from '../lib/imageUrl';
 
 export default function Article() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export default function Article() {
   const [newsletter, setNewsletter] = useState(false);
   const [downloadGranted, setDownloadGranted] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [coverFailed, setCoverFailed] = useState(false);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -141,12 +143,13 @@ export default function Article() {
         </p>
 
         {/* Featured Image */}
-        {article.image_url && (
+        {article.image_url && !coverFailed && (
           <div className="relative aspect-[16/9] mb-8 overflow-hidden border border-zinc-200 rounded-lg">
             <img
-              src={article.image_url}
+              src={normalizeFileUrl(article.image_url)}
               alt={title}
               className="w-full h-full object-cover"
+              onError={() => setCoverFailed(true)}
               data-testid="article-image"
             />
           </div>
