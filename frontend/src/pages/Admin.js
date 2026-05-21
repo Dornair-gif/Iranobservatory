@@ -64,7 +64,7 @@ export default function Admin() {
   const [anglesTopic, setAnglesTopic] = useState('Iran actualités 2026');
   const [showAddFeed, setShowAddFeed] = useState(false);
   const [editFeed, setEditFeed] = useState(null);
-  const [newFeed, setNewFeed] = useState({ name: '', url: '', category: 'general', language: 'en' });
+  const [newFeed, setNewFeed] = useState({ name: '', url: '', category: 'general', language: 'en', is_regime_source: false });
   const [selectedRssItem, setSelectedRssItem] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [showCreateArticle, setShowCreateArticle] = useState(false);
@@ -323,7 +323,7 @@ export default function Admin() {
       await axios.post(`${API}/rss/feeds`, newFeed, axiosConfig);
       toast.success('Feed added successfully');
       setShowAddFeed(false);
-      setNewFeed({ name: '', url: '', category: 'general', language: 'en' });
+      setNewFeed({ name: '', url: '', category: 'general', language: 'en', is_regime_source: false });
       fetchFeeds();
     } catch (e) {
       toast.error('Failed to add feed');
@@ -337,7 +337,8 @@ export default function Admin() {
         name: editFeed.name,
         url: editFeed.url,
         category: editFeed.category,
-        language: editFeed.language
+        language: editFeed.language,
+        is_regime_source: !!editFeed.is_regime_source,
       }, axiosConfig);
       toast.success('Feed updated successfully');
       setEditFeed(null);
@@ -881,11 +882,20 @@ export default function Admin() {
                 {feeds.map(feed => (
                   <div key={feed.id} className="p-4 flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium">{feed.name}</p>
                         <span className="px-2 py-0.5 text-xs font-mono uppercase tracking-wider bg-zinc-100 text-zinc-600">
                           {feed.language || 'en'}
                         </span>
+                        {feed.is_regime_source && (
+                          <span
+                            className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300"
+                            title="Source du régime iranien — attribution automatique"
+                            data-testid={`regime-badge-${feed.id}`}
+                          >
+                            Régime
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-zinc-500 font-mono truncate">{feed.url}</p>
                       {feed.last_fetched && (
@@ -1562,10 +1572,26 @@ export default function Admin() {
                     <SelectItem value="social">Social</SelectItem>
                     <SelectItem value="news">News</SelectItem>
                     <SelectItem value="politics">Politics</SelectItem>
+                    <SelectItem value="regime">Régime (État iranien)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
+            <label className="flex items-start gap-3 p-3 border border-amber-300 bg-amber-50 rounded-none cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!newFeed.is_regime_source}
+                onChange={(e) => setNewFeed({ ...newFeed, is_regime_source: e.target.checked })}
+                className="mt-1"
+                data-testid="feed-regime-source-toggle"
+              />
+              <div className="flex-1">
+                <div className="font-mono text-xs uppercase tracking-wider text-amber-900 font-semibold">Source du régime iranien</div>
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  Cochez si la source est un média d'État iranien (Tasnim, Fars, IRNA, Press TV, Mehr, ISNA…). Tous les articles générés à partir de ce flux seront automatiquement préfixés <span className="italic">« selon les médias d'État iraniens »</span>.
+                </p>
+              </div>
+            </label>
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-none" onClick={() => setShowAddFeed(false)}>
@@ -1627,10 +1653,26 @@ export default function Admin() {
                       <SelectItem value="social">Social</SelectItem>
                       <SelectItem value="news">News</SelectItem>
                       <SelectItem value="politics">Politics</SelectItem>
+                      <SelectItem value="regime">Régime (État iranien)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+              <label className="flex items-start gap-3 p-3 border border-amber-300 bg-amber-50 rounded-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!editFeed.is_regime_source}
+                  onChange={(e) => setEditFeed({ ...editFeed, is_regime_source: e.target.checked })}
+                  className="mt-1"
+                  data-testid="edit-feed-regime-source-toggle"
+                />
+                <div className="flex-1">
+                  <div className="font-mono text-xs uppercase tracking-wider text-amber-900 font-semibold">Source du régime iranien</div>
+                  <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                    Cochez si la source est un média d'État iranien (Tasnim, Fars, IRNA, Press TV…). Attribution automatique appliquée.
+                  </p>
+                </div>
+              </label>
             </div>
           )}
           <DialogFooter>

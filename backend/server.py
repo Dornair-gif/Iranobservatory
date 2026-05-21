@@ -34,6 +34,117 @@ api_router = APIRouter(prefix="/api")
 # JWT Configuration
 JWT_ALGORITHM = "HS256"
 
+# ============ EDITORIAL SOURCE POLICY ============
+# Hard editorial guardrails baked into every AI prompt. Iran Observatory must
+# never reference opposition-affiliated outlets, and must always disclose when
+# regime mouthpieces are quoted. These rules are appended to every LLM system
+# message and post-processed via _sanitize_editorial() as a safety net.
+
+BANNED_SOURCES = [
+    # MEK / Mojahedin-e Khalq / Rajavi network and front organisations
+    "mek", "m.e.k", "mko", "pmoi", "mojahedin", "mujahedin", "mojahedin-e khalq",
+    "mujahedin-e khalq", "ncri", "cnri", "national council of resistance of iran",
+    "conseil national de la résistance iranienne", "rajavi", "radjavi",
+    "maryam rajavi", "maryam radjavi", "massoud rajavi", "iran-hrm", "iran hrm",
+    # Iran International (Saudi-funded, openly partisan)
+    "iran international", "iranintl", "iran intl", "ایران اینترنشنال",
+]
+
+# Regime-affiliated media: allowed only as primary sources for official
+# announcements, and ALWAYS prefixed with an attribution disclaimer.
+REGIME_SOURCES = {
+    "tasnim": {"display": "Tasnim", "domain": "tasnimnews.com"},
+    "tasnimnews": {"display": "Tasnim", "domain": "tasnimnews.com"},
+    "fars": {"display": "Fars News", "domain": "farsnews.ir"},
+    "farsnews": {"display": "Fars News", "domain": "farsnews.ir"},
+    "irna": {"display": "IRNA", "domain": "irna.ir"},
+    "press tv": {"display": "Press TV", "domain": "presstv.ir"},
+    "presstv": {"display": "Press TV", "domain": "presstv.ir"},
+    "mehr news": {"display": "Mehr News", "domain": "mehrnews.com"},
+    "mehrnews": {"display": "Mehr News", "domain": "mehrnews.com"},
+    "isna": {"display": "ISNA", "domain": "isna.ir"},
+    "tabnak": {"display": "Tabnak", "domain": "tabnak.ir"},
+    "kayhan": {"display": "Kayhan", "domain": "kayhan.ir"},
+}
+
+EDITORIAL_SOURCE_RULES = """
+EDITORIAL SOURCE POLICY — STRICTLY ENFORCED (non-negotiable):
+
+1. BANNED SOURCES — NEVER cite, quote, link, paraphrase, or reference in any way:
+   - MEK / Mojahedin-e Khalq / MKO / PMOI / NCRI / CNRI / Rajavi (Maryam or Massoud) / Iran-HRM
+   - Iran International (iranintl, ایران اینترنشنال) — partisan, Saudi-funded
+   - Any outlet affiliated with the exiled Iranian opposition
+   If a fact ONLY exists in these outlets, OMIT it. Do not laundering it. Do not say "some sources claim".
+
+2. REGIME SOURCES — Tasnim, Fars News, IRNA, Press TV, Mehr News, ISNA, Tabnak, Kayhan:
+   - Use ONLY for official Iranian government announcements, regime statements, or to document the regime's own narrative.
+   - When cited, you MUST ALWAYS attribute with one of these exact framings (match output language):
+       • French: "selon les médias d'État iraniens [Name]", "selon les sources du régime [Name]"
+       • English: "according to Iranian state media [Name]", "per regime-controlled outlet [Name]"
+       • Persian: "بنا به منابع حکومتی [Name]", "به گزارش رسانه دولتی [Name]"
+   - NEVER present regime claims as neutral fact.
+
+3. PREFERRED SOURCES (cite by name when used):
+   - International independent: Reuters, AFP, AP, BBC, Le Monde, Financial Times, The Economist, NYT, Washington Post, Bloomberg
+   - Multilateral / official: UN OHCHR, IAEA, IMF, World Bank, EU Council, US Treasury OFAC
+   - Specialized monitors: NetBlocks, Cloudflare Radar, OONI, Crisis Group, SIPRI, FDD, UANI
+   - Independent human rights (Oslo-based / international): Iran Human Rights (iranhr.net), HRA / HRANA (en-hrana.org), Amnesty International, Human Rights Watch
+
+4. IF a source is unknown or unverified, do NOT fabricate. Either omit, or write "international independent sources" without specifics.
+"""
+
+
+def _sanitize_editorial(text: str) -> str:
+    """Post-process AI output: scrub any residual banned-source mention and
+    auto-prefix attribution disclaimers for regime sources. Idempotent."""
+    if not text or not isinstance(text, str):
+        return text
+    import re as _re_ed
+
+    cleaned = text
+
+    # 1) Strip whole sentences that mention banned sources (most aggressive +
+    # safest behaviour: if a banned source slipped in, drop the sentence).
+    banned_pattern = _re_ed.compile(
+        r"(?i)(?:[^.!?\n]*?\b(?:" + "|".join(_re_ed.escape(s) for s in BANNED_SOURCES) + r")\b[^.!?\n]*[.!?])"
+    )
+    cleaned = banned_pattern.sub("", cleaned)
+
+    # 2) Collapse residual orphan punctuation / double spaces left by removal.
+    cleaned = _re_ed.sub(r"\s{2,}", " ", cleaned)
+    cleaned = _re_ed.sub(r"\s+([.,;:!?])", r"\1", cleaned)
+    cleaned = _re_ed.sub(r"\n\s*\n\s*\n+", "\n\n", cleaned)
+
+    # 3) Ensure regime sources carry attribution. We only act when the regime
+    # source is mentioned WITHOUT one of the disclosure markers in the same
+    # sentence (keeps idempotency).
+    disclosure_markers = [
+        "régime", "regime", "état iranien", "iranian state", "state media",
+        "حکومتی", "دولتی", "regime-controlled", "régime iranien",
+        "iran state", "official iranian",
+    ]
+    for key, info in REGIME_SOURCES.items():
+        name = info["display"]
+        # Word-boundary match on display name (case-insensitive)
+        pattern = _re_ed.compile(rf"(?i)\b{_re_ed.escape(name)}\b")
+        def _attribute(match, _name=name):
+            # Look back to the start of the current sentence only (avoids
+            # leaking disclosure from a prior sentence).
+            start_sentence = match.start()
+            for i in range(match.start() - 1, -1, -1):
+                if cleaned[i] in ".!?\n":
+                    start_sentence = i + 1
+                    break
+                else:
+                    start_sentence = i
+            window = cleaned[start_sentence:match.end()].lower()
+            if any(m in window for m in disclosure_markers):
+                return match.group(0)
+            return f"the Iranian regime-controlled outlet {_name}"
+        cleaned = pattern.sub(_attribute, cleaned)
+
+    return cleaned.strip()
+
 # ============ SEO HELPERS ============
 import re as _re_seo
 import unicodedata as _ud_seo
@@ -181,11 +292,13 @@ class RSSFeedBase(BaseModel):
     url: str
     category: str = "general"
     language: str = "en"
+    is_regime_source: bool = False  # Tasnim/Fars/IRNA/etc. — triggers auto-attribution
 
 class RSSFeedResponse(RSSFeedBase):
     id: str
     active: bool
     language: str = "en"
+    is_regime_source: bool = False
     last_fetched: Optional[str] = None
 
 class RSSItemResponse(BaseModel):
@@ -255,6 +368,7 @@ async def get_rss_feeds(request: Request):
             "url": feed["url"],
             "category": feed.get("category", "general"),
             "language": feed.get("language", "en"),
+            "is_regime_source": feed.get("is_regime_source", False),
             "active": feed.get("active", True),
             "last_fetched": feed.get("last_fetched").isoformat() if feed.get("last_fetched") else None
         })
@@ -268,6 +382,7 @@ async def create_rss_feed(data: RSSFeedBase, request: Request):
         "url": data.url,
         "category": data.category,
         "language": data.language,
+        "is_regime_source": data.is_regime_source,
         "active": True,
         "last_fetched": None,
         "created_at": datetime.now(timezone.utc)
@@ -279,20 +394,22 @@ async def create_rss_feed(data: RSSFeedBase, request: Request):
         "url": data.url,
         "category": data.category,
         "language": data.language,
+        "is_regime_source": data.is_regime_source,
         "active": True,
         "last_fetched": None
     }
 
 @api_router.put("/rss/feeds/{feed_id}")
 async def update_rss_feed(feed_id: str, data: RSSFeedBase, request: Request):
-    """Update RSS feed name, URL, category, or language"""
+    """Update RSS feed name, URL, category, language, or regime-source flag"""
     await get_current_user(request)
-    
+
     update_doc = {
         "name": data.name,
         "url": data.url,
         "category": data.category,
-        "language": data.language
+        "language": data.language,
+        "is_regime_source": data.is_regime_source,
     }
     
     result = await db.rss_feeds.update_one(
@@ -364,6 +481,7 @@ async def _fetch_single_feed(feed: dict) -> int:
                 item_doc = {
                     "feed_id": feed_id,
                     "feed_name": feed["name"],
+                    "is_regime_source": feed.get("is_regime_source", False),
                     "title": entry.get("title", ""),
                     "link": entry.get("link", ""),
                     "summary": entry.get("summary", entry.get("description", "")),
@@ -399,7 +517,11 @@ async def _evaluate_rss_items(items: list):
         chat = LlmChat(
             api_key=api_key,
             session_id=f"rss-eval-{uuid.uuid4()}",
-            system_message="""You are an editorial assistant for Iran Observatory. Your job is to evaluate news items and identify which ones have potential for in-depth journalistic analysis.
+            system_message=EDITORIAL_SOURCE_RULES + """
+
+You are an editorial assistant for Iran Observatory. Your job is to evaluate news items and identify which ones have potential for in-depth journalistic analysis.
+
+REJECT any item whose primary source is a BANNED outlet (MEK/NCRI/Iran International/Rajavi network) — no exceptions.
 
 SELECT items that:
 - Have geopolitical significance (sanctions, diplomacy, military, international relations)
@@ -569,7 +691,9 @@ async def generate_article(data: AIGenerateRequest, request: Request):
         chat = LlmChat(
             api_key=api_key,
             session_id=f"article-gen-{uuid.uuid4()}",
-            system_message="""You are a senior analyst for Iran Observatory, an independent platform offering fact-based insights into Iran's political, economic and social dynamics.
+            system_message=EDITORIAL_SOURCE_RULES + """
+
+You are a senior analyst for Iran Observatory, an independent platform offering fact-based insights into Iran's political, economic and social dynamics.
 
 EDITORIAL STANCE:
 - We are completely independent and impartial
@@ -604,7 +728,17 @@ Output in the requested language only, with proper localization and cultural ada
         ).with_model("openai", "gpt-5.2")
         
         generated = {}
-        
+
+        is_regime = bool(rss_item.get("is_regime_source", False))
+        regime_hint_en = (
+            "\nIMPORTANT — REGIME SOURCE: this item originates from an Iranian state-controlled outlet "
+            f"({rss_item.get('feed_name','')}). You MUST attribute it as such ("
+            "FR: 'selon les médias d'État iraniens'; EN: 'according to Iranian state media'; "
+            "FA: 'بنا به منابع حکومتی'). Treat the claim as the regime's narrative, not as verified fact, "
+            "and cross-check against international independent sources.\n"
+            if is_regime else ""
+        )
+
         for lang in data.target_languages:
             lang_names = {"en": "English", "fr": "French", "fa": "Persian (Farsi)"}
             
@@ -625,7 +759,7 @@ Write ONLY the headline, nothing else. Make it professional and engaging."""
 Title: {rss_item['title']}
 Summary: {rss_item.get('summary', '')}
 Source: {rss_item.get('link', '')}
-
+{regime_hint_en}
 REQUIREMENTS:
 1. Write 4-6 paragraphs of genuine analysis, not news recap
 2. Open with the key fact in 1-2 sentences, then immediately analyze WHY it matters
@@ -652,9 +786,9 @@ Write ONLY the summary, nothing else."""
             summary_msg = UserMessage(text=summary_prompt)
             summary_response = await chat.send_message(summary_msg)
             
-            generated[f"title_{lang}"] = title_response.strip()
-            generated[f"content_{lang}"] = content_response.strip()
-            generated[f"summary_{lang}"] = summary_response.strip()
+            generated[f"title_{lang}"] = _sanitize_editorial(title_response.strip())
+            generated[f"content_{lang}"] = _sanitize_editorial(content_response.strip())
+            generated[f"summary_{lang}"] = _sanitize_editorial(summary_response.strip())
         
         # Create draft article
         article_doc = {
@@ -2029,7 +2163,9 @@ async def _compute_dashboard_indexes():
         chat = LlmChat(
             api_key=api_key,
             session_id=f"dashboard-{uuid.uuid4()}",
-            system_message="""You are a geopolitical data analyst for Iran Observatory. Produce accurate, source-based quantitative indexes. Return ONLY valid JSON."""
+            system_message=EDITORIAL_SOURCE_RULES + """
+
+You are a geopolitical data analyst for Iran Observatory. Produce accurate, source-based quantitative indexes. Return ONLY valid JSON."""
         ).with_model("openai", "gpt-5.2")
         
         # CALL 1: Core indexes
@@ -2092,15 +2228,15 @@ Max 10 HR timeline events. Based ONLY on provided sources."""
                         break
         dashboard_data = json_lib.loads(r1.strip())
         
-        # HARDCODED HR FIGURES from verified independent sources
+        # HARDCODED HR FIGURES from verified independent international sources
         # Executions: IHR/ECPM report (April 2026) — at least 1,639 in 2025 (highest since 1989, +68% from 975 in 2024)
-        # NCRI reports 2,201; Iran-HRM reports 2,167 — IHR figure is the most conservative/verified
+        # IHR (Iran Human Rights, Oslo) figure is the most conservative/verified international source
         # Political prisoners: ~15,000 estimated (worldpopulationreview.com, 2026); HRW reports "tens of thousands" of arbitrary arrests
         # HRANA documented 53,000+ arrests post-protest; 2,800+ named detainees as of Feb 2026
         hri = dashboard_data.get("human_rights_index", {})
         hri["executions"] = "1,639+"
         hri["executions_source"] = "IHR/ECPM (2025)"
-        hri["executions_detail"] = "Highest since 1989. +68% vs 2024 (975). 48 women, 11 public. NCRI reports 2,201."
+        hri["executions_detail"] = "Highest since 1989. +68% vs 2024 (975). 48 women, 11 public. Independent monitoring: IHR (Oslo) is the most conservative international source."
         hri["political_prisoners"] = "15,000+"
         hri["political_prisoners_source"] = "HRW / HRANA (2026)"
         hri["political_prisoners_detail"] = "53,000+ arrests documented post-Jan 2026 protests. 2,800+ named detainees."
@@ -2116,7 +2252,9 @@ Max 10 HR timeline events. Based ONLY on provided sources."""
         chat2 = LlmChat(
             api_key=api_key,
             session_id=f"dashboard2-{uuid.uuid4()}",
-            system_message="""You are a geopolitical data analyst. Return ONLY valid JSON."""
+            system_message=EDITORIAL_SOURCE_RULES + """
+
+You are a geopolitical data analyst. Return ONLY valid JSON."""
         ).with_model("openai", "gpt-5.2")
         
         prompt2 = f"""Based on these Iran news sources and INTERNATIONAL independent economic data, produce economic indicators.
@@ -2271,6 +2409,18 @@ CRITICAL: Use the VERIFIED baseline data provided above. Do NOT use Iranian gove
         dashboard_data["updated_at"] = datetime.now(timezone.utc).isoformat()
         dashboard_data["rss_items_analyzed"] = len(recent_items)
         dashboard_data["telegram_messages_analyzed"] = len(hra_messages) + len(vahid_messages)
+
+        # Editorial sanitation: scrub any banned-source mentions and ensure
+        # regime-source attribution across all AI-generated text fields.
+        def _scrub_obj(obj):
+            if isinstance(obj, str):
+                return _sanitize_editorial(obj)
+            if isinstance(obj, list):
+                return [_scrub_obj(x) for x in obj]
+            if isinstance(obj, dict):
+                return {k: _scrub_obj(v) for k, v in obj.items()}
+            return obj
+        dashboard_data = _scrub_obj(dashboard_data)
         
         # Cache in DB
         await db.dashboard_cache.delete_many({})
@@ -2529,7 +2679,9 @@ async def generate_weekly_brief():
         chat = LlmChat(
             api_key=api_key,
             session_id=f"weekly-brief-{uuid.uuid4()}",
-            system_message="""You are a senior geopolitical intelligence analyst at Iran Observatory. Write sharp, assertive weekly intelligence briefs. No hedging, no filler. Style: The Economist meets BCA Research."""
+            system_message=EDITORIAL_SOURCE_RULES + """
+
+You are a senior geopolitical intelligence analyst at Iran Observatory. Write sharp, assertive weekly intelligence briefs. No hedging, no filler. Style: The Economist meets BCA Research."""
         ).with_model("openai", "gpt-5.2")
         
         prompt = f"""Write a professional weekly intelligence brief for Iran Observatory covering {week_start} to {week_end}.
@@ -2584,14 +2736,14 @@ IMPORTANT: Return valid JSON only. Content must be HTML-formatted for direct ren
         
         # Save as draft article
         brief_doc = {
-            "title_en": brief_data.get("title_en", f"Weekly Brief: {week_start} – {week_end}"),
-            "title_fr": brief_data.get("title_fr", f"Brief Hebdomadaire: {week_start} – {week_end}"),
+            "title_en": _sanitize_editorial(brief_data.get("title_en", f"Weekly Brief: {week_start} – {week_end}")),
+            "title_fr": _sanitize_editorial(brief_data.get("title_fr", f"Brief Hebdomadaire: {week_start} – {week_end}")),
             "title_fa": "",
-            "content_en": brief_data.get("content_en", ""),
-            "content_fr": brief_data.get("content_fr", ""),
+            "content_en": _sanitize_editorial(brief_data.get("content_en", "")),
+            "content_fr": _sanitize_editorial(brief_data.get("content_fr", "")),
             "content_fa": "",
-            "summary_en": brief_data.get("summary_en", ""),
-            "summary_fr": brief_data.get("summary_fr", ""),
+            "summary_en": _sanitize_editorial(brief_data.get("summary_en", "")),
+            "summary_fr": _sanitize_editorial(brief_data.get("summary_fr", "")),
             "summary_fa": "",
             "image_url": "",
             "source_url": "",
@@ -3429,6 +3581,7 @@ async def seed_admin():
             "url": "https://rss.app/feeds/cPvRWpMkf81Tx8nr.xml",
             "category": "social",
             "language": "en",
+            "is_regime_source": False,
             "active": True,
             "last_fetched": None,
             "created_at": datetime.now(timezone.utc)
@@ -3439,11 +3592,61 @@ async def seed_admin():
             "url": "https://rss.app/feeds/0aYtpxYInp9pe8Vz.xml",
             "category": "social",
             "language": "fr",
+            "is_regime_source": False,
             "active": True,
             "last_fetched": None,
             "created_at": datetime.now(timezone.utc)
         })
         logger.info("Default RSS feeds created (EN + FR)")
+
+    # Idempotent migration: backfill is_regime_source on existing feeds.
+    await db.rss_feeds.update_many(
+        {"is_regime_source": {"$exists": False}},
+        {"$set": {"is_regime_source": False}}
+    )
+
+    # Migration: replace previously-seeded direct .ir endpoints (which fail
+    # outside Iran) with the new Google News proxy entries. Safe to run on
+    # every startup; only matches the legacy URLs.
+    await db.rss_feeds.delete_many({"url": {"$in": [
+        "https://www.tasnimnews.com/en/rss/feed/0/8/0/world-service",
+        "https://www.farsnews.ir/en/rss/allnews",
+    ]}})
+
+    # Idempotent seed of regime-monitored feeds (Tasnim + Fars).
+    # We flag them is_regime_source=True so every downstream AI prompt
+    # auto-prefixes attribution and never treats their claims as neutral fact.
+    # NOTE: direct .ir RSS endpoints often fail from outside Iran (DNS / TLS).
+    # We proxy via Google News RSS which is globally reliable and updates in
+    # near real-time. The is_regime_source flag is what matters for editorial
+    # treatment — not the underlying transport.
+    REGIME_FEEDS_TO_SEED = [
+        {
+            "name": "Tasnim News (Régime — via Google News)",
+            "url": "https://news.google.com/rss/search?q=site:tasnimnews.com&hl=en-US&gl=US&ceid=US:en",
+            "category": "regime",
+            "language": "en",
+        },
+        {
+            "name": "Fars News (Régime — via Google News)",
+            "url": "https://news.google.com/rss/search?q=site:farsnews.ir&hl=en-US&gl=US&ceid=US:en",
+            "category": "regime",
+            "language": "en",
+        },
+    ]
+    for f in REGIME_FEEDS_TO_SEED:
+        await db.rss_feeds.update_one(
+            {"url": f["url"]},
+            {"$setOnInsert": {
+                **f,
+                "is_regime_source": True,
+                "active": True,
+                "last_fetched": None,
+                "created_at": datetime.now(timezone.utc),
+            }},
+            upsert=True,
+        )
+    logger.info("Regime-monitored RSS feeds ensured (Tasnim + Fars)")
     
     # Write test credentials
     Path("/app/memory").mkdir(exist_ok=True)

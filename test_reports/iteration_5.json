@@ -1,0 +1,48 @@
+{
+  "summary": "Iteration 5 — editorial policy (BANNED MEK/NCRI/IranIntl/Rajavi; REGIME Tasnim/Fars/IRNA/PressTV with auto-attribution). Created /app/backend/tests/test_editorial_policy.py with 17 tests: 11 unit tests for _sanitize_editorial (banned-strip on MEK/NCRI/Iran International/Rajavi/Mojahedin, regime-prefix on Tasnim & Fars News, no-double-prefix when 'Iranian state media' or 'regime-controlled outlet' already present in the sentence, idempotent f(f(x))==f(x), None/empty safe) + 4 RSS API tests (GET /api/rss/feeds returns is_regime_source on every row, Tasnim+Fars seeded as is_regime_source=true at startup, POST persists the flag, PUT can toggle it both ways) + 1 dashboard scan (/api/dashboard/indexes is the real route — others 404; no NCRI/Mojohedin/Mujahedin/Iran International literal in payload) + 1 signals regression (/api/signals 200). All 17 pass. Legacy backend_test.py (24 tests) still 100%. Frontend Playwright: logged in as admin → /admin/RSS Feeds tab → 3 RÉGIME badges visible (Tasnim + Fars from seed, plus a leftover test row I cleaned up after) → Add Feed dialog exposes [data-testid=feed-regime-source-toggle] amber-styled with proper French copy; checkbox toggles to true. /monitor public page loads (HTTP 200, no JS errors) and the Situation Briefing actually shows the policy at work: 'Per regime-controlled outlet Fars News and Iranian state media Tasnim, …' — proper attribution prefix applied. Zero banned-source strings (NCRI, Mojahedin, Iran International, MEK, Rajavi) visible on /monitor.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/rss/feeds POST + PUT", "issue": "Endpoints don't reject hostile/non-resolvable URLs at validation time. Backend then logs 'Failed to fetch feed … Name or service not known' on every poll. Consider lightweight URL reachability or scheme/host-allowlist check, or surface the fetch error to the admin UI."},
+      {"endpoint": "/api/rss/feeds POST", "issue": "Returns RSSFeedResponse but doesn't echo back the 'active' default consistently if the client posts active=false (RSSFeedBase doesn't carry 'active' — clients can't create a paused feed)."},
+      {"endpoint": "server.py startup", "issue": "Uses @app.on_event('startup'/'shutdown') — deprecated in current FastAPI. Migrate to lifespan context manager."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Global", "issues": ["Custom font 'Cabinet Grotesk' from https://fonts.cdnfonts.com fails to decode in browser ('OTS parsing error: invalid sfntVersion'). The CDN serves an HTML 404/landing page instead of a font file. Currently falls back silently to system fonts. Replace the CDN with a self-hosted .woff2 or a Google Fonts equivalent (e.g. 'Inter' / 'Space Grotesk')."]},
+      {"screen": "Add Feed / Edit Feed dialogs", "issues": ["Radix warning: 'Missing Description or aria-describedby for DialogContent'. Add a <DialogDescription> for screen-reader compliance."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_editorial_policy.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_editorial.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: Add server-side URL validation in POST /api/rss/feeds (reject non-resolvable hosts or non-http(s) schemes) — would prevent the recurring 'Cannot connect to host example.test:443' noise in backend logs.",
+    "OPTIONAL: Replace Cabinet Grotesk CDN URL — current source returns HTML, browsers reject the font and fall back. Self-host the .woff2 in /public/fonts or move to Google Fonts.",
+    "OPTIONAL: Add <DialogDescription> to Add/Edit Feed Radix dialogs to silence the aria-describedby warning.",
+    "OPTIONAL: Migrate @app.on_event('startup'/'shutdown') to FastAPI lifespan handlers.",
+    "CARRY-OVER (iter_4): server.py is 3700 lines — modularize (auth/articles/rss/dashboard/signals/newsletter/sitemap)."
+  ],
+  "critical_code_review_comments": [
+    "server.py:97 _sanitize_editorial — sentence-stripping regex `(?i)[^.!?\\n]*?\\bBANNED\\b[^.!?\\n]*[.!?]` requires the sentence to end with a terminal punctuation. A banned source mention in a trailing fragment WITHOUT a final '.' (e.g. last line of an LLM dump) will survive. Cover that edge case (append a '.' before sanitizing, or anchor on \\Z too).",
+    "server.py:126 regime-prefix loop — iterates REGIME_SOURCES by lowercase key but only the 'display' name is matched on output. The keys 'tasnim' and 'tasnimnews' both map to display='Tasnim', so the same substring is scanned twice (harmless — second pass sees the disclosure marker already injected — but wasteful). Use unique displays.",
+    "server.py disclosure_markers list contains 'regime' alone — any French sentence containing the word 'régime' (e.g. 'changement de régime') would be treated as an already-attributed sentence and skip prefixing. Narrow to multi-word phrases.",
+    "server.py:3623 Tasnim/Fars are seeded via Google News proxy (.ir hosts unreachable from preview). Document this in /app/README.md so future devs don't 'fix' the URLs back to tasnimnews.com.",
+    "server.py:2239 dashboard executions_detail is a HARDCODED string ('Highest since 1989. +68% vs 2024 …'). Move to settings or compute from data so it stays current."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_editorial_policy.py (new 17-test editorial regression suite)"
+  ],
+  "success_rate": {"backend": "100% (17/17 new + 24/24 legacy)", "frontend": "100% on tested flows (login, RSS feeds tab, badges, Add Feed dialog with regime toggle, /monitor)"},
+  "test_credentials": "admin@iranobservatory.org / IranObs2024! (from /app/memory/test_credentials.md). Cookies set httpOnly + access_token in JSON body.",
+  "seed_data_creation": "Two ephemeral feeds created via POST (TEST_REGIME_FEED, TEST_TOGGLE_FEED) — both deleted in their respective test bodies. One leftover from a pre-fix timeout run (TEST_TOGGLE_FEED) was manually deleted at the end via curl. DB now clean.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Editorial policy is well-isolated in /app/backend/server.py:40-146 (BANNED_SOURCES list, REGIME_SOURCES dict, EDITORIAL_SOURCE_RULES system-prompt block, _sanitize_editorial function). Future tests can extend the unit suite in test_editorial_policy.py by adding strings to the sanitize cases. Note that /api/dashboard does NOT exist as a route — use /api/dashboard/indexes or /api/dashboard/sources. RSS feeds tab is the 3rd admin tab (RSS_FEEDS data-testid not set on the tab itself; use text=RSS Feeds). Cabinet Grotesk font 404 is cosmetic only — system font fallback is fine for assertions.",
+  "rca of the issue": "No regressions found. The original 15s read-timeout on the first run of test_update_feed_toggle_regime_flag was caused by the test client racing the backend's heavy LLM warm-up (gpt-5.2 calls from concurrent dashboard refresh). Mitigated by raising all per-request timeouts to 60s in the test file. Root-cause-free."
+}
