@@ -72,7 +72,22 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - Sources: RSS feeds + Telegram channels (t.me/hranews, t.me/VahidOnline)
 
 ### P1 (Completed)
-- **Multilingual Newsletter (May 2026, Option A — per-subscriber language preference)**:
+- **Full SEO Overhaul (May 2026)**:
+  - **AI auto-SEO per article**: New endpoint `POST /api/articles/{id}/seo/generate` calls GPT-5.2 to produce `seo_title_{fr,en,fa}` (≤60 chars), `meta_description_{fr,en,fa}` (≤160 chars) and `focus_keywords[]`. Server-side hard-capped. Admin button "✨ Générer SEO (IA)" in the article edit panel.
+  - **SEO score endpoint** `GET /api/articles/{id}/seo/score`: 0-100 with 12 checks (slug, per-lang title/desc, image, focus keywords, long-form, tags, published). Live checklist in admin.
+  - **Slug-based URLs** for articles: `/article/iran-strait-hormuz-crisis-2026` instead of ObjectIds. Backend lookup supports BOTH slug and legacy ObjectId. Article page does a client-side 301-equivalent redirect from ObjectId → slug for SEO canonicalization. `POST /api/admin/backfill-slugs` to migrate legacy articles (idempotent).
+  - **Indexable hub pages** for categories (`/articles/category/{slug}`) and tags (`/articles/tag/{slug}`) with their own SEO, breadcrumbs, and listing. New endpoints `GET /api/categories`, `GET /api/tags`, `GET /api/articles/by-category/{slug}`, `GET /api/articles/by-tag/{slug}`.
+  - **Sitemap upgrade**: hreflang FR/EN/FA + x-default on every URL, `image:image` entries for article covers, category & tag hub URLs. New Google News-format `/api/news-sitemap.xml` for last-48h articles. `robots.txt` references both.
+  - **Rich Schema.org JSON-LD**: `NewsArticle`/`Report`/`Article` on article pages with `author`, `wordCount`, `keywords`, `inLanguage`, `mainEntityOfPage`. `BreadcrumbList` on every page. Site-wide `Organization` + `WebSite` with `SearchAction` mounted once at app root.
+  - **Per-language meta + canonical**: Helmet now manages all `<head>` meta (removed static SEO meta from `index.html` to avoid duplicates). Hreflang links on every page.
+  - **Reading time & visible breadcrumbs** on article page. Related articles section (4 cards) by tag-overlap scoring + category match.
+  - **SEO Angles Suggester**: `POST /api/seo/suggest-angles` calls GPT-5.2 to propose 10 article ideas with primary keyword, search intent, estimated difficulty, and strategic rationale. Admin tool surfaces them in the Dashboard tab.
+  - **Internal linking**: article-page category badge + tag pills now link to hub pages.
+  - Backend test coverage: 70/70 pytest cases pass (43 legacy + 27 new SEO).
+- **Multilingual Newsletter (May 2026, Option A — per-subscriber language preference)** [carried]
+- **Newsletter Founder Introduction (May 2026)** [carried]
+- **Newsletter logo enlarged (May 2026)** [carried]
+- Studies & Briefs page: Filter tabs (All / Studies & Analysis / Weekly Briefs)
   - Subscribers now have a `language` field (FR/EN/FA, default FR for legacy/new). Stored on `db.subscribers`.
   - Public signup form on Home auto-uses the current site language.
   - Admin → Subscribers tab: language column with inline dropdown to change each subscriber's language. Header shows breakdown FR/EN/FA counts.
