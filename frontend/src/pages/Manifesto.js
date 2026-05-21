@@ -14,7 +14,7 @@ const COPY = {
     breadcrumbName: "Manifeste",
     signature: (
       <>
-        <p className="font-serif italic text-zinc-600">— Maneli Mirkhan</p>
+        <p className="italic text-zinc-700 text-lg">— Maneli Mirkhan</p>
         <p className="text-sm text-zinc-500">Fondatrice, Iran Observatory · Mai 2026</p>
       </>
     ),
@@ -114,7 +114,7 @@ const COPY = {
     breadcrumbName: "Manifesto",
     signature: (
       <>
-        <p className="font-serif italic text-zinc-600">— Maneli Mirkhan</p>
+        <p className="italic text-zinc-700 text-lg">— Maneli Mirkhan</p>
         <p className="text-sm text-zinc-500">Founder, Iran Observatory · May 2026</p>
       </>
     ),
@@ -206,7 +206,7 @@ const COPY = {
     breadcrumbName: "بیانیه",
     signature: (
       <>
-        <p className="font-serif italic text-zinc-600">— مانلی میرخان</p>
+        <p className="italic text-zinc-700 text-lg">— مانلی میرخان</p>
         <p className="text-sm text-zinc-500">بنیان‌گذار، رصدخانه ایران · مه ۲۰۲۶</p>
       </>
     ),
@@ -319,6 +319,7 @@ export default function Manifesto() {
       signature={c.signature}
       breadcrumbs={breadcrumbs}
       extraJsonLd={jsonLd}
+      voice="personal"
     >
       {c.body()}
     </EditorialPage>

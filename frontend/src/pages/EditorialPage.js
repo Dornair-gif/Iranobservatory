@@ -5,9 +5,12 @@ import SEO from '../components/SEO';
 import { Footer } from '../components/Footer';
 
 // Long-form editorial page wrapper used by /a-propos, /methodologie, /manifeste.
-// Centers a single column of serif body text at a generous measure, with a
-// monospace label-stamp at the top and a discreet meta footer (last revision
-// date). Kept intentionally austere — the credibility cue is the layout.
+// Centers a single column of text at a generous measure, with a monospace
+// label-stamp at the top and a discreet meta footer (last revision date).
+// Brand typography: Cabinet Grotesk (headings) + IBM Plex Sans (body) — the
+// global Iran Observatory stack. The `voice="personal"` variant (Manifesto,
+// founder-signed) swaps the body to an editorial italic serif (Cormorant
+// Garamond) to carry Maneli's personal voice.
 export function EditorialPage({
   label,
   title,
@@ -20,6 +23,7 @@ export function EditorialPage({
   canonicalPath,
   breadcrumbs,
   extraJsonLd,
+  voice = 'institutional',
 }) {
   const { language } = useLanguage();
   const isRtl = language === 'fa';
@@ -43,6 +47,16 @@ export function EditorialPage({
         </Helmet>
       )}
 
+      {/* Cormorant Garamond is only loaded on the founder-voice variant */}
+      {voice === 'personal' && (
+        <Helmet>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap"
+          />
+        </Helmet>
+      )}
+
       {/* Top rule */}
       <div className="border-b border-zinc-200 bg-white">
         <div className="max-w-3xl mx-auto px-6 sm:px-10 py-6">
@@ -61,7 +75,11 @@ export function EditorialPage({
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-6 text-lg sm:text-xl text-zinc-600 leading-relaxed font-serif italic">
+          <p
+            className={`mt-6 text-lg sm:text-xl text-zinc-600 leading-relaxed ${
+              voice === 'personal' ? 'voice-personal italic' : ''
+            }`}
+          >
             {subtitle}
           </p>
         )}
@@ -69,7 +87,9 @@ export function EditorialPage({
 
       {/* Body */}
       <article
-        className="max-w-3xl mx-auto px-6 sm:px-10 pb-16 prose-editorial"
+        className={`max-w-3xl mx-auto px-6 sm:px-10 pb-16 prose-editorial ${
+          voice === 'personal' ? 'voice-personal' : ''
+        }`}
         data-testid="editorial-body"
       >
         {children}
@@ -80,7 +100,7 @@ export function EditorialPage({
         <div className="border-t border-zinc-200">
           <div className="max-w-3xl mx-auto px-6 sm:px-10 py-10 space-y-4">
             {signature && (
-              <div className="font-serif text-zinc-700">{signature}</div>
+              <div className="voice-personal text-zinc-700">{signature}</div>
             )}
             {lastRevised && (
               <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500">
@@ -93,23 +113,78 @@ export function EditorialPage({
 
       <Footer />
 
-      {/* Page-local typography refinements */}
+      {/* Page-local typography. Defaults use the global Iran Observatory
+          stack (IBM Plex Sans body + Cabinet Grotesk headings). The
+          `.voice-personal` modifier swaps body & headings to Cormorant
+          Garamond — used only on the Manifesto to carry Maneli's voice. */}
       <style>{`
-        .prose-editorial p { font-family: ui-serif, Georgia, 'Iowan Old Style', 'Apple Garamond', 'Times New Roman', serif; font-size: 1.0625rem; line-height: 1.75; color: #2a2a2a; margin: 0 0 1.35rem; }
+        .prose-editorial p { font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 1.0625rem; line-height: 1.75; color: #2a2a2a; margin: 0 0 1.35rem; }
         .prose-editorial p + p { margin-top: 0; }
-        .prose-editorial h2 { font-family: ui-serif, Georgia, serif; font-size: 1.5rem; font-weight: 700; color: #0f1e2e; margin: 2.75rem 0 1rem; letter-spacing: -0.01em; }
-        .prose-editorial h3 { font-family: ui-serif, Georgia, serif; font-size: 1.15rem; font-weight: 700; color: #1E3A5F; margin: 2rem 0 0.6rem; }
+        .prose-editorial h2 { font-family: 'Cabinet Grotesk', 'IBM Plex Sans', sans-serif; font-size: 1.5rem; font-weight: 700; color: #0f1e2e; margin: 2.75rem 0 1rem; letter-spacing: -0.01em; }
+        .prose-editorial h3 { font-family: 'Cabinet Grotesk', 'IBM Plex Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color: #1E3A5F; margin: 2rem 0 0.6rem; }
         .prose-editorial ul { list-style: none; padding: 0; margin: 0 0 1.35rem; }
-        .prose-editorial ul li { font-family: ui-serif, Georgia, serif; font-size: 1.0625rem; line-height: 1.75; color: #2a2a2a; padding-left: 1.5rem; position: relative; margin-bottom: 0.75rem; }
+        .prose-editorial ul li { font-family: 'IBM Plex Sans', sans-serif; font-size: 1.0625rem; line-height: 1.75; color: #2a2a2a; padding-left: 1.5rem; position: relative; margin-bottom: 0.75rem; }
         .prose-editorial ul li::before { content: '·'; position: absolute; left: 0.4rem; top: -0.2rem; color: #3DB883; font-weight: 700; font-size: 1.4rem; }
         [dir="rtl"] .prose-editorial ul li { padding-left: 0; padding-right: 1.5rem; }
         [dir="rtl"] .prose-editorial ul li::before { left: auto; right: 0.4rem; }
         .prose-editorial strong { color: #0f1e2e; font-weight: 700; }
         .prose-editorial em { font-style: italic; color: #1E3A5F; }
-        .prose-editorial blockquote { border-left: 3px solid #3DB883; padding-left: 1.25rem; margin: 2rem 0; font-style: italic; color: #1E3A5F; font-size: 1.15rem; line-height: 1.7; }
+        .prose-editorial blockquote { border-left: 3px solid #3DB883; padding-left: 1.25rem; margin: 2rem 0; font-style: italic; color: #1E3A5F; font-size: 1.15rem; line-height: 1.7; font-family: 'IBM Plex Sans', sans-serif; }
         [dir="rtl"] .prose-editorial blockquote { border-left: none; border-right: 3px solid #3DB883; padding-left: 0; padding-right: 1.25rem; }
         .prose-editorial hr { border: 0; border-top: 1px solid #e5e5e5; margin: 2.5rem 0; }
-        .prose-editorial .lede { font-size: 1.25rem; line-height: 1.65; color: #1E3A5F; font-family: ui-serif, Georgia, serif; font-style: italic; }
+        .prose-editorial .lede { font-size: 1.25rem; line-height: 1.65; color: #1E3A5F; font-family: 'IBM Plex Sans', sans-serif; }
+
+        /* Persian: keep Vazirmatn body for readability, even on Manifesto */
+        [dir="rtl"] .prose-editorial p,
+        [dir="rtl"] .prose-editorial ul li,
+        [dir="rtl"] .prose-editorial blockquote,
+        [dir="rtl"] .prose-editorial .lede { font-family: 'Vazirmatn', 'IBM Plex Sans', sans-serif; }
+
+        /* ----- Founder voice (Manifesto only) ----- */
+        .voice-personal,
+        .prose-editorial.voice-personal p,
+        .prose-editorial.voice-personal ul li,
+        .prose-editorial.voice-personal .lede {
+          font-family: 'Cormorant Garamond', 'EB Garamond', Garamond, Georgia, serif;
+          font-style: italic;
+          font-weight: 400;
+          font-size: 1.2rem;
+          line-height: 1.7;
+          color: #1f2937;
+        }
+        .prose-editorial.voice-personal .lede {
+          font-size: 1.5rem;
+          line-height: 1.55;
+          color: #1E3A5F;
+          font-weight: 500;
+        }
+        .prose-editorial.voice-personal strong {
+          font-style: normal;
+          font-weight: 600;
+          color: #0f1e2e;
+          font-family: 'Cabinet Grotesk', 'IBM Plex Sans', sans-serif;
+        }
+        .prose-editorial.voice-personal em {
+          font-style: italic;
+          font-weight: 500;
+          color: #1E3A5F;
+        }
+        .prose-editorial.voice-personal blockquote {
+          font-family: 'Cormorant Garamond', Garamond, serif;
+          font-style: italic;
+          font-size: 1.5rem;
+          line-height: 1.55;
+          color: #1E3A5F;
+          font-weight: 500;
+        }
+        /* Persian manifesto: stay on Vazirmatn (Cormorant has no Persian glyphs) */
+        [dir="rtl"] .prose-editorial.voice-personal p,
+        [dir="rtl"] .prose-editorial.voice-personal ul li,
+        [dir="rtl"] .prose-editorial.voice-personal blockquote,
+        [dir="rtl"] .prose-editorial.voice-personal .lede {
+          font-family: 'Vazirmatn', 'IBM Plex Sans', sans-serif;
+          font-style: normal;
+        }
       `}</style>
     </div>
   );
