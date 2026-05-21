@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
+import { Footer } from '../components/Footer';
 
 const TITLES = {
   fr: (slug) => `Articles : ${slug.replace(/-/g, ' ')}`,
@@ -93,6 +94,7 @@ export default function ArticlesByTag() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

@@ -2513,6 +2513,9 @@ async def sitemap():
         {"loc": "/articles", "priority": "0.9", "changefreq": "daily"},
         {"loc": "/studies", "priority": "0.9", "changefreq": "weekly"},
         {"loc": "/monitor", "priority": "0.9", "changefreq": "daily"},
+        {"loc": "/a-propos", "priority": "0.8", "changefreq": "monthly"},
+        {"loc": "/methodologie", "priority": "0.8", "changefreq": "monthly"},
+        {"loc": "/manifeste", "priority": "0.8", "changefreq": "monthly"},
     ]
     for page in pages:
         xml += f'  <url>\n    <loc>{base_url}{page["loc"]}</loc>\n'

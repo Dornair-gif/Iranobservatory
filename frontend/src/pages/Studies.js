@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
 import { format } from 'date-fns';
+import { Footer } from '../components/Footer';
 import { fr as frLocale, enUS } from 'date-fns/locale';
 
 function normalizeFileUrl(url) {
@@ -291,6 +292,7 @@ export default function Studies() {
           </>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

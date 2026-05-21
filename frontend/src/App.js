@@ -17,6 +17,9 @@ import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import IndexPreview from "./pages/IndexPreview";
 import Dashboard from "./pages/Dashboard";
+import About from "./pages/About";
+import Methodology from "./pages/Methodology";
+import Manifesto from "./pages/Manifesto";
 
 function AppContent() {
   return (
@@ -62,6 +65,24 @@ function AppContent() {
         } />
         <Route path="/preview-index" element={<IndexPreview />} />
         <Route path="/monitor" element={<Dashboard />} />
+        <Route path="/a-propos" element={
+          <>
+            <Header />
+            <About />
+          </>
+        } />
+        <Route path="/methodologie" element={
+          <>
+            <Header />
+            <Methodology />
+          </>
+        } />
+        <Route path="/manifeste" element={
+          <>
+            <Header />
+            <Manifesto />
+          </>
+        } />
         <Route path="/" element={
           <>
             <Header />

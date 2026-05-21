@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
+import { Footer } from '../components/Footer';
 
 const CATEGORY_LABELS = {
   news:      { fr: 'Actualités', en: 'News', fa: 'اخبار' },
@@ -102,6 +103,7 @@ export default function ArticlesByCategory() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

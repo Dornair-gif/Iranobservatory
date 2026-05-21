@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 6 testing — 3 new editorial pages (/a-propos, /methodologie, /manifeste) + shared Footer + sitemap.xml. Backend: 19/19 pytest passed (sitemap exposes 3 new URLs with FR/EN/FA + x-default hreflang). Frontend: all required data-testids present, footer renders on Home/Articles/Studies/About/Methodology/Manifesto, language switch (FR/EN/FA) updates titles, dir=rtl applied on FA, header contains NO links to the 3 new pages. Manifesto has italic lede + Maneli Mirkhan signature + OpinionNewsArticle+Person JSON-LD + NO photo. Methodology section 5 'Sources interdites et sources attribuées' present with MEK/NCRI/Iran International banned and Tasnim/Fars attributed; no /corrections stub. About has AboutPage JSON-LD. Regression: editorial policy tests from iteration_5 still 17/17 pass. No critical issues found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Studies page", "issues": ["Pre-existing hydration warning: <a> nested inside <a> (brief-pdf-... link is inside the brief-card LinkWithRef wrapper). Not introduced by this iteration but worth fixing — invalid HTML."]},
+      {"screen": "Global", "issues": ["Console warnings: cabinet-grotesk font fails to decode (OTS parsing error on https://fonts.cdnfonts.com/css/cabinet-grotesk). Cosmetic only — fallback fonts kick in. Consider self-hosting or replacing the source."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_editorial_pages.py",
+    "/app/backend/tests/test_editorial_policy.py",
+    "/app/test_reports/pytest/pytest_editorial_pages.xml"
+  ],
+  "action_items": [
+    "(Optional, pre-existing) Fix nested <a> hydration warning in Studies.js — the brief-pdf <a> should not be inside the LinkWithRef brief-card.",
+    "(Optional) Replace or self-host the cabinet-grotesk font to remove OTS decoding warnings."
+  ],
+  "critical_code_review_comments": [
+    "EditorialPage.js renders the Footer inside itself AND parent routes do not need to wrap separately — confirmed no double-footer on /a-propos, /methodologie, /manifeste.",
+    "JSON-LD for Manifesto correctly uses OpinionNewsArticle + Person 'Maneli Mirkhan' with affiliation Organization Iran Observatory.",
+    "Sitemap canonical hardcoded to https://iranobservatory.org regardless of FRONTEND_URL when 'preview' in URL — appropriate for SEO."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_editorial_pages.py (new — sitemap regression tests)"
+  ],
+  "success_rate": {"backend": "100% (19/19 + 17/17 regression)", "frontend": "100% (all required testids + flows verified)"},
+  "test_credentials": "Not exercised this iteration — read-only public pages.",
+  "seed_data_creation": "None — no DB writes.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Editorial pages and shared Footer fully validated. Iteration 5 editorial policy regression (17 tests) continues to pass. If new editorial routes are added, extend /app/backend/tests/test_editorial_pages.py with the new path and matching hreflang assertions. Pre-existing Studies.js nested-<a> hydration warning should be fixed by main agent.",
+  "rca of the issue": "No bugs found this iteration."
+}

@@ -11,6 +11,7 @@ import SEO from '../components/SEO';
 import { API } from '../config/api';
 import { normalizeFileUrl } from '../lib/imageUrl';
 import { renderHtml } from '../lib/sanitize';
+import { Footer } from '../components/Footer';
 
 export default function Article() {
   const { id } = useParams();
@@ -482,6 +483,7 @@ export default function Article() {
           </div>
         )}
       </article>
+      <Footer />
     </div>
   );
 }

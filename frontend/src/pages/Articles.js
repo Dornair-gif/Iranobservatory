@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { ArticleCard, ArticleCardSkeleton } from '../components/ArticleCard';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
+import { Footer } from '../components/Footer';
 import { normalizeFileUrl } from '../lib/imageUrl';
 import { formatDistanceToNow } from 'date-fns';
 import { fr as frLocale, enUS } from 'date-fns/locale';
@@ -230,6 +231,7 @@ export default function Articles() {
           </>
         )}
       </main>
+      <Footer />
     </div>
   );
 }
