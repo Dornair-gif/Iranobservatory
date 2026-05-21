@@ -49,18 +49,135 @@ function PulseBackground() {
   );
 }
 
+// Source clustering badge — favicons + label "draws on X sources"
+function SourceFavicons({ sources, language = 'fr', size = 18 }) {
+  if (!sources || sources.length === 0) return null;
+  const label = language === 'fr'
+    ? `${sources.length} sources vérifiées`
+    : language === 'fa'
+      ? `${sources.length} منبع تأیید شده`
+      : `${sources.length} verified sources`;
+  return (
+    <div className="flex items-center gap-2 mt-1">
+      <div className="flex items-center -space-x-1.5">
+        {sources.slice(0, 4).map((s, i) => (
+          <a
+            key={s.url || i}
+            href={s.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={s.name}
+            className="block bg-white border border-white/20 rounded-full overflow-hidden hover:scale-110 hover:z-10 transition-transform"
+            style={{ width: size, height: size }}
+          >
+            <img
+              src={s.favicon}
+              alt={s.name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          </a>
+        ))}
+        {sources.length > 4 && (
+          <span className="bg-white/10 text-white/70 text-[9px] font-mono rounded-full flex items-center justify-center" style={{ width: size, height: size }}>
+            +{sources.length - 4}
+          </span>
+        )}
+      </div>
+      <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">{label}</span>
+    </div>
+  );
+}
+
+// "Last updated X min ago" pill with live tick
+function LastUpdatedPill({ timestamp, language = 'fr' }) {
+  if (!timestamp) return <span className="text-xs font-mono text-zinc-400">LIVE</span>;
+  const date = new Date(timestamp);
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.max(0, Math.floor(diffMs / 60000));
+  const diffHr = Math.floor(diffMin / 60);
+  
+  let label;
+  if (diffMin < 1) {
+    label = language === 'fr' ? "à l'instant" : language === 'fa' ? 'هم اکنون' : 'just now';
+  } else if (diffMin < 60) {
+    label = language === 'fr' ? `il y a ${diffMin} min` : language === 'fa' ? `${diffMin} دقیقه پیش` : `${diffMin} min ago`;
+  } else if (diffHr < 24) {
+    label = language === 'fr' ? `il y a ${diffHr}h` : language === 'fa' ? `${diffHr} ساعت پیش` : `${diffHr}h ago`;
+  } else {
+    label = date.toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse" />
+      <span className="text-xs font-mono text-zinc-400">
+        {language === 'fr' ? 'MAJ' : language === 'fa' ? 'به‌روزرسانی' : 'UPDATED'} <span className="text-[#3DB883]">{label}</span>
+      </span>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { language } = useLanguage();
   const [data, setData] = useState(null);
+  const [sources, setSources] = useState({});
+  const [signals, setSignals] = useState([]);
+  const [audience, setAudience] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [unlockingSignalId, setUnlockingSignalId] = useState(null);
+  const [unlockEmail, setUnlockEmail] = useState('');
+  const [unlockedSignals, setUnlockedSignals] = useState({}); // id -> full signal
 
+  // Fetch dashboard + sources once
   useEffect(() => {
-    axios.get(`${API}/dashboard/indexes`)
-      .then(r => setData(r.data))
-      .catch(() => setError(true))
+    Promise.all([
+      axios.get(`${API}/dashboard/indexes`),
+      axios.get(`${API}/dashboard/sources`).catch(() => ({ data: {} }))
+    ]).then(([d, s]) => {
+      setData(d.data);
+      setSources(s.data || {});
+    }).catch(() => setError(true))
       .finally(() => setLoading(false));
+  }, [refreshTick]);
+
+  // Fetch signals when audience changes
+  useEffect(() => {
+    axios.get(`${API}/signals`, { params: { audience } })
+      .then(r => setSignals(r.data || []))
+      .catch(() => setSignals([]));
+  }, [audience]);
+
+  // Auto-refresh "last updated X min ago" pill every minute (no API call)
+  useEffect(() => {
+    const t = setInterval(() => setRefreshTick(t => t), 60_000); // tick state for re-render
+    return () => clearInterval(t);
   }, []);
+
+  // Auto refresh data every 10 minutes (in case admin runs refresh on prod)
+  useEffect(() => {
+    const t = setInterval(() => {
+      axios.get(`${API}/dashboard/indexes`).then(r => setData(r.data)).catch(() => {});
+    }, 600_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const handleUnlock = async (signalId) => {
+    if (!unlockEmail || !unlockEmail.includes('@')) return;
+    try {
+      const res = await axios.post(`${API}/signals/${signalId}/unlock`, {
+        email: unlockEmail, language
+      });
+      setUnlockedSignals(prev => ({ ...prev, [signalId]: res.data }));
+      setUnlockingSignalId(null);
+      setUnlockEmail('');
+    } catch (e) {
+      alert('Erreur — merci de réessayer');
+    }
+  };
 
   if (loading) {
     return (
@@ -127,12 +244,7 @@ export default function Dashboard() {
               </div>
               <h1 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter">Iran Monitor</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-[#3DB883] rounded-full animate-pulse" />
-              <span className="text-xs font-mono text-zinc-400">
-                {data.updated_at ? new Date(data.updated_at).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'LIVE'}
-              </span>
-            </div>
+            <LastUpdatedPill timestamp={data.last_updated || data.updated_at} language={language} />
           </div>
         </div>
       </div>
@@ -153,17 +265,195 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
+            <div className="mt-6 pt-4 border-t border-white/10">
+              <SourceFavicons sources={sources.tension_index} language={language} />
+            </div>
           </section>
         )}
 
+        {/* ===== STRATEGIC SIGNALS (Signaux Stratégiques) ===== */}
+        <section data-testid="strategic-signals">
+          <div className="flex items-start justify-between gap-4 mb-2 flex-wrap">
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#3DB883] font-bold mb-1">
+                {language === 'fr' ? 'Veille stratégique · non-partisan · francophone' : language === 'fa' ? 'هشدار راهبردی' : 'Strategic Watch'}
+              </p>
+              <h2 className="font-heading font-black text-3xl tracking-tight">
+                {language === 'fr' ? 'Signaux à surveiller' : language === 'fa' ? 'سیگنال‌های قابل پیگیری' : 'Signals to Watch'}
+              </h2>
+              <p className="text-sm text-zinc-400 mt-1 max-w-2xl">
+                {language === 'fr'
+                  ? 'Notre lecture éditoriale des signaux faibles, dérives possibles et points de bascule. Pour décideurs, diplomates, journalistes et ONG.'
+                  : language === 'fa'
+                    ? 'تحلیل سردبیری ما از سیگنال‌های ضعیف، روندهای احتمالی و نقاط عطف.'
+                    : 'Our editorial read on weak signals, possible drifts and tipping points. For executives, diplomats, journalists & NGOs.'}
+              </p>
+            </div>
+            {/* Audience filter */}
+            <div className="flex gap-1 flex-wrap">
+              {[
+                { value: 'all', label_fr: 'Tous', label_en: 'All', label_fa: 'همه' },
+                { value: 'business', label_fr: 'Entreprises', label_en: 'Business', label_fa: 'کسب‌وکار' },
+                { value: 'diplomatic', label_fr: 'Diplomatie', label_en: 'Diplomatic', label_fa: 'دیپلماسی' },
+                { value: 'media', label_fr: 'Médias', label_en: 'Media', label_fa: 'رسانه' },
+                { value: 'ngo', label_fr: 'ONG', label_en: 'NGO', label_fa: 'سازمان‌های مردم‌نهاد' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setAudience(opt.value)}
+                  className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider rounded-md transition-colors ${audience === opt.value ? 'bg-[#3DB883] text-[#0a1628]' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}
+                  data-testid={`audience-${opt.value}`}
+                >
+                  {opt[`label_${language}`] || opt.label_en}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {signals.length === 0 ? (
+            <div className="bg-[#162640] border border-white/10 rounded-xl p-8 text-center">
+              <p className="text-zinc-400 text-sm">
+                {language === 'fr' ? 'Aucun signal actif pour cette audience.' : language === 'fa' ? 'سیگنال فعالی وجود ندارد.' : 'No active signals for this audience.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+              {signals.map(s => {
+                const full = unlockedSignals[s.id] || s;
+                const t = full[`title_${language}`] || full.title_fr || full.title_en;
+                const ctx = full[`context_${language}`] || full.context_fr || full.context_en;
+                const isLocked = s.locked && !unlockedSignals[s.id];
+                
+                const impactColor = {
+                  critical: 'bg-red-500/20 text-red-300 border-red-500/40',
+                  high: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                  medium: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+                  low: 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                }[full.impact] || 'bg-white/10 text-zinc-300 border-white/20';
+                
+                const likelihoodLabel = {
+                  fr: { low: 'faible', medium: 'modérée', high: 'élevée', critical: 'très élevée' },
+                  en: { low: 'low', medium: 'medium', high: 'high', critical: 'very high' },
+                  fa: { low: 'کم', medium: 'متوسط', high: 'بالا', critical: 'بسیار بالا' }
+                }[language] || {};
+                
+                const timeframeLabel = {
+                  fr: { this_week: 'cette semaine', next_30_days: '30 jours', ongoing: 'continu', next_quarter: 'trimestre' },
+                  en: { this_week: 'this week', next_30_days: '30 days', ongoing: 'ongoing', next_quarter: 'next quarter' },
+                  fa: { this_week: 'این هفته', next_30_days: '۳۰ روز', ongoing: 'پیوسته', next_quarter: 'سه ماه آینده' }
+                }[language] || {};
+                
+                return (
+                  <div key={s.id} className="bg-[#162640] border border-white/10 rounded-xl p-5 hover:border-[#3DB883]/40 transition-colors" data-testid={`signal-${s.id}`}>
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                      <span className={`px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider border rounded ${impactColor}`}>
+                        {language === 'fr' ? 'Impact' : language === 'fa' ? 'تأثیر' : 'Impact'} · {full.impact}
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        {language === 'fr' ? 'Proba' : language === 'fa' ? 'احتمال' : 'Likelihood'}: <span className="text-white">{likelihoodLabel[full.likelihood] || full.likelihood}</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">·</span>
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        {timeframeLabel[full.timeframe] || full.timeframe}
+                      </span>
+                      {s.premium && (
+                        <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-[#3DB883] flex items-center gap-1">
+                          <span className="text-[10px]">★</span>
+                          {language === 'fr' ? 'Premium' : 'Premium'}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <h3 className="font-heading font-bold text-lg leading-tight mb-2 text-white" dir={language === 'fa' ? 'rtl' : 'ltr'}>
+                      {t}
+                    </h3>
+                    
+                    {isLocked ? (
+                      <>
+                        <div className="bg-gradient-to-b from-zinc-700/20 to-transparent rounded-lg p-3 mb-3 relative overflow-hidden">
+                          <p className="text-sm text-zinc-500 blur-sm select-none" dir={language === 'fa' ? 'rtl' : 'ltr'}>
+                            Lorem ipsum dolor sit amet consectetur adipiscing elit. Cette analyse stratégique est réservée aux lecteurs inscrits. Nos sources confirment plusieurs signaux faibles convergents sur ce dossier sensible. Le rapport complet inclut...
+                          </p>
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#162640] via-[#162640]/60 to-transparent" />
+                        </div>
+                        {unlockingSignalId === s.id ? (
+                          <div className="space-y-2">
+                            <input
+                              type="email"
+                              value={unlockEmail}
+                              onChange={(e) => setUnlockEmail(e.target.value)}
+                              placeholder={language === 'fr' ? 'votre@email.com' : 'your@email.com'}
+                              className="w-full bg-[#0a1628] border border-white/10 text-white px-3 py-2 rounded text-sm focus:outline-none focus:border-[#3DB883]"
+                              autoFocus
+                              data-testid={`signal-unlock-email-${s.id}`}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleUnlock(s.id)}
+                                className="flex-1 bg-[#3DB883] text-[#0a1628] py-2 rounded text-xs font-mono uppercase tracking-wider font-bold hover:bg-[#2d9e6e]"
+                                data-testid={`signal-unlock-confirm-${s.id}`}
+                              >
+                                {language === 'fr' ? 'Débloquer' : language === 'fa' ? 'باز کردن' : 'Unlock'}
+                              </button>
+                              <button
+                                onClick={() => { setUnlockingSignalId(null); setUnlockEmail(''); }}
+                                className="px-3 py-2 text-xs font-mono text-zinc-500 hover:text-white"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              {language === 'fr' ? 'Inclus l\'inscription à notre newsletter hebdomadaire. Désinscription à tout moment.' : 'Includes our weekly newsletter. Unsubscribe anytime.'}
+                            </p>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setUnlockingSignalId(s.id)}
+                            className="w-full bg-[#3DB883]/10 border border-[#3DB883]/30 text-[#3DB883] py-2 rounded text-xs font-mono uppercase tracking-wider font-bold hover:bg-[#3DB883]/20 transition-colors"
+                            data-testid={`signal-unlock-btn-${s.id}`}
+                          >
+                            {language === 'fr' ? '✦ Débloquer avec mon email' : language === 'fa' ? '✦ با ایمیل باز کنید' : '✦ Unlock with email'}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-zinc-300 leading-relaxed mb-3 whitespace-pre-line" dir={language === 'fa' ? 'rtl' : 'ltr'}>
+                          {ctx}
+                        </p>
+                        {(full.sources || []).length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                            {full.sources.map((src, i) => (
+                              <a
+                                key={i}
+                                href={src.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-mono text-[#3DB883] hover:underline"
+                              >
+                                {src.name} ↗
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {/* ===== ECONOMIC INDICATORS ===== */}
         <section>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <DollarSign className="w-6 h-6 text-amber-400" strokeWidth={1.5} />
               <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Indicateurs Économiques' : 'Economic Indicators'}</h2>
             </div>
-            <span className="text-xs font-mono text-zinc-500">IMF, World Bank, OPEC, Tanker Tracking</span>
+            <SourceFavicons sources={sources.economy} language={language} />
           </div>
           {econ.summary && (
             <div className="bg-[#162640] border border-white/10 rounded-xl p-5 mb-5">
@@ -201,9 +491,12 @@ export default function Dashboard() {
 
         {/* ===== HORMUZ CRISIS MONITORING ===== */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <Anchor className="w-6 h-6 text-cyan-400" strokeWidth={1.5} />
-            <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Crise du Détroit d\'Ormuz' : 'Strait of Hormuz Crisis'}</h2>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <Anchor className="w-6 h-6 text-cyan-400" strokeWidth={1.5} />
+              <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Crise du Détroit d\'Ormuz' : 'Strait of Hormuz Crisis'}</h2>
+            </div>
+            <SourceFavicons sources={sources.hormuz} language={language} />
           </div>
 
           {/* Key indicators row */}
@@ -356,9 +649,12 @@ export default function Dashboard() {
 
         {/* ===== HUMAN RIGHTS ===== */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <Shield className="w-6 h-6 text-purple-400" strokeWidth={1.5} />
-            <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Droits Humains' : 'Human Rights'}</h2>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <Shield className="w-6 h-6 text-purple-400" strokeWidth={1.5} />
+              <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Droits Humains' : 'Human Rights'}</h2>
+            </div>
+            <SourceFavicons sources={[...(sources.human_rights || []), ...(sources.internet_blackouts || [])]} language={language} />
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
             <div className="bg-[#162640] border border-red-500/20 rounded-xl p-5 text-center" data-testid="hr-blackout">
@@ -430,9 +726,12 @@ export default function Dashboard() {
 
         {/* ===== SANCTIONS ===== */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <Scale className="w-6 h-6 text-[#3DB883]" strokeWidth={1.5} />
-            <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Sanctions' : 'Sanctions'}</h2>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <Scale className="w-6 h-6 text-[#3DB883]" strokeWidth={1.5} />
+              <h2 className="font-heading font-black text-2xl tracking-tight">{language === 'fr' ? 'Sanctions' : 'Sanctions'}</h2>
+            </div>
+            <SourceFavicons sources={sources.sanctions} language={language} />
           </div>
           <div className="bg-[#162640] border border-white/10 rounded-xl p-6 mb-5">
             <div className="grid grid-cols-3 gap-6 mb-5">

@@ -2296,10 +2296,13 @@ async def get_dashboard_indexes():
     """Public endpoint - returns cached dashboard data."""
     cached = await db.dashboard_cache.find_one({}, {"_id": 0})
     if cached:
+        # Surface last_updated timestamp for the UI "updated X min ago" pill
+        cached["last_updated"] = cached.get("updated_at")
         return cached
     # Compute on first request
     data = await _compute_dashboard_indexes()
     if data:
+        data["last_updated"] = data.get("updated_at")
         return data
     raise HTTPException(status_code=503, detail="Dashboard data not yet available")
 
@@ -2635,6 +2638,265 @@ async def weekly_brief_scheduler():
         except Exception as e:
             logger.error(f"Weekly brief scheduler error: {e}")
             await asyncio.sleep(3600)
+
+# ============ STRATEGIC SIGNALS ("Signaux Stratégiques") ============
+# Editorial curation of things-to-watch for professional readers
+# (executives, diplomats, journalists, NGOs). Positions Iran Observatory in
+# the gap left by partisan media: francophone, non-partisan, signed.
+
+STRATEGIC_AUDIENCES = {"business", "diplomatic", "media", "ngo", "all"}
+STRATEGIC_LEVELS = {"low", "medium", "high", "critical"}
+STRATEGIC_TIMEFRAMES = {"this_week", "next_30_days", "ongoing", "next_quarter"}
+
+@api_router.get("/signals")
+async def list_signals(audience: str = "all", include_locked: bool = False):
+    """Public list of active strategic signals.
+    Filters out expired signals automatically. The `locked` flag controls
+    whether premium signals are returned with full body or just preview meta."""
+    now = datetime.now(timezone.utc)
+    query = {
+        "status": "published",
+        "$or": [{"expires_at": None}, {"expires_at": {"$gte": now}}]
+    }
+    if audience and audience != "all":
+        # Match signals targeting this audience OR all
+        query["audience"] = {"$in": [audience, "all"]}
+    
+    cursor = db.signals.find(query).sort([("priority", -1), ("created_at", -1)]).limit(50)
+    out = []
+    async for s in cursor:
+        s["id"] = str(s.pop("_id"))
+        for k in ("created_at", "updated_at", "expires_at", "published_at"):
+            if isinstance(s.get(k), datetime):
+                s[k] = s[k].isoformat()
+        # Premium gating: if locked & not include_locked, hide details
+        if s.get("premium") and not include_locked:
+            s["context_fr"] = ""
+            s["context_en"] = ""
+            s["context_fa"] = ""
+            s["sources"] = []
+            s["locked"] = True
+        else:
+            s["locked"] = False
+        out.append(s)
+    return out
+
+@api_router.get("/signals/admin")
+async def list_signals_admin(request: Request):
+    """Admin: all signals including drafts + expired."""
+    await get_current_user(request)
+    out = []
+    async for s in db.signals.find({}).sort("created_at", -1):
+        s["id"] = str(s.pop("_id"))
+        for k in ("created_at", "updated_at", "expires_at", "published_at"):
+            if isinstance(s.get(k), datetime):
+                s[k] = s[k].isoformat()
+        out.append(s)
+    return out
+
+@api_router.post("/signals")
+async def create_signal(request: Request):
+    await get_current_user(request)
+    body = await request.json()
+    
+    audience = body.get("audience", "all")
+    if audience not in STRATEGIC_AUDIENCES:
+        raise HTTPException(status_code=400, detail=f"audience must be one of {sorted(STRATEGIC_AUDIENCES)}")
+    
+    likelihood = (body.get("likelihood") or "medium").lower()
+    impact = (body.get("impact") or "medium").lower()
+    if likelihood not in STRATEGIC_LEVELS:
+        likelihood = "medium"
+    if impact not in STRATEGIC_LEVELS:
+        impact = "medium"
+    
+    timeframe = (body.get("timeframe") or "this_week").lower()
+    if timeframe not in STRATEGIC_TIMEFRAMES:
+        timeframe = "this_week"
+    
+    # Compute priority for sorting (impact * likelihood, on 0-15 scale)
+    weight = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+    priority = weight.get(likelihood, 2) * weight.get(impact, 2)
+    
+    # Optional expiry
+    expires_at = None
+    if body.get("expires_at"):
+        try:
+            expires_at = datetime.fromisoformat(body["expires_at"].replace("Z", "+00:00"))
+        except Exception:
+            pass
+    
+    doc = {
+        "title_fr": (body.get("title_fr") or "").strip(),
+        "title_en": (body.get("title_en") or "").strip(),
+        "title_fa": (body.get("title_fa") or "").strip(),
+        "context_fr": (body.get("context_fr") or "").strip(),
+        "context_en": (body.get("context_en") or "").strip(),
+        "context_fa": (body.get("context_fa") or "").strip(),
+        "category": body.get("category") or "geopolitics",
+        "audience": audience,
+        "timeframe": timeframe,
+        "likelihood": likelihood,
+        "impact": impact,
+        "priority": priority,
+        "sources": [s for s in (body.get("sources") or []) if isinstance(s, dict) and s.get("url")][:10],
+        "tags": [t for t in (body.get("tags") or []) if isinstance(t, str)][:10],
+        "premium": bool(body.get("premium", False)),
+        "status": body.get("status", "draft"),
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        "published_at": datetime.now(timezone.utc) if body.get("status") == "published" else None,
+    }
+    res = await db.signals.insert_one(doc)
+    return {"id": str(res.inserted_id), "message": "Signal created"}
+
+@api_router.put("/signals/{signal_id}")
+async def update_signal(signal_id: str, request: Request):
+    await get_current_user(request)
+    body = await request.json()
+    try:
+        oid = ObjectId(signal_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid signal id")
+    
+    update = {}
+    for k in ("title_fr", "title_en", "title_fa", "context_fr", "context_en", "context_fa", "category", "audience", "timeframe", "likelihood", "impact", "status"):
+        if k in body:
+            update[k] = body[k]
+    if "sources" in body:
+        update["sources"] = [s for s in body["sources"] if isinstance(s, dict) and s.get("url")][:10]
+    if "tags" in body:
+        update["tags"] = [t for t in body["tags"] if isinstance(t, str)][:10]
+    if "premium" in body:
+        update["premium"] = bool(body["premium"])
+    if "expires_at" in body:
+        try:
+            update["expires_at"] = datetime.fromisoformat(body["expires_at"].replace("Z", "+00:00")) if body["expires_at"] else None
+        except Exception:
+            pass
+    
+    # Recompute priority if likelihood/impact changed
+    if "likelihood" in update or "impact" in update:
+        existing = await db.signals.find_one({"_id": oid}, {"likelihood": 1, "impact": 1})
+        if existing:
+            lk = update.get("likelihood", existing.get("likelihood", "medium"))
+            im = update.get("impact", existing.get("impact", "medium"))
+            weight = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+            update["priority"] = weight.get(lk, 2) * weight.get(im, 2)
+    
+    update["updated_at"] = datetime.now(timezone.utc)
+    if update.get("status") == "published":
+        update["published_at"] = datetime.now(timezone.utc)
+    
+    result = await db.signals.update_one({"_id": oid}, {"$set": update})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    return {"message": "Signal updated"}
+
+@api_router.delete("/signals/{signal_id}")
+async def delete_signal(signal_id: str, request: Request):
+    await get_current_user(request)
+    try:
+        oid = ObjectId(signal_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid signal id")
+    result = await db.signals.delete_one({"_id": oid})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    return {"message": "Signal deleted"}
+
+@api_router.post("/signals/{signal_id}/unlock")
+async def unlock_signal(signal_id: str, request: Request):
+    """Email-gated unlock for premium signals. Adds the requester to subscribers
+    (newsletter=true) and returns the full body. Stepping stone before Stripe."""
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+    language = (body.get("language") or "fr").lower()
+    if "@" not in email:
+        raise HTTPException(status_code=400, detail="Valid email required")
+    if language not in ("fr", "en", "fa"):
+        language = "fr"
+    
+    try:
+        oid = ObjectId(signal_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid signal id")
+    signal = await db.signals.find_one({"_id": oid})
+    if not signal:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    
+    # Track lead — also subscribes them to the newsletter
+    existing = await db.subscribers.find_one({"email": email})
+    if existing:
+        await db.subscribers.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {"newsletter": True, "language": language},
+             "$addToSet": {"unlocked_signals": str(oid)}}
+        )
+    else:
+        await db.subscribers.insert_one({
+            "email": email,
+            "newsletter": True,
+            "language": language,
+            "unlocked_signals": [str(oid)],
+            "downloads": [],
+            "created_at": datetime.now(timezone.utc),
+            "source": "strategic_signal_unlock"
+        })
+    
+    # Return full signal body
+    signal["id"] = str(signal.pop("_id"))
+    for k in ("created_at", "updated_at", "expires_at", "published_at"):
+        if isinstance(signal.get(k), datetime):
+            signal[k] = signal[k].isoformat()
+    signal["locked"] = False
+    return signal
+
+# ============ DASHBOARD SOURCES ============
+# Curated list of trusted sources for each Iran Monitor indicator. Returned
+# alongside indicator values to display source-clustering favicons.
+DASHBOARD_SOURCE_CONFIG = {
+    "tension_index": [
+        {"name": "International Crisis Group", "url": "https://www.crisisgroup.org/", "favicon": "https://www.google.com/s2/favicons?domain=crisisgroup.org&sz=32"},
+        {"name": "Reuters", "url": "https://www.reuters.com/world/middle-east/", "favicon": "https://www.google.com/s2/favicons?domain=reuters.com&sz=32"},
+        {"name": "Stockholm Int. Peace Research", "url": "https://www.sipri.org/", "favicon": "https://www.google.com/s2/favicons?domain=sipri.org&sz=32"},
+    ],
+    "hormuz": [
+        {"name": "UNCTAD", "url": "https://unctad.org/publication/strait-hormuz-disruptions-implications-global-trade-and-development", "favicon": "https://www.google.com/s2/favicons?domain=unctad.org&sz=32"},
+        {"name": "MarineTraffic", "url": "https://www.marinetraffic.com/", "favicon": "https://www.google.com/s2/favicons?domain=marinetraffic.com&sz=32"},
+        {"name": "EIA US Energy", "url": "https://www.eia.gov/", "favicon": "https://www.google.com/s2/favicons?domain=eia.gov&sz=32"},
+        {"name": "Crisis Group", "url": "https://www.crisisgroup.org/trigger-list/iran-usisrael-trigger-list/flashpoints/strait-hormuz", "favicon": "https://www.google.com/s2/favicons?domain=crisisgroup.org&sz=32"},
+    ],
+    "human_rights": [
+        {"name": "HRA Iran", "url": "https://www.en-hrana.org/", "favicon": "https://www.google.com/s2/favicons?domain=en-hrana.org&sz=32"},
+        {"name": "Amnesty International", "url": "https://www.amnesty.org/en/location/middle-east-and-north-africa/iran/", "favicon": "https://www.google.com/s2/favicons?domain=amnesty.org&sz=32"},
+        {"name": "UN OHCHR", "url": "https://www.ohchr.org/en/countries/iran", "favicon": "https://www.google.com/s2/favicons?domain=ohchr.org&sz=32"},
+        {"name": "Iran Human Rights", "url": "https://iranhr.net/", "favicon": "https://www.google.com/s2/favicons?domain=iranhr.net&sz=32"},
+    ],
+    "internet_blackouts": [
+        {"name": "NetBlocks", "url": "https://netblocks.org/", "favicon": "https://www.google.com/s2/favicons?domain=netblocks.org&sz=32"},
+        {"name": "Cloudflare Radar", "url": "https://radar.cloudflare.com/", "favicon": "https://www.google.com/s2/favicons?domain=cloudflare.com&sz=32"},
+        {"name": "OONI", "url": "https://ooni.org/country/IR/", "favicon": "https://www.google.com/s2/favicons?domain=ooni.org&sz=32"},
+    ],
+    "sanctions": [
+        {"name": "US Treasury OFAC", "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information/iran-sanctions", "favicon": "https://www.google.com/s2/favicons?domain=treasury.gov&sz=32"},
+        {"name": "EU Council", "url": "https://www.consilium.europa.eu/en/policies/sanctions-against-iran/", "favicon": "https://www.google.com/s2/favicons?domain=consilium.europa.eu&sz=32"},
+        {"name": "UN Security Council", "url": "https://www.un.org/securitycouncil/sanctions/1737", "favicon": "https://www.google.com/s2/favicons?domain=un.org&sz=32"},
+        {"name": "UK FCDO", "url": "https://www.gov.uk/government/collections/uk-sanctions-on-iran", "favicon": "https://www.google.com/s2/favicons?domain=gov.uk&sz=32"},
+    ],
+    "economy": [
+        {"name": "IMF", "url": "https://www.imf.org/en/Countries/IRN", "favicon": "https://www.google.com/s2/favicons?domain=imf.org&sz=32"},
+        {"name": "World Bank", "url": "https://www.worldbank.org/en/country/iran", "favicon": "https://www.google.com/s2/favicons?domain=worldbank.org&sz=32"},
+        {"name": "Central Bank of Iran", "url": "https://www.cbi.ir/", "favicon": "https://www.google.com/s2/favicons?domain=cbi.ir&sz=32"},
+        {"name": "Statistical Centre of Iran", "url": "https://www.amar.org.ir/", "favicon": "https://www.google.com/s2/favicons?domain=amar.org.ir&sz=32"},
+    ],
+}
+
+@api_router.get("/dashboard/sources")
+async def get_dashboard_sources():
+    """Returns the source attribution map for each indicator on the Iran Monitor."""
+    return DASHBOARD_SOURCE_CONFIG
 
 # ============ NEWSLETTER I18N + BUILDER ============
 NEWSLETTER_I18N = {
