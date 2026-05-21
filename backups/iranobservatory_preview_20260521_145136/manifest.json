@@ -1,0 +1,14 @@
+{
+  "source": "https://iran-events-live.preview.emergentagent.com",
+  "created_at_utc": "2026-05-21T14:51:37.996841+00:00",
+  "counts": {
+    "articles": 10,
+    "subscribers": 1,
+    "rss_feeds": 2,
+    "files_attempted": 0,
+    "files_downloaded": 0,
+    "files_missing": 0
+  },
+  "files": [],
+  "duration_seconds": 1.64
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Iran Observatory Social",
+    "url": "https://rss.app/feeds/cPvRWpMkf81Tx8nr.xml",
+    "category": "social",
+    "language": "en",
+    "id": "69cf72863c9c1e1167b794ea",
+    "active": true,
+    "last_fetched": "2026-05-21T14:22:42.444000"
+  },
+  {
+    "name": "Observatoire de l'Iran - Français",
+    "url": "https://rss.app/feeds/0aYtpxYInp9pe8Vz.xml",
+    "category": "social",
+    "language": "fr",
+    "id": "69cf7d6679b88469759a2b65",
+    "active": true,
+    "last_fetched": "2026-05-21T14:22:42.837000"
+  }
+]

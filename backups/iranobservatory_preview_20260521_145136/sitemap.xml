@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://iranobservatory.org/</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/articles</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/articles" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/articles" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/articles" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/articles" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/studies</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/studies" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/studies" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/studies" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/studies" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/monitor</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/monitor" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/monitor" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/monitor" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/monitor" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/articles/category/news</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/articles/category/news" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/articles/category/news" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/articles/category/news" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/articles/category/news" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/articles/category/politics</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/articles/category/politics" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/articles/category/politics" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/articles/category/politics" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/articles/category/politics" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/articles/tag/weekly-brief</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/articles/tag/weekly-brief" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/articles/tag/weekly-brief" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/articles/tag/weekly-brief" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/articles/tag/weekly-brief" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/weekly-brief-april-29-may-06-2026</loc>
+    <lastmod>2026-05-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/weekly-brief-april-29-may-06-2026" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/weekly-brief-april-29-may-06-2026" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/weekly-brief-april-29-may-06-2026" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/weekly-brief-april-29-may-06-2026" />
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/eu-energy-shock-gas-up-70-oil-up-60-in-first-month-of-us-israel-operation-agains</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/eu-energy-shock-gas-up-70-oil-up-60-in-first-month-of-us-israel-operation-agains" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/eu-energy-shock-gas-up-70-oil-up-60-in-first-month-of-us-israel-operation-agains" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/eu-energy-shock-gas-up-70-oil-up-60-in-first-month-of-us-israel-operation-agains" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/eu-energy-shock-gas-up-70-oil-up-60-in-first-month-of-us-israel-operation-agains" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/media/HE5FciPXsAAHJIv.jpg</image:loc>
+      <image:title>EU Energy Shock: Gas Up 70%, Oil Up 60% in First Month of U.S.-Israel Operation Against Islamic Republic, Adding €14bn Cost</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/france-us-and-gulf-states-push-un-chapter-vii-resolution-for-international-opera</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/france-us-and-gulf-states-push-un-chapter-vii-resolution-for-international-opera" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/france-us-and-gulf-states-push-un-chapter-vii-resolution-for-international-opera" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/france-us-and-gulf-states-push-un-chapter-vii-resolution-for-international-opera" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/france-us-and-gulf-states-push-un-chapter-vii-resolution-for-international-opera" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/media/HE5aC3TWwAAImea.jpg</image:loc>
+      <image:title>France, US and Gulf States Push UN Chapter VII Resolution for International Operation to Secure the Strait of Hormuz</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/gulf-states-accelerate-plans-for-new-oil-pipelines-to-bypass-the-strait-of-hormu</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/gulf-states-accelerate-plans-for-new-oil-pipelines-to-bypass-the-strait-of-hormu" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/gulf-states-accelerate-plans-for-new-oil-pipelines-to-bypass-the-strait-of-hormu" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/gulf-states-accelerate-plans-for-new-oil-pipelines-to-bypass-the-strait-of-hormu" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/gulf-states-accelerate-plans-for-new-oil-pipelines-to-bypass-the-strait-of-hormu" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/media/HE6DSB1WAAANl-Z.jpg</image:loc>
+      <image:title>Gulf States Accelerate Plans for New Oil Pipelines to Bypass the Strait of Hormuz</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/iran-executes-18-year-old-amirhossein-hatami-after-decemberjanuary-protest-arres</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/iran-executes-18-year-old-amirhossein-hatami-after-decemberjanuary-protest-arres" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/iran-executes-18-year-old-amirhossein-hatami-after-decemberjanuary-protest-arres" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/iran-executes-18-year-old-amirhossein-hatami-after-decemberjanuary-protest-arres" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/iran-executes-18-year-old-amirhossein-hatami-after-decemberjanuary-protest-arres" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/media/HE6KNZGWYAAZfFA.jpg</image:loc>
+      <image:title>Iran Executes 18-Year-Old Amirhossein Hatami After December–January Protest Arrest, in Escalating Political Prisoner Crackdown</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/us-israeli-strikes-hit-karaj-destroying-b1-bridge-near-azimiyeh</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/us-israeli-strikes-hit-karaj-destroying-b1-bridge-near-azimiyeh" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/us-israeli-strikes-hit-karaj-destroying-b1-bridge-near-azimiyeh" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/us-israeli-strikes-hit-karaj-destroying-b1-bridge-near-azimiyeh" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/us-israeli-strikes-hit-karaj-destroying-b1-bridge-near-azimiyeh" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/ext_tw_video_thumb/2039757278941790209/pu/img/K-gr-UQtfDbdw_W4.jpg</image:loc>
+      <image:title>U.S.-Israeli Strikes Hit Karaj, Destroying B1 Bridge Near Azimiyeh</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/bahrain-takes-un-security-council-helm-as-gulf-states-push-hormuz-navigation-res</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/bahrain-takes-un-security-council-helm-as-gulf-states-push-hormuz-navigation-res" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/bahrain-takes-un-security-council-helm-as-gulf-states-push-hormuz-navigation-res" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/bahrain-takes-un-security-council-helm-as-gulf-states-push-hormuz-navigation-res" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/bahrain-takes-un-security-council-helm-as-gulf-states-push-hormuz-navigation-res" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/media/HE6zUHFXEAALozG.jpg</image:loc>
+      <image:title>Bahrain Takes UN Security Council Helm as Gulf States Push Hormuz Navigation Resolution</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/iran-accused-of-recruiting-children-for-military-roles-as-11-year-old-dies-at-ch</loc>
+    <lastmod>2026-04-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/iran-accused-of-recruiting-children-for-military-roles-as-11-year-old-dies-at-ch" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/iran-accused-of-recruiting-children-for-military-roles-as-11-year-old-dies-at-ch" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/iran-accused-of-recruiting-children-for-military-roles-as-11-year-old-dies-at-ch" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/iran-accused-of-recruiting-children-for-military-roles-as-11-year-old-dies-at-ch" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/media/HE1Kz7mWYAAWLs-.jpg</image:loc>
+      <image:title>Iran Accused of Recruiting Children for Military Roles as 11-Year-Old Dies at Checkpoint, Highlighting IRGC Manpower Strain</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://iranobservatory.org/article/iran-turmoil-pushes-oil-above-100-boosting-russias-war-coffers-as-india-turns-to</loc>
+    <lastmod>2026-04-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://iranobservatory.org/article/iran-turmoil-pushes-oil-above-100-boosting-russias-war-coffers-as-india-turns-to" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://iranobservatory.org/article/iran-turmoil-pushes-oil-above-100-boosting-russias-war-coffers-as-india-turns-to" />
+    <xhtml:link rel="alternate" hreflang="fa" href="https://iranobservatory.org/article/iran-turmoil-pushes-oil-above-100-boosting-russias-war-coffers-as-india-turns-to" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://iranobservatory.org/article/iran-turmoil-pushes-oil-above-100-boosting-russias-war-coffers-as-india-turns-to" />
+    <image:image>
+      <image:loc>https://pbs.twimg.com/media/HE1AkXPXcAAoFGM.jpg</image:loc>
+      <image:title>Iran Turmoil Pushes Oil Above $100, Boosting Russia’s War Coffers as India Turns to Moscow</image:title>
+    </image:image>
+  </url>
+</urlset>

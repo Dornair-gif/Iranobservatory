@@ -1,0 +1,50 @@
+{
+  "source": "https://iranobservatory.org",
+  "created_at_utc": "2026-05-21T14:49:27.884782+00:00",
+  "counts": {
+    "articles": 23,
+    "subscribers": 0,
+    "rss_feeds": 2,
+    "files_attempted": 5,
+    "files_downloaded": 5,
+    "files_missing": 0
+  },
+  "files": [
+    {
+      "path": "/api/files/2354f65f-3cb6-479e-9b2c-2c4f26757368.png",
+      "ok": true,
+      "status_code": 200,
+      "bytes": 317309,
+      "saved_as": "files/2354f65f-3cb6-479e-9b2c-2c4f26757368.png"
+    },
+    {
+      "path": "/api/files/5c32b2c0-da0c-4122-85c7-395f3714f24b.png",
+      "ok": true,
+      "status_code": 200,
+      "bytes": 1004092,
+      "saved_as": "files/5c32b2c0-da0c-4122-85c7-395f3714f24b.png"
+    },
+    {
+      "path": "/api/files/8cd63cb0-80e2-46da-ba29-1378c0631a03.png",
+      "ok": true,
+      "status_code": 200,
+      "bytes": 1049112,
+      "saved_as": "files/8cd63cb0-80e2-46da-ba29-1378c0631a03.png"
+    },
+    {
+      "path": "/api/files/c48740e5-2ef7-428c-9f72-5e10e4b0e7cd.jpg",
+      "ok": true,
+      "status_code": 200,
+      "bytes": 660766,
+      "saved_as": "files/c48740e5-2ef7-428c-9f72-5e10e4b0e7cd.jpg"
+    },
+    {
+      "path": "/api/files/d74c566b-6c46-4b64-a1fc-b74b328c36ea.webp",
+      "ok": true,
+      "status_code": 200,
+      "bytes": 40358,
+      "saved_as": "files/d74c566b-6c46-4b64-a1fc-b74b328c36ea.webp"
+    }
+  ],
+  "duration_seconds": 4.44
+}
