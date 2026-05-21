@@ -4,9 +4,15 @@
 User-agent: *
 Allow: /
 Allow: /articles
+Allow: /articles/category/
+Allow: /articles/tag/
 Allow: /studies
 Allow: /monitor
-Allow: /article/*
+Allow: /article/
+
+# Allow image & file delivery so Google Image can index covers
+Allow: /api/files/
+Allow: /api/og/
 
 Disallow: /admin
 Disallow: /login
@@ -14,6 +20,7 @@ Disallow: /api/
 
 # Sitemaps
 Sitemap: https://iranobservatory.org/api/sitemap.xml
+Sitemap: https://iranobservatory.org/api/news-sitemap.xml
 
 # Crawl-delay
 Crawl-delay: 1

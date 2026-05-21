@@ -29,7 +29,7 @@ export function ArticleCard({ article, featured = false }) {
   if (featured) {
     return (
       <Link 
-        to={`/article/${article.id}`}
+        to={`/article/${article.slug || article.id}`}
         className="article-card group block bg-white border border-zinc-200 overflow-hidden rounded-lg h-full"
         data-testid={`featured-article-${article.id}`}
       >
@@ -62,7 +62,7 @@ export function ArticleCard({ article, featured = false }) {
 
   return (
     <Link 
-      to={`/article/${article.id}`}
+      to={`/article/${article.slug || article.id}`}
       className="article-card group block bg-white border border-zinc-200 p-4 h-full flex flex-col"
       data-testid={`article-card-${article.id}`}
     >

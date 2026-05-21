@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, ExternalLink, Calendar, Tag, Share2, FileDown, Mail, Check } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,7 +14,9 @@ import { normalizeFileUrl } from '../lib/imageUrl';
 export default function Article() {
   const { id } = useParams();
   const { language, t, getArticleField } = useLanguage();
+  const navigate = useNavigate();
   const [article, setArticle] = useState(null);
+  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloadEmail, setDownloadEmail] = useState('');
@@ -22,6 +24,31 @@ export default function Article() {
   const [downloadGranted, setDownloadGranted] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [coverFailed, setCoverFailed] = useState(false);
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`${API}/articles/${id}`);
+        setArticle(response.data);
+        // If we landed via legacy ObjectId but a slug exists, redirect to the
+        // slug URL for SEO (canonicalisation, 301-equivalent in SPA).
+        if (response.data?.slug && response.data.slug !== id && /^[a-f0-9]{24}$/i.test(id)) {
+          navigate(`/article/${response.data.slug}`, { replace: true });
+          return;
+        }
+        // Fetch related articles
+        axios.get(`${API}/articles/${response.data.id}/related?limit=4`)
+          .then(r => setRelated(r.data || []))
+          .catch(() => setRelated([]));
+      } catch (e) {
+        setError('Article not found');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [id, navigate]);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -79,6 +106,16 @@ export default function Article() {
   const isStudy = article.content_type === 'analysis' || article.content_type === 'study';
   const isHtml = content && content.includes('<') && (content.includes('</') || content.includes('/>'));
 
+  // SEO: prefer AI-generated SEO meta if available, fall back to title/summary
+  const seoField = (base) => article?.[`${base}_${language}`] || article?.[`${base}_en`] || article?.[`${base}_fr`] || '';
+  const seoTitle = seoField('seo_title') || title;
+  const seoDescription = seoField('meta_description') || summary;
+  const seoKeywords = article?.focus_keywords || article?.tags || [];
+
+  // Reading time (avg 200 wpm)
+  const wordCount = (content || '').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  const readingMin = Math.max(1, Math.round(wordCount / 200));
+
   const publishedDate = article.published_at || article.created_at;
   const formattedDate = publishedDate 
     ? format(new Date(publishedDate), 'PPP', { locale: locales[language] || enUS })
@@ -90,15 +127,28 @@ export default function Article() {
       })
     : '';
 
+  const breadcrumbs = [
+    { name: language === 'fr' ? 'Accueil' : language === 'fa' ? 'خانه' : 'Home', path: '/' },
+    {
+      name: isStudy
+        ? (language === 'fr' ? 'Études' : language === 'fa' ? 'مطالعات' : 'Studies')
+        : (language === 'fr' ? 'Articles' : language === 'fa' ? 'مقالات' : 'Articles'),
+      path: isStudy ? '/studies' : '/articles'
+    },
+    { name: title, path: `/article/${article.slug || article.id}` }
+  ];
+
   return (
     <div className="min-h-screen bg-white" data-testid="article-page">
       <SEO 
-        title={title}
-        description={summary}
+        title={seoTitle}
+        description={seoDescription}
         image={article.image_url}
-        url={`/article/${article.id}`}
+        url={`/article/${article.slug || article.id}`}
         type="article"
         article={article}
+        keywords={seoKeywords}
+        breadcrumbs={breadcrumbs}
         language={language}
       />
       
@@ -118,14 +168,35 @@ export default function Article() {
 
       {/* Article Header */}
       <article className={`${isStudy ? 'max-w-7xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12`}>
+        {/* Breadcrumbs */}
+        <nav className="text-xs font-mono text-zinc-400 mb-4" aria-label="Breadcrumb">
+          {breadcrumbs.map((b, i) => (
+            <React.Fragment key={b.path}>
+              {i > 0 && <span className="mx-2">/</span>}
+              {i < breadcrumbs.length - 1 ? (
+                <Link to={b.path} className="hover:text-[#1E3A5F]">{b.name}</Link>
+              ) : (
+                <span className="text-zinc-500 truncate" style={{maxWidth:'40ch',display:'inline-block',verticalAlign:'middle'}}>{b.name}</span>
+              )}
+            </React.Fragment>
+          ))}
+        </nav>
+
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
-          <span className="px-3 py-1 bg-[#3DB883] text-white text-xs font-mono uppercase tracking-wider">
+          <Link
+            to={`/articles/category/${article.category || 'news'}`}
+            className="px-3 py-1 bg-[#3DB883] text-white text-xs font-mono uppercase tracking-wider hover:bg-[#2d9e6e] transition-colors"
+            data-testid="article-category-link"
+          >
             {article.category || 'News'}
-          </span>
+          </Link>
           <span className="font-mono text-xs text-zinc-500 flex items-center gap-1">
             <Calendar className="w-3 h-3" strokeWidth={1.5} />
             {formattedDate} • {timeAgo}
+          </span>
+          <span className="font-mono text-xs text-zinc-400">
+            • {readingMin} {language === 'fr' ? 'min de lecture' : language === 'fa' ? 'دقیقه مطالعه' : 'min read'}
           </span>
         </div>
 
@@ -351,6 +422,64 @@ export default function Article() {
             {t('latestNews')}
           </Link>
         </div>
+
+        {/* Tags */}
+        {(article.tags || []).length > 0 && (
+          <div className="mt-8 pt-6 border-t border-zinc-100" data-testid="article-tags">
+            <p className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">
+              {language === 'fr' ? 'Sujets' : language === 'fa' ? 'موضوعات' : 'Topics'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {article.tags.map(tag => {
+                const slug = String(tag).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                if (!slug) return null;
+                return (
+                  <Link
+                    key={tag}
+                    to={`/articles/tag/${slug}`}
+                    className="px-3 py-1 bg-zinc-100 hover:bg-[#1E3A5F] hover:text-white text-xs font-mono text-zinc-700 transition-colors rounded-full"
+                  >
+                    #{tag}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Related Articles */}
+        {related.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-zinc-200" data-testid="related-articles">
+            <h2 className="font-heading font-bold text-2xl text-[#1E3A5F] mb-6">
+              {language === 'fr' ? 'À lire aussi' : language === 'fa' ? 'بیشتر بخوانید' : 'Continue reading'}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {related.map(r => {
+                const rTitle = r[`title_${language}`] || r.title_en || r.title_fr || '';
+                const rSummary = (r[`summary_${language}`] || r.summary_en || r.summary_fr || '').slice(0, 110);
+                const rImg = r.image_url ? normalizeFileUrl(r.image_url) : null;
+                return (
+                  <Link
+                    key={r.id}
+                    to={`/article/${r.slug || r.id}`}
+                    className="group block bg-zinc-50 hover:bg-white border border-zinc-200 hover:shadow-md transition-all"
+                  >
+                    {rImg && (
+                      <div className="aspect-[16/10] overflow-hidden">
+                        <img src={rImg} alt={rTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => e.currentTarget.parentElement.style.display='none'} />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <p className="text-xs font-mono text-zinc-400 uppercase mb-2">{r.category || 'news'}</p>
+                      <p className="font-bold text-sm text-[#1E3A5F] leading-tight line-clamp-3 mb-2 group-hover:underline">{rTitle}</p>
+                      <p className="text-xs text-zinc-500 line-clamp-2">{rSummary}...</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </article>
     </div>
   );

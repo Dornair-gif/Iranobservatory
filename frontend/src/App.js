@@ -6,9 +6,12 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { Header } from "./components/Header";
 import { Toaster } from "./components/ui/sonner";
+import { SiteJsonLd } from "./components/SEO";
 import Home from "./pages/Home";
 import Article from "./pages/Article";
 import Articles from "./pages/Articles";
+import ArticlesByTag from "./pages/ArticlesByTag";
+import ArticlesByCategory from "./pages/ArticlesByCategory";
 import Studies from "./pages/Studies";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
@@ -18,6 +21,7 @@ import Dashboard from "./pages/Dashboard";
 function AppContent() {
   return (
     <div className="App min-h-screen bg-white">
+      <SiteJsonLd />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={
@@ -30,6 +34,18 @@ function AppContent() {
           <>
             <Header />
             <Article />
+          </>
+        } />
+        <Route path="/articles/tag/:slug" element={
+          <>
+            <Header />
+            <ArticlesByTag />
+          </>
+        } />
+        <Route path="/articles/category/:slug" element={
+          <>
+            <Header />
+            <ArticlesByCategory />
           </>
         } />
         <Route path="/articles" element={

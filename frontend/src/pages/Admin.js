@@ -55,6 +55,12 @@ export default function Admin() {
   
   // Modals
   const [editArticle, setEditArticle] = useState(null);
+  const [seoGenerating, setSeoGenerating] = useState(false);
+  const [seoScore, setSeoScore] = useState(null);
+  const [seoScoreLoading, setSeoScoreLoading] = useState(false);
+  const [angles, setAngles] = useState(null);
+  const [anglesLoading, setAnglesLoading] = useState(false);
+  const [anglesTopic, setAnglesTopic] = useState('Iran actualités 2026');
   const [showAddFeed, setShowAddFeed] = useState(false);
   const [editFeed, setEditFeed] = useState(null);
   const [newFeed, setNewFeed] = useState({ name: '', url: '', category: 'general', language: 'en' });
@@ -388,9 +394,64 @@ export default function Admin() {
       await axios.put(`${API}/articles/${editArticle.id}`, editArticle, axiosConfig);
       toast.success('Article updated');
       setEditArticle(null);
+      setSeoScore(null);
       fetchArticles();
     } catch (e) {
       toast.error('Failed to update article');
+    }
+  };
+
+  const handleGenerateSeo = async () => {
+    if (!editArticle?.id) return;
+    setSeoGenerating(true);
+    try {
+      const res = await axios.post(`${API}/articles/${editArticle.id}/seo/generate`, {}, axiosConfig);
+      // Merge AI output back into the edit form so admin can review/edit
+      setEditArticle(prev => ({
+        ...prev,
+        seo_title_en: res.data.seo_title_en || '',
+        seo_title_fr: res.data.seo_title_fr || '',
+        seo_title_fa: res.data.seo_title_fa || '',
+        meta_description_en: res.data.meta_description_en || '',
+        meta_description_fr: res.data.meta_description_fr || '',
+        meta_description_fa: res.data.meta_description_fa || '',
+        focus_keywords: res.data.focus_keywords || []
+      }));
+      // Refresh score
+      try {
+        const sc = await axios.get(`${API}/articles/${editArticle.id}/seo/score`, axiosConfig);
+        setSeoScore(sc.data);
+      } catch {}
+      toast.success('SEO meta generated');
+    } catch (e) {
+      toast.error('SEO generation failed: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setSeoGenerating(false);
+    }
+  };
+
+  const fetchSeoScore = async (articleId) => {
+    if (!articleId) { setSeoScore(null); return; }
+    setSeoScoreLoading(true);
+    try {
+      const res = await axios.get(`${API}/articles/${articleId}/seo/score`, axiosConfig);
+      setSeoScore(res.data);
+    } catch {
+      setSeoScore(null);
+    } finally {
+      setSeoScoreLoading(false);
+    }
+  };
+
+  const handleSuggestAngles = async () => {
+    setAnglesLoading(true);
+    try {
+      const res = await axios.post(`${API}/seo/suggest-angles`, { topic: anglesTopic }, axiosConfig);
+      setAngles(res.data.angles || []);
+    } catch (e) {
+      toast.error('Angle suggestion failed: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setAnglesLoading(false);
     }
   };
 
@@ -570,7 +631,7 @@ export default function Admin() {
                           size="sm"
                           variant="outline"
                           className="rounded-none"
-                          onClick={() => setEditArticle(article)}
+                          onClick={() => { setEditArticle(article); fetchSeoScore(article.id); }}
                         >
                           <Edit className="w-3 h-3" strokeWidth={1.5} />
                         </Button>
@@ -648,6 +709,76 @@ export default function Admin() {
                 </Button>
               </div>
             </div>
+
+            {/* SEO tools */}
+            <div className="bg-white border border-zinc-200 p-4 mt-6">
+              <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+                <div>
+                  <h3 className="font-heading font-bold text-sm">SEO Tools</h3>
+                  <p className="text-xs text-zinc-500 mt-1">Backfill slugs on legacy articles + AI angle suggester to ideate high-potential SEO topics.</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-none text-xs"
+                  onClick={async () => {
+                    try {
+                      const res = await axios.post(`${API}/admin/backfill-slugs`, {}, axiosConfig);
+                      toast.success(`Slugs generated for ${res.data.updated_count} article(s)`);
+                      fetchArticles();
+                    } catch (e) {
+                      toast.error('Failed: ' + (e.response?.data?.detail || e.message));
+                    }
+                  }}
+                  data-testid="backfill-slugs-btn"
+                >
+                  Backfill Slugs
+                </Button>
+              </div>
+
+              <div className="mt-3 border-t border-zinc-100 pt-3">
+                <Label className="font-mono text-xs uppercase tracking-wider text-zinc-500">Suggest SEO angles (10 article ideas)</Label>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={anglesTopic}
+                    onChange={(e) => setAnglesTopic(e.target.value)}
+                    className="rounded-none flex-1 text-sm"
+                    placeholder="ex: sanctions Iran 2026, droits humains, JCPOA..."
+                    data-testid="seo-angles-topic"
+                  />
+                  <Button
+                    size="sm"
+                    className="rounded-none bg-[#3DB883] hover:bg-[#2d9e6e]"
+                    disabled={anglesLoading}
+                    onClick={handleSuggestAngles}
+                    data-testid="suggest-angles-btn"
+                  >
+                    {anglesLoading ? 'Génération...' : '✨ Suggérer'}
+                  </Button>
+                </div>
+                {angles && angles.length > 0 && (
+                  <div className="mt-4 space-y-2" data-testid="angles-results">
+                    {angles.map((a, i) => (
+                      <div key={i} className="bg-zinc-50 border border-zinc-200 p-3 text-xs">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="font-bold text-[#1E3A5F]">{i + 1}. {a.title_fr || a.title_en}</p>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <span className={`px-2 py-0.5 text-[10px] font-mono uppercase ${a.estimated_difficulty === 'low' ? 'bg-green-100 text-green-700' : a.estimated_difficulty === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {a.estimated_difficulty || '-'}
+                            </span>
+                          </div>
+                        </div>
+                        {a.title_en && a.title_fr && a.title_en !== a.title_fr && (
+                          <p className="text-zinc-500 italic mb-1">EN: {a.title_en}</p>
+                        )}
+                        <p className="text-zinc-600 mb-1">🎯 {a.primary_keyword}</p>
+                        <p className="text-zinc-500 text-[11px]">{a.why_it_matters}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </TabsContent>
 
           {/* Articles Tab */}
@@ -697,7 +828,7 @@ export default function Admin() {
                         size="sm"
                         variant="outline"
                         className="rounded-none"
-                        onClick={() => setEditArticle(article)}
+                        onClick={() => { setEditArticle(article); fetchSeoScore(article.id); }}
                         data-testid={`edit-article-${article.id}`}
                       >
                         <Edit className="w-3 h-3" strokeWidth={1.5} />
@@ -1822,6 +1953,118 @@ export default function Admin() {
                     className="rounded-none"
                     data-testid="pdf-upload-edit"
                   />
+                )}
+              </div>
+
+              {/* ============ SEO PANEL ============ */}
+              <div className="border-t border-zinc-200 pt-6 mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-heading font-bold text-base">SEO</h3>
+                    <p className="text-xs text-zinc-500 mt-1">Meta title, description et mots-clés par langue.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {seoScore && (
+                      <div
+                        className={`px-3 py-1 text-xs font-mono font-bold ${seoScore.score >= 80 ? 'bg-green-100 text-green-700' : seoScore.score >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}
+                        data-testid="seo-score-badge"
+                      >
+                        SEO {seoScore.score}/100
+                      </div>
+                    )}
+                    <Button
+                      size="sm"
+                      className="rounded-none bg-[#1E3A5F] text-xs"
+                      disabled={seoGenerating}
+                      onClick={handleGenerateSeo}
+                      data-testid="generate-seo-btn"
+                    >
+                      {seoGenerating ? 'Génération...' : '✨ Générer SEO (IA)'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <Label className="font-mono text-xs uppercase tracking-wider">Slug (URL)</Label>
+                  <Input
+                    value={editArticle.slug || ''}
+                    onChange={(e) => setEditArticle({ ...editArticle, slug: e.target.value })}
+                    className="rounded-none font-mono text-xs"
+                    placeholder="ex: iran-strait-hormuz-crisis-2026"
+                    data-testid="seo-slug-input"
+                  />
+                  <p className="text-[10px] text-zinc-400">URL canonique : iranobservatory.org/article/<span className="font-mono">{editArticle.slug || '...'}</span></p>
+                </div>
+
+                <Tabs defaultValue="fr" className="space-y-3">
+                  <TabsList className="rounded-none">
+                    <TabsTrigger value="fr" className="rounded-none font-mono text-xs">FR</TabsTrigger>
+                    <TabsTrigger value="en" className="rounded-none font-mono text-xs">EN</TabsTrigger>
+                    <TabsTrigger value="fa" className="rounded-none font-mono text-xs">FA</TabsTrigger>
+                  </TabsList>
+                  {['fr', 'en', 'fa'].map(lang => (
+                    <TabsContent key={lang} value={lang} className="space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="font-mono text-xs uppercase tracking-wider">SEO Title ({lang.toUpperCase()})</Label>
+                          <span className={`text-[10px] font-mono ${((editArticle[`seo_title_${lang}`] || '').length || 0) > 60 ? 'text-red-500' : 'text-zinc-400'}`}>
+                            {((editArticle[`seo_title_${lang}`] || '').length || 0)}/60
+                          </span>
+                        </div>
+                        <Input
+                          value={editArticle[`seo_title_${lang}`] || ''}
+                          onChange={(e) => setEditArticle({ ...editArticle, [`seo_title_${lang}`]: e.target.value })}
+                          className="rounded-none"
+                          dir={lang === 'fa' ? 'rtl' : 'ltr'}
+                          maxLength={70}
+                          data-testid={`seo-title-${lang}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="font-mono text-xs uppercase tracking-wider">Meta Description ({lang.toUpperCase()})</Label>
+                          <span className={`text-[10px] font-mono ${((editArticle[`meta_description_${lang}`] || '').length || 0) > 160 ? 'text-red-500' : 'text-zinc-400'}`}>
+                            {((editArticle[`meta_description_${lang}`] || '').length || 0)}/155
+                          </span>
+                        </div>
+                        <Textarea
+                          value={editArticle[`meta_description_${lang}`] || ''}
+                          onChange={(e) => setEditArticle({ ...editArticle, [`meta_description_${lang}`]: e.target.value })}
+                          className="rounded-none"
+                          rows={2}
+                          dir={lang === 'fa' ? 'rtl' : 'ltr'}
+                          maxLength={170}
+                          data-testid={`meta-desc-${lang}`}
+                        />
+                      </div>
+                    </TabsContent>
+                  ))}
+                </Tabs>
+
+                <div className="space-y-1 mt-3">
+                  <Label className="font-mono text-xs uppercase tracking-wider">Focus Keywords (comma-separated)</Label>
+                  <Input
+                    value={(editArticle.focus_keywords || []).join(', ')}
+                    onChange={(e) => setEditArticle({ ...editArticle, focus_keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean) })}
+                    className="rounded-none font-mono text-xs"
+                    placeholder="Iran sanctions 2026, Strait of Hormuz, droits humains Iran"
+                    data-testid="focus-keywords-input"
+                  />
+                </div>
+
+                {/* Live SEO checklist */}
+                {seoScore && (
+                  <div className="mt-4 bg-zinc-50 border border-zinc-200 p-3">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Checklist</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                      {seoScore.checks.map((c, i) => (
+                        <div key={i} className="text-xs flex items-center gap-2">
+                          <span className={c.passed ? 'text-green-600' : 'text-zinc-300'}>{c.passed ? '✓' : '○'}</span>
+                          <span className={c.passed ? 'text-zinc-700' : 'text-zinc-500'}>{c.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

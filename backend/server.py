@@ -34,6 +34,43 @@ api_router = APIRouter(prefix="/api")
 # JWT Configuration
 JWT_ALGORITHM = "HS256"
 
+# ============ SEO HELPERS ============
+import re as _re_seo
+import unicodedata as _ud_seo
+
+def slugify(value: str, max_length: int = 80) -> str:
+    """ASCII-safe URL slug. Persian/Arabic chars are transliterated when possible,
+    otherwise dropped. Falls back to a short uid if the result is empty."""
+    if not value:
+        return ""
+    # Normalize unicode (strip combining marks); for Persian/Arabic, NFKD often
+    # doesn't ASCII-fold meaningfully, so we just drop non-ascii and rely on
+    # the caller passing a Latin title (we use the EN title preferentially).
+    normalized = _ud_seo.normalize("NFKD", value)
+    ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+    ascii_only = ascii_only.lower()
+    ascii_only = _re_seo.sub(r"[^a-z0-9\s-]", "", ascii_only)
+    ascii_only = _re_seo.sub(r"[\s_-]+", "-", ascii_only).strip("-")
+    if len(ascii_only) > max_length:
+        ascii_only = ascii_only[:max_length].rstrip("-")
+    return ascii_only
+
+async def ensure_unique_slug(base: str, article_id_str: str) -> str:
+    """Ensure slug uniqueness across articles. Appends -2, -3... if collision."""
+    if not base:
+        base = f"a-{article_id_str[-6:]}"
+    candidate = base
+    i = 1
+    while True:
+        existing = await db.articles.find_one(
+            {"slug": candidate, "_id": {"$ne": ObjectId(article_id_str)}},
+            {"_id": 1}
+        )
+        if not existing:
+            return candidate
+        i += 1
+        candidate = f"{base}-{i}"
+
 def get_jwt_secret() -> str:
     return os.environ.get("JWT_SECRET", "default-secret-key")
 
@@ -106,6 +143,15 @@ class ArticleBase(BaseModel):
     summary_en: str = ""
     summary_fr: str = ""
     summary_fa: str = ""
+    # SEO fields (per language)
+    slug: Optional[str] = None  # canonical URL slug
+    seo_title_en: str = ""
+    seo_title_fr: str = ""
+    seo_title_fa: str = ""
+    meta_description_en: str = ""
+    meta_description_fr: str = ""
+    meta_description_fa: str = ""
+    focus_keywords: List[str] = []
     image_url: Optional[str] = None
     source_url: Optional[str] = None
     pdf_url: Optional[str] = None
@@ -122,6 +168,7 @@ class ArticleUpdate(ArticleBase):
 class ArticleResponse(ArticleBase):
     model_config = ConfigDict(extra="ignore")
     id: str
+    slug: Optional[str] = None
     status: str
     content_type: str = "news"
     pdf_url: Optional[str] = None
@@ -700,6 +747,13 @@ async def create_article(data: ArticleCreate, request: Request):
         "summary_en": data.summary_en,
         "summary_fr": data.summary_fr,
         "summary_fa": data.summary_fa,
+        "seo_title_en": data.seo_title_en or "",
+        "seo_title_fr": data.seo_title_fr or "",
+        "seo_title_fa": data.seo_title_fa or "",
+        "meta_description_en": data.meta_description_en or "",
+        "meta_description_fr": data.meta_description_fr or "",
+        "meta_description_fa": data.meta_description_fa or "",
+        "focus_keywords": data.focus_keywords or [],
         "image_url": image_url,
         "source_url": data.source_url,
         "tags": data.tags,
@@ -711,9 +765,21 @@ async def create_article(data: ArticleCreate, request: Request):
     }
     
     result = await db.articles.insert_one(article_doc)
+    inserted_id = str(result.inserted_id)
+    
+    # Generate slug from English title (best for SEO) → French → Persian fallback
+    slug_seed = data.title_en or data.title_fr or data.title_fa
+    base_slug = slugify(slug_seed) if slug_seed else ""
+    final_slug = await ensure_unique_slug(base_slug, inserted_id) if base_slug else None
+    if final_slug:
+        await db.articles.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"slug": final_slug}}
+        )
     
     return {
-        "id": str(result.inserted_id),
+        "id": inserted_id,
+        "slug": final_slug,
         "title_en": data.title_en,
         "title_fr": data.title_fr,
         "title_fa": data.title_fa,
@@ -748,6 +814,7 @@ async def get_articles(status: Optional[str] = None, content_type: Optional[str]
     projection = {
         "title_en": 1, "title_fr": 1, "title_fa": 1,
         "summary_en": 1, "summary_fr": 1, "summary_fa": 1,
+        "slug": 1, "focus_keywords": 1,
         "image_url": 1, "source_url": 1, "tags": 1,
         "category": 1, "content_type": 1, "status": 1,
         "created_at": 1, "updated_at": 1, "published_at": 1
@@ -758,6 +825,7 @@ async def get_articles(status: Optional[str] = None, content_type: Optional[str]
     for article in articles:
         result.append({
             "id": str(article["_id"]),
+            "slug": article.get("slug"),
             "title_en": article.get("title_en", ""),
             "title_fr": article.get("title_fr", ""),
             "title_fa": article.get("title_fa", ""),
@@ -767,6 +835,7 @@ async def get_articles(status: Optional[str] = None, content_type: Optional[str]
             "summary_en": article.get("summary_en", ""),
             "summary_fr": article.get("summary_fr", ""),
             "summary_fa": article.get("summary_fa", ""),
+            "focus_keywords": article.get("focus_keywords", []),
             "image_url": article.get("image_url"),
             "source_url": article.get("source_url"),
             "pdf_url": article.get("pdf_url"),
@@ -816,14 +885,22 @@ async def get_admin_articles(request: Request, status: Optional[str] = None, con
         })
     return result
 
-@api_router.get("/articles/{article_id}", response_model=ArticleResponse)
-async def get_article(article_id: str):
-    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+@api_router.get("/articles/{article_id_or_slug}", response_model=ArticleResponse)
+async def get_article(article_id_or_slug: str):
+    # Try ObjectId first (legacy), then slug
+    article = None
+    try:
+        article = await db.articles.find_one({"_id": ObjectId(article_id_or_slug)})
+    except Exception:
+        pass
+    if not article:
+        article = await db.articles.find_one({"slug": article_id_or_slug})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     
     return {
         "id": str(article["_id"]),
+        "slug": article.get("slug"),
         "title_en": article.get("title_en", ""),
         "title_fr": article.get("title_fr", ""),
         "title_fa": article.get("title_fa", ""),
@@ -833,6 +910,13 @@ async def get_article(article_id: str):
         "summary_en": article.get("summary_en", ""),
         "summary_fr": article.get("summary_fr", ""),
         "summary_fa": article.get("summary_fa", ""),
+        "seo_title_en": article.get("seo_title_en", ""),
+        "seo_title_fr": article.get("seo_title_fr", ""),
+        "seo_title_fa": article.get("seo_title_fa", ""),
+        "meta_description_en": article.get("meta_description_en", ""),
+        "meta_description_fr": article.get("meta_description_fr", ""),
+        "meta_description_fa": article.get("meta_description_fa", ""),
+        "focus_keywords": article.get("focus_keywords", []),
         "image_url": article.get("image_url"),
         "source_url": article.get("source_url"),
         "pdf_url": article.get("pdf_url"),
@@ -844,6 +928,360 @@ async def get_article(article_id: str):
         "updated_at": article.get("updated_at").isoformat() if article.get("updated_at") else "",
         "published_at": article.get("published_at").isoformat() if article.get("published_at") else None
     }
+
+# ============ ARTICLE SEO HELPERS ============
+@api_router.get("/articles/{article_id_or_slug}/related", response_model=List[ArticleResponse])
+async def get_related_articles(article_id_or_slug: str, limit: int = 4):
+    """Find related articles by shared tags / category. Used for internal linking + SEO."""
+    article = None
+    try:
+        article = await db.articles.find_one({"_id": ObjectId(article_id_or_slug)})
+    except Exception:
+        pass
+    if not article:
+        article = await db.articles.find_one({"slug": article_id_or_slug})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    tags = article.get("tags", []) or []
+    category = article.get("category", "news")
+    
+    # Score by tag overlap first, then category match, then recency
+    query = {
+        "_id": {"$ne": article["_id"]},
+        "status": "published"
+    }
+    if tags:
+        query["$or"] = [{"tags": {"$in": tags}}, {"category": category}]
+    else:
+        query["category"] = category
+    
+    projection = {
+        "title_en": 1, "title_fr": 1, "title_fa": 1,
+        "summary_en": 1, "summary_fr": 1, "summary_fa": 1,
+        "slug": 1, "image_url": 1, "tags": 1, "category": 1,
+        "content_type": 1, "status": 1,
+        "created_at": 1, "updated_at": 1, "published_at": 1
+    }
+    candidates = await db.articles.find(query, projection).sort("created_at", -1).limit(20).to_list(20)
+    
+    # Score & sort
+    article_tags = set(tags)
+    def score(c):
+        c_tags = set(c.get("tags", []) or [])
+        return len(article_tags & c_tags) * 10 + (5 if c.get("category") == category else 0)
+    candidates.sort(key=score, reverse=True)
+    
+    out = []
+    for c in candidates[:limit]:
+        out.append({
+            "id": str(c["_id"]),
+            "slug": c.get("slug"),
+            "title_en": c.get("title_en", ""),
+            "title_fr": c.get("title_fr", ""),
+            "title_fa": c.get("title_fa", ""),
+            "content_en": "", "content_fr": "", "content_fa": "",
+            "summary_en": c.get("summary_en", ""),
+            "summary_fr": c.get("summary_fr", ""),
+            "summary_fa": c.get("summary_fa", ""),
+            "image_url": c.get("image_url"),
+            "tags": c.get("tags", []),
+            "category": c.get("category", "news"),
+            "content_type": c.get("content_type", "news"),
+            "status": c.get("status", "published"),
+            "created_at": c.get("created_at").isoformat() if c.get("created_at") else "",
+            "updated_at": c.get("updated_at").isoformat() if c.get("updated_at") else "",
+            "published_at": c.get("published_at").isoformat() if c.get("published_at") else None
+        })
+    return out
+
+@api_router.post("/articles/{article_id}/seo/generate")
+async def generate_article_seo(article_id: str, request: Request):
+    """Auto-generate SEO meta (title, description, keywords) per language from article content using GPT-5.2."""
+    await get_current_user(request)
+    
+    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    # Strip HTML for the AI prompt
+    import re as _re
+    def _strip(s): return _re.sub(r"<[^>]+>", " ", s or "").strip()[:3000]
+    
+    content_excerpt = _strip(article.get("content_en") or article.get("content_fr") or article.get("content_fa"))
+    title_en = article.get("title_en", "")
+    title_fr = article.get("title_fr", "")
+    title_fa = article.get("title_fa", "")
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"seo-{article_id}",
+            system_message="""You are an SEO expert for Iran Observatory, a multilingual independent platform on Iran.
+For a given article, produce SEO-optimized meta in French, English and Persian.
+
+Output STRICT JSON, no commentary, no markdown fence:
+{
+  "seo_title_en": "max 60 chars, includes primary keyword, in English",
+  "seo_title_fr": "max 60 chars, includes primary keyword, in French",
+  "seo_title_fa": "max 60 chars, in Persian",
+  "meta_description_en": "max 155 chars, compelling summary that includes 1-2 keywords, in English",
+  "meta_description_fr": "max 155 chars, in French",
+  "meta_description_fa": "max 155 chars, in Persian",
+  "focus_keywords": ["3 to 6 keywords/phrases (mixed langs is fine), most-searched first"]
+}
+
+Rules:
+- Titles must include the article's primary topic and avoid clickbait.
+- Descriptions must be self-contained (a search user can understand without clicking) and end without truncation.
+- Focus keywords should be searchable phrases related to Iran (e.g., "Iran sanctions 2026", "Strait of Hormuz crisis", "اعتراضات ایران", "diplomatie Iran-USA").
+- Do NOT include site name (we append it client-side).
+"""
+        ).with_model("openai", "gpt-5.2")
+        
+        prompt = f"""Article title (FR): {title_fr}
+Article title (EN): {title_en}
+Article title (FA): {title_fa}
+Tags: {', '.join(article.get('tags', []) or [])}
+Category: {article.get('category', 'news')}
+Content excerpt:
+{content_excerpt}
+"""
+        msg = UserMessage(text=prompt)
+        response = await chat.send_message(msg)
+        
+        # Parse JSON
+        import json as _json
+        raw = response.strip()
+        # Tolerate occasional code fences
+        raw = _re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=_re.MULTILINE).strip()
+        data = _json.loads(raw)
+        
+        # Truncate to limits to be safe
+        def _cap(s, n): return (s or "").strip()[:n]
+        seo = {
+            "seo_title_en": _cap(data.get("seo_title_en", ""), 60),
+            "seo_title_fr": _cap(data.get("seo_title_fr", ""), 60),
+            "seo_title_fa": _cap(data.get("seo_title_fa", ""), 60),
+            "meta_description_en": _cap(data.get("meta_description_en", ""), 160),
+            "meta_description_fr": _cap(data.get("meta_description_fr", ""), 160),
+            "meta_description_fa": _cap(data.get("meta_description_fa", ""), 160),
+            "focus_keywords": [k.strip() for k in (data.get("focus_keywords") or []) if k and isinstance(k, str)][:8],
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        await db.articles.update_one({"_id": article["_id"]}, {"$set": seo})
+        # Don't return Mongo's datetime
+        seo["updated_at"] = seo["updated_at"].isoformat()
+        return {"message": "SEO meta generated", **seo}
+    except Exception as e:
+        logger.exception("SEO generation failed")
+        raise HTTPException(status_code=500, detail=f"SEO generation failed: {e}")
+
+@api_router.get("/articles/{article_id}/seo/score")
+async def get_seo_score(article_id: str, request: Request):
+    """Compute a 0-100 SEO score with checklist for an article."""
+    await get_current_user(request)
+    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    checks = []
+    score = 0
+    def add(passed, weight, label, hint=None):
+        nonlocal score
+        if passed:
+            score += weight
+        checks.append({"label": label, "passed": bool(passed), "weight": weight, "hint": hint or ""})
+    
+    add(bool(article.get("slug")), 10, "Has SEO-friendly slug", "Set a slug from the EN title")
+    
+    # Each title (FR/EN/FA): present + length ≤ 60
+    for lang in ("fr", "en", "fa"):
+        t = article.get(f"seo_title_{lang}") or article.get(f"title_{lang}") or ""
+        ok = bool(t) and len(t) <= 60
+        add(ok, 5, f"SEO title ({lang.upper()})", f"Set a 50-60 char title in {lang.upper()}")
+        m = article.get(f"meta_description_{lang}") or article.get(f"summary_{lang}") or ""
+        ok2 = 80 <= len(m) <= 160
+        add(ok2, 5, f"Meta description ({lang.upper()})", "Aim for 120-155 chars")
+    
+    add(bool(article.get("image_url")), 10, "Has cover image", "Upload a cover image for OG/Twitter cards")
+    add(bool(article.get("focus_keywords")), 10, "Has focus keywords", "Add 3-6 focus keywords (use AI generator)")
+    
+    # Content length: target ≥ 600 words in at least one language
+    import re as _re
+    def wc(s): return len(_re.findall(r"\w+", _re.sub(r"<[^>]+>", " ", s or "")))
+    max_words = max(wc(article.get("content_en")), wc(article.get("content_fr")), wc(article.get("content_fa")))
+    add(max_words >= 600, 15, f"Long-form content ({max_words} words)", "Aim for at least 600 words in one language")
+    
+    add(bool(article.get("tags")), 5, "Has tags", "Add 2-5 tags for internal linking")
+    add(article.get("status") == "published", 5, "Published", "Draft articles aren't indexed")
+    
+    return {"score": score, "max": 100, "checks": checks}
+
+# Public: list of all categories with article counts
+@api_router.get("/categories")
+async def list_categories():
+    pipeline = [
+        {"$match": {"status": "published"}},
+        {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = await db.articles.aggregate(pipeline).to_list(100)
+    return [{"slug": (r["_id"] or "news"), "count": r["count"]} for r in result]
+
+# Public: list of all tags with article counts
+@api_router.get("/tags")
+async def list_tags():
+    pipeline = [
+        {"$match": {"status": "published"}},
+        {"$unwind": "$tags"},
+        {"$group": {"_id": "$tags", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 100}
+    ]
+    result = await db.articles.aggregate(pipeline).to_list(200)
+    return [{"slug": slugify(r["_id"]), "name": r["_id"], "count": r["count"]} for r in result if r["_id"]]
+
+# Public: articles by tag
+@api_router.get("/articles/by-tag/{tag_slug}", response_model=List[ArticleResponse])
+async def articles_by_tag(tag_slug: str, limit: int = 50):
+    # Find the canonical tag name(s) whose slugified form matches
+    all_tags_doc = await db.articles.distinct("tags", {"status": "published"})
+    matching = [t for t in all_tags_doc if t and slugify(t) == tag_slug]
+    if not matching:
+        return []
+    projection = {
+        "title_en": 1, "title_fr": 1, "title_fa": 1,
+        "summary_en": 1, "summary_fr": 1, "summary_fa": 1,
+        "slug": 1, "image_url": 1, "tags": 1, "category": 1,
+        "content_type": 1, "status": 1,
+        "created_at": 1, "updated_at": 1, "published_at": 1
+    }
+    arts = await db.articles.find(
+        {"status": "published", "tags": {"$in": matching}},
+        projection
+    ).sort("created_at", -1).to_list(limit)
+    return [{
+        "id": str(a["_id"]),
+        "slug": a.get("slug"),
+        "title_en": a.get("title_en", ""),
+        "title_fr": a.get("title_fr", ""),
+        "title_fa": a.get("title_fa", ""),
+        "content_en": "", "content_fr": "", "content_fa": "",
+        "summary_en": a.get("summary_en", ""),
+        "summary_fr": a.get("summary_fr", ""),
+        "summary_fa": a.get("summary_fa", ""),
+        "image_url": a.get("image_url"),
+        "tags": a.get("tags", []),
+        "category": a.get("category", "news"),
+        "content_type": a.get("content_type", "news"),
+        "status": a.get("status", "published"),
+        "created_at": a.get("created_at").isoformat() if a.get("created_at") else "",
+        "updated_at": a.get("updated_at").isoformat() if a.get("updated_at") else "",
+        "published_at": a.get("published_at").isoformat() if a.get("published_at") else None
+    } for a in arts]
+
+# Public: articles by category
+@api_router.get("/articles/by-category/{category_slug}", response_model=List[ArticleResponse])
+async def articles_by_category(category_slug: str, limit: int = 50):
+    projection = {
+        "title_en": 1, "title_fr": 1, "title_fa": 1,
+        "summary_en": 1, "summary_fr": 1, "summary_fa": 1,
+        "slug": 1, "image_url": 1, "tags": 1, "category": 1,
+        "content_type": 1, "status": 1,
+        "created_at": 1, "updated_at": 1, "published_at": 1
+    }
+    arts = await db.articles.find(
+        {"status": "published", "category": category_slug},
+        projection
+    ).sort("created_at", -1).to_list(limit)
+    return [{
+        "id": str(a["_id"]),
+        "slug": a.get("slug"),
+        "title_en": a.get("title_en", ""),
+        "title_fr": a.get("title_fr", ""),
+        "title_fa": a.get("title_fa", ""),
+        "content_en": "", "content_fr": "", "content_fa": "",
+        "summary_en": a.get("summary_en", ""),
+        "summary_fr": a.get("summary_fr", ""),
+        "summary_fa": a.get("summary_fa", ""),
+        "image_url": a.get("image_url"),
+        "tags": a.get("tags", []),
+        "category": a.get("category", "news"),
+        "content_type": a.get("content_type", "news"),
+        "status": a.get("status", "published"),
+        "created_at": a.get("created_at").isoformat() if a.get("created_at") else "",
+        "updated_at": a.get("updated_at").isoformat() if a.get("updated_at") else "",
+        "published_at": a.get("published_at").isoformat() if a.get("published_at") else None
+    } for a in arts]
+
+# Admin: SEO angle suggester — propose 10 high-potential article topics
+@api_router.post("/seo/suggest-angles")
+async def suggest_article_angles(request: Request):
+    await get_current_user(request)
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    seed_topic = (body.get("topic") or "Iran current affairs").strip()
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"seo-angles-{uuid.uuid4()}",
+            system_message="""You are an SEO strategist for Iran Observatory.
+Suggest 10 article angles with strong SEO potential (high search interest, low-to-mid competition, evergreen + topical mix).
+
+For each angle, output:
+- title_fr: a French headline (50-60 chars)
+- title_en: an English headline (50-60 chars)
+- primary_keyword: the main searchable keyword/phrase
+- search_intent: informational / navigational / commercial / transactional
+- estimated_difficulty: low / medium / high
+- why_it_matters: 1 sentence on the strategic value for Iran Observatory
+
+Return ONLY a strict JSON array of 10 objects, no markdown, no commentary.
+Focus on Iran politics, economy, society, sanctions, diplomacy, human rights."""
+        ).with_model("openai", "gpt-5.2")
+        
+        msg = UserMessage(text=f"Topic focus: {seed_topic}")
+        response = await chat.send_message(msg)
+        
+        import json as _json, re as _re
+        raw = _re.sub(r"^```(?:json)?\s*|\s*```$", "", response.strip(), flags=_re.MULTILINE).strip()
+        angles = _json.loads(raw)
+        if not isinstance(angles, list):
+            raise ValueError("Expected JSON array")
+        return {"angles": angles[:10]}
+    except Exception as e:
+        logger.exception("Angle suggestion failed")
+        raise HTTPException(status_code=500, detail=f"Angle suggestion failed: {e}")
+
+# Admin: backfill slugs for legacy articles that don't have one
+@api_router.post("/admin/backfill-slugs")
+async def backfill_slugs(request: Request):
+    await get_current_user(request)
+    cursor = db.articles.find(
+        {"$or": [{"slug": None}, {"slug": ""}, {"slug": {"$exists": False}}]},
+        {"_id": 1, "title_en": 1, "title_fr": 1, "title_fa": 1}
+    )
+    updated = 0
+    async for art in cursor:
+        seed = art.get("title_en") or art.get("title_fr") or art.get("title_fa") or ""
+        base = slugify(seed)
+        if not base:
+            continue
+        final = await ensure_unique_slug(base, str(art["_id"]))
+        await db.articles.update_one({"_id": art["_id"]}, {"$set": {"slug": final}})
+        updated += 1
+    return {"updated_count": updated}
+
 
 @api_router.put("/articles/{article_id}")
 async def update_article(article_id: str, data: ArticleUpdate, request: Request):
@@ -857,6 +1295,22 @@ async def update_article(article_id: str, data: ArticleUpdate, request: Request)
     
     if update_doc.get("status") == "published":
         update_doc["published_at"] = datetime.now(timezone.utc)
+    
+    # Auto-generate slug if title_en changes and no manual slug provided
+    if "title_en" in update_doc and "slug" not in update_doc:
+        existing = await db.articles.find_one({"_id": ObjectId(article_id)}, {"slug": 1, "title_en": 1})
+        # Only regenerate slug if not set, or the EN title was empty before
+        if existing and (not existing.get("slug") or not existing.get("title_en")):
+            base = slugify(update_doc["title_en"])
+            if base:
+                update_doc["slug"] = await ensure_unique_slug(base, article_id)
+    elif "slug" in update_doc and update_doc["slug"]:
+        # Sanitize user-provided slug
+        cleaned = slugify(update_doc["slug"])
+        if cleaned:
+            update_doc["slug"] = await ensure_unique_slug(cleaned, article_id)
+        else:
+            update_doc.pop("slug", None)
     
     result = await db.articles.update_one(
         {"_id": ObjectId(article_id)},
@@ -875,46 +1329,6 @@ async def delete_article(article_id: str, request: Request):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Article not found")
     return {"message": "Article deleted"}
-
-# Dynamic sitemap.xml
-@api_router.get("/sitemap.xml")
-async def sitemap():
-    from fastapi.responses import Response
-    base_url = "https://iranobservatory.org"
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    
-    urls = [
-        {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
-        {"loc": f"{base_url}/articles", "changefreq": "daily", "priority": "0.9"},
-        {"loc": f"{base_url}/studies", "changefreq": "weekly", "priority": "0.9"},
-        {"loc": f"{base_url}/monitor", "changefreq": "daily", "priority": "0.9"},
-    ]
-    
-    # Add all published articles
-    articles = await db.articles.find(
-        {"status": "published"},
-        {"_id": 1, "updated_at": 1, "content_type": 1}
-    ).sort("created_at", -1).to_list(500)
-    
-    for article in articles:
-        aid = str(article["_id"])
-        lastmod = article.get("updated_at", "").strftime("%Y-%m-%d") if hasattr(article.get("updated_at", ""), "strftime") else now
-        priority = "0.8" if article.get("content_type") in ("study", "analysis", "brief") else "0.7"
-        urls.append({"loc": f"{base_url}/article/{aid}", "lastmod": lastmod, "changefreq": "monthly", "priority": priority})
-    
-    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    for u in urls:
-        xml += '  <url>\n'
-        xml += f'    <loc>{u["loc"]}</loc>\n'
-        if u.get("lastmod"):
-            xml += f'    <lastmod>{u["lastmod"]}</lastmod>\n'
-        xml += f'    <changefreq>{u["changefreq"]}</changefreq>\n'
-        xml += f'    <priority>{u["priority"]}</priority>\n'
-        xml += '  </url>\n'
-    xml += '</urlset>'
-    
-    return Response(content=xml, media_type="application/xml")
 
 # SEO: Pre-render meta tags for social sharing and crawlers
 @api_router.get("/og/article/{article_id}")
@@ -968,16 +1382,6 @@ async def publish_article(article_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Article not found")
     
     return {"message": "Article published"}
-
-@api_router.delete("/articles/{article_id}")
-async def delete_article(article_id: str, request: Request):
-    await get_current_user(request)
-    
-    result = await db.articles.delete_one({"_id": ObjectId(article_id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Article not found")
-    
-    return {"message": "Article deleted"}
 
 # PDF Upload endpoint
 UPLOAD_DIR = Path("/app/backend/uploads")
@@ -1928,48 +2332,159 @@ async def root():
 async def sitemap():
     from fastapi.responses import Response
     
-    # Use environment variable for base URL
     base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org').rstrip('/')
+    if "preview" in base_url:
+        # Always use the canonical production domain in the sitemap
+        base_url = 'https://iranobservatory.org'
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    langs = ("fr", "en", "fa")
     
-    # Get all published articles with projection (only needed fields)
-    articles = await db.articles.find(
-        {"status": "published"}, 
-        {"_id": 1, "updated_at": 1, "created_at": 1}
-    ).limit(1000).to_list(1000)
+    def hreflang_for(path: str) -> str:
+        # Each URL on the site is the same regardless of language (language
+        # is picked client-side via context/cookie), so all hreflang entries
+        # point to the same URL — this still satisfies Google's requirement.
+        out = ""
+        for lc in langs:
+            out += f'    <xhtml:link rel="alternate" hreflang="{lc}" href="{base_url}{path}" />\n'
+        out += f'    <xhtml:link rel="alternate" hreflang="x-default" href="{base_url}{path}" />\n'
+        return out
     
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+    xml += '        xmlns:xhtml="http://www.w3.org/1999/xhtml"\n'
+    xml += '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n'
     
     # Main pages
     pages = [
         {"loc": "/", "priority": "1.0", "changefreq": "daily"},
         {"loc": "/articles", "priority": "0.9", "changefreq": "daily"},
         {"loc": "/studies", "priority": "0.9", "changefreq": "weekly"},
+        {"loc": "/monitor", "priority": "0.9", "changefreq": "daily"},
     ]
-    
     for page in pages:
-        xml_content += f'''  <url>
-    <loc>{base_url}{page["loc"]}</loc>
-    <changefreq>{page["changefreq"]}</changefreq>
-    <priority>{page["priority"]}</priority>
-  </url>\n'''
+        xml += f'  <url>\n    <loc>{base_url}{page["loc"]}</loc>\n'
+        xml += f'    <lastmod>{now}</lastmod>\n'
+        xml += f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+        xml += f'    <priority>{page["priority"]}</priority>\n'
+        xml += hreflang_for(page["loc"])
+        xml += '  </url>\n'
     
-    # Article pages
-    for article in articles:
-        article_id = str(article["_id"])
-        lastmod = article.get("updated_at") or article.get("created_at")
-        lastmod_str = lastmod.strftime("%Y-%m-%d") if lastmod else ""
+    # Categories (indexable hubs)
+    try:
+        cats = await db.articles.distinct("category", {"status": "published"})
+        for c in cats:
+            if not c:
+                continue
+            cslug = slugify(c) or c
+            path = f"/articles/category/{cslug}"
+            xml += f'  <url>\n    <loc>{base_url}{path}</loc>\n'
+            xml += f'    <lastmod>{now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n'
+            xml += hreflang_for(path)
+            xml += '  </url>\n'
+    except Exception:
+        pass
+    
+    # Tags (indexable hubs) — top 50 by usage
+    try:
+        pipeline = [
+            {"$match": {"status": "published"}},
+            {"$unwind": "$tags"},
+            {"$group": {"_id": "$tags", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 50}
+        ]
+        for tag in await db.articles.aggregate(pipeline).to_list(50):
+            tname = tag.get("_id")
+            if not tname:
+                continue
+            tslug = slugify(tname)
+            if not tslug:
+                continue
+            path = f"/articles/tag/{tslug}"
+            xml += f'  <url>\n    <loc>{base_url}{path}</loc>\n'
+            xml += f'    <lastmod>{now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n'
+            xml += hreflang_for(path)
+            xml += '  </url>\n'
+    except Exception:
+        pass
+    
+    # All published articles
+    articles = await db.articles.find(
+        {"status": "published"},
+        {"_id": 1, "slug": 1, "updated_at": 1, "created_at": 1, "content_type": 1, "image_url": 1, "title_en": 1, "title_fr": 1}
+    ).sort("created_at", -1).to_list(1000)
+    
+    for art in articles:
+        aid = str(art["_id"])
+        slug = art.get("slug") or aid
+        path = f"/article/{slug}"
+        lastmod_dt = art.get("updated_at") or art.get("created_at")
+        lastmod = lastmod_dt.strftime("%Y-%m-%d") if hasattr(lastmod_dt, "strftime") else now
+        priority = "0.9" if art.get("content_type") in ("study", "analysis", "brief") else "0.7"
         
-        xml_content += f'''  <url>
-    <loc>{base_url}/article/{article_id}</loc>
-    <lastmod>{lastmod_str}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>\n'''
+        xml += f'  <url>\n    <loc>{base_url}{path}</loc>\n'
+        xml += f'    <lastmod>{lastmod}</lastmod>\n'
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += f'    <priority>{priority}</priority>\n'
+        xml += hreflang_for(path)
+        
+        # Image entry
+        img = art.get("image_url") or ""
+        if img:
+            if img.startswith("/"):
+                img = f"{base_url}{img}"
+            # XML-escape minimal chars
+            img_esc = img.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            title_for_img = (art.get("title_en") or art.get("title_fr") or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")[:150]
+            xml += '    <image:image>\n'
+            xml += f'      <image:loc>{img_esc}</image:loc>\n'
+            if title_for_img:
+                xml += f'      <image:title>{title_for_img}</image:title>\n'
+            xml += '    </image:image>\n'
+        xml += '  </url>\n'
     
-    xml_content += '</urlset>'
+    xml += '</urlset>'
+    return Response(content=xml, media_type="application/xml")
+
+# Google News-specific sitemap (recent articles only, last 2 days)
+@api_router.get("/news-sitemap.xml")
+async def news_sitemap():
+    from fastapi.responses import Response
+    base_url = os.environ.get('FRONTEND_URL', 'https://iranobservatory.org').rstrip('/')
+    if "preview" in base_url:
+        base_url = 'https://iranobservatory.org'
     
-    return Response(content=xml_content, media_type="application/xml")
+    two_days_ago = datetime.now(timezone.utc) - timedelta(days=2)
+    articles = await db.articles.find(
+        {"status": "published", "published_at": {"$gte": two_days_ago}},
+        {"_id": 1, "slug": 1, "published_at": 1, "title_en": 1, "title_fr": 1, "title_fa": 1}
+    ).sort("published_at", -1).to_list(500)
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+    xml += '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n'
+    
+    for art in articles:
+        aid = str(art["_id"])
+        slug = art.get("slug") or aid
+        title = (art.get("title_fr") or art.get("title_en") or art.get("title_fa") or "").replace("&", "&amp;").replace("<", "&lt;")[:200]
+        pub_dt = art.get("published_at")
+        pub_iso = pub_dt.strftime("%Y-%m-%dT%H:%M:%S+00:00") if hasattr(pub_dt, "strftime") else ""
+        
+        xml += f'  <url>\n    <loc>{base_url}/article/{slug}</loc>\n'
+        xml += '    <news:news>\n'
+        xml += '      <news:publication>\n'
+        xml += '        <news:name>Iran Observatory</news:name>\n'
+        xml += '        <news:language>fr</news:language>\n'
+        xml += '      </news:publication>\n'
+        xml += f'      <news:publication_date>{pub_iso}</news:publication_date>\n'
+        xml += f'      <news:title>{title}</news:title>\n'
+        xml += '    </news:news>\n'
+        xml += '  </url>\n'
+    
+    xml += '</urlset>'
+    return Response(content=xml, media_type="application/xml")
+
 
 # ============ WEEKLY BRIEF GENERATION ============
 async def generate_weekly_brief():

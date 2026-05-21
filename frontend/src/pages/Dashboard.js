@@ -98,7 +98,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#0f1b2d] text-white" data-testid="dashboard-page">
-      <SEO title="Iran Monitor" description="Real-time intelligence dashboard on Iran" url="/monitor" language={language} />
+            <SEO
+        title={language === 'fr' ? 'Iran Monitor — Tableau de bord temps réel' : language === 'fa' ? 'ایران مانیتور — داشبورد لحظه‌ای' : 'Iran Monitor — Real-time intelligence dashboard'}
+        description={language === 'fr'
+          ? 'Tableau de bord temps réel sur l\'Iran : indice de tension, crise du détroit d\'Ormuz, sanctions, blackouts internet, droits humains. Sources vérifiées : NetBlocks, HRA, OFAC, UNSCR.'
+          : language === 'fa'
+            ? 'داشبورد لحظه‌ای ایران: شاخص تنش، بحران تنگه هرمز، تحریم‌ها، قطعی اینترنت، حقوق بشر. منابع تأیید شده.'
+            : "Real-time intelligence dashboard on Iran: tension index, Strait of Hormuz crisis, sanctions tracker, internet blackouts, human rights. Verified sources: NetBlocks, HRA, OFAC, UNSCR."}
+        url="/monitor"
+        language={language}
+        keywords={['Iran monitor', 'Strait of Hormuz', 'Iran sanctions tracker', 'NetBlocks Iran', 'tension index Iran']}
+        breadcrumbs={[
+          { name: language === 'fr' ? 'Accueil' : language === 'fa' ? 'خانه' : 'Home', path: '/' },
+          { name: 'Iran Monitor', path: '/monitor' }
+        ]}
+      />
 
       {/* Header with pulse */}
       <div className="relative border-b border-white/10">

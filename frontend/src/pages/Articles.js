@@ -67,6 +67,17 @@ export default function Articles() {
         description={seoDescriptions[language] || seoDescriptions.en}
         url="/articles"
         language={language}
+        keywords={
+          language === 'fr'
+            ? ['Iran articles', 'actualités Iran', 'analyses Iran']
+            : language === 'fa'
+              ? ['مقالات ایران', 'اخبار ایران', 'تحلیل ایران']
+              : ['Iran articles', 'Iran news', 'Iran analysis']
+        }
+        breadcrumbs={[
+          { name: language === 'fr' ? 'Accueil' : language === 'fa' ? 'خانه' : 'Home', path: '/' },
+          { name: language === 'fr' ? 'Articles' : language === 'fa' ? 'مقالات' : 'Articles', path: '/articles' }
+        ]}
       />
 
       {/* Magazine Header */}
@@ -136,7 +147,7 @@ export default function Articles() {
             {/* Featured Article (page 1 only) */}
             {featuredArticle && (
               <Link
-                to={`/article/${featuredArticle.id}`}
+                to={`/article/${featuredArticle.slug || featuredArticle.id}`}
                 className="group block mb-10 bg-white border border-zinc-200 overflow-hidden"
                 data-testid="featured-article"
               >

@@ -71,9 +71,19 @@ export default function Studies() {
   return (
     <div className="min-h-screen bg-[#fafafa]" data-testid="studies-page">
       <SEO 
-        title={language === 'fr' ? 'Etudes & Briefs' : 'Studies & Briefs'}
-        description={language === 'fr' ? 'Etudes, analyses et briefs hebdomadaires' : 'Studies, analyses and weekly intelligence briefs'}
-        url="/studies" language={language}
+        title={language === 'fr' ? 'Études, Analyses & Briefs sur l\'Iran' : language === 'fa' ? 'مطالعات، تحلیل‌ها و بریف‌ها' : 'Iran Studies, Analyses & Weekly Briefs'}
+        description={language === 'fr'
+          ? 'Recherches longues, analyses stratégiques et briefs hebdomadaires sur l\'Iran. Publication signée, sources vérifiées, contenu en français, anglais et persan.'
+          : language === 'fa'
+            ? 'تحقیقات بلند، تحلیل‌های راهبردی و بریف‌های هفتگی درباره ایران. منابع تأیید شده، محتوا به فارسی، فرانسوی و انگلیسی.'
+            : 'In-depth research, strategic analyses and weekly intelligence briefs on Iran. Signed publications, verified sources, content in French, English & Persian.'}
+        url="/studies"
+        language={language}
+        keywords={['Iran studies', 'Iran analysis', 'weekly brief Iran', 'études Iran', 'تحلیل ایران']}
+        breadcrumbs={[
+          { name: language === 'fr' ? 'Accueil' : language === 'fa' ? 'خانه' : 'Home', path: '/' },
+          { name: language === 'fr' ? 'Études & Briefs' : language === 'fa' ? 'مطالعات و بریف‌ها' : 'Studies & Briefs', path: '/studies' }
+        ]}
       />
 
       {/* Header */}
@@ -129,7 +139,7 @@ export default function Studies() {
                   {briefs.map((brief) => (
                     <Link
                       key={brief.id}
-                      to={`/article/${brief.id}`}
+                      to={`/article/${brief.slug || brief.id}`}
                       className="group bg-white border border-amber-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-amber-300 transition-all"
                       data-testid={`brief-card-${brief.id}`}
                     >
@@ -195,7 +205,7 @@ export default function Studies() {
                   {/* Featured Study */}
                   {studies[0] && (
                     <Link
-                      to={`/article/${studies[0].id}`}
+                      to={`/article/${studies[0].slug || studies[0].id}`}
                       className="group block bg-white border border-zinc-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
                       data-testid="featured-study"
                     >
@@ -245,7 +255,7 @@ export default function Studies() {
                       {studies.slice(1).map((study) => (
                         <Link
                           key={study.id}
-                          to={`/article/${study.id}`}
+                          to={`/article/${study.slug || study.id}`}
                           className="group bg-white border border-zinc-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
                           data-testid={`study-card-${study.id}`}
                         >

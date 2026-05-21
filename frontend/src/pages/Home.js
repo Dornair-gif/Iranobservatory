@@ -48,19 +48,32 @@ export default function Home() {
   const featuredArticle = allArticles[0];
   const sideArticles = allArticles.slice(1, 4);
 
+  const seoTitle = language === 'fr'
+    ? "Observatoire de l'Iran — Analyses indépendantes et veille multilingue"
+    : language === 'fa'
+      ? 'رصدخانه ایران — تحلیل‌های مستقل و چندزبانه'
+      : 'Iran Observatory — Independent multilingual analysis & monitoring';
+
   const seoDescriptions = {
-    en: "Independent platform offering fact-based insights into Iran's political, economic and social dynamics. Iran's future matters, far beyond its borders.",
-    fr: "Plateforme indépendante offrant des analyses factuelles sur les dynamiques politiques, économiques et sociales de l'Iran.",
-    fa: "پلتفرم مستقل ارائه‌دهنده تحلیل‌های مبتنی بر واقعیت درباره پویایی‌های سیاسی، اقتصادی و اجتماعی ایران."
+    en: "Iran Observatory: independent, multilingual coverage of Iran's politics, economy, sanctions, human rights and diplomacy. Real-time monitor + weekly intelligence brief + signed studies in EN/FR/FA.",
+    fr: "Observatoire de l'Iran : couverture indépendante et multilingue de la politique, économie, sanctions, droits humains et diplomatie iraniens. Moniteur temps réel + brief hebdo + études signées en FR/EN/FA.",
+    fa: "رصدخانه ایران: پوشش مستقل و چندزبانه سیاست، اقتصاد، تحریم‌ها، حقوق بشر و دیپلماسی ایران. مانیتور لحظه‌ای + بریف هفتگی + مطالعات امضا شده."
   };
 
   return (
     <div className="min-h-screen bg-white" data-testid="home-page">
       <SEO 
-        title={null}
+        title={seoTitle}
         description={seoDescriptions[language] || seoDescriptions.en}
         url="/"
         language={language}
+        keywords={
+          language === 'fr'
+            ? ['Iran', 'sanctions', 'politique iranienne', 'Hormuz', 'droits humains Iran', 'observatoire']
+            : language === 'fa'
+              ? ['ایران', 'تحلیل ایران', 'تحریم‌ها', 'هرمز', 'حقوق بشر']
+              : ['Iran', 'Iran sanctions', 'Iran politics', 'Strait of Hormuz', 'human rights Iran']
+        }
       />
       {/* Hero Section - Iran Observatory Brand Colors */}
       <section className="relative bg-[#0a1628] text-white overflow-hidden">
@@ -148,7 +161,7 @@ export default function Home() {
                 {sideArticles.map((article, index) => (
                   <Link 
                     key={article.id} 
-                    to={`/article/${article.id}`}
+                    to={`/article/${article.slug || article.id}`}
                     className={`group flex gap-4 items-start bg-white border border-zinc-100 rounded-lg p-4 hover:shadow-md hover:border-zinc-200 transition-all animate-fade-up`}
                     style={{ animationDelay: `${(index + 1) * 0.1}s` }}
                     data-testid={`side-article-${article.id}`}
@@ -312,7 +325,7 @@ export default function Home() {
                 {studies.map((study, index) => (
                   <Link 
                     key={study.id}
-                    to={`/article/${study.id}`}
+                    to={`/article/${study.slug || study.id}`}
                     className="flex-shrink-0 w-80 sm:w-96 bg-white border border-zinc-200 p-6 hover:shadow-lg transition-shadow group snap-start"
                   >
                     <div className="flex items-center gap-2 mb-3">
