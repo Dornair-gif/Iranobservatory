@@ -22,6 +22,19 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 5. Professional news + modern aesthetic design
 6. Independent editorial voice - critical but impartial
 
+## Editorial Source Policy (Strictly Enforced — 2026-05-21)
+**Banned sources** (never cited, never used as basis for content):
+- MEK / Mojahedin-e Khalq / MKO / PMOI / NCRI / CNRI / Rajavi network / Iran-HRM
+- Iran International (iranintl) — Saudi-funded, partisan
+- Any outlet affiliated with the exiled Iranian opposition
+
+**Regime sources** (Tasnim, Fars, IRNA, Press TV, Mehr, ISNA, Tabnak, Kayhan):
+- Allowed ONLY for official Iranian state announcements
+- Always prefixed with attribution: "selon les médias d'État iraniens X" / "according to Iranian state media X" / "بنا به منابع حکومتی X"
+- Treated as regime narrative, never as neutral fact
+
+**Enforcement**: `EDITORIAL_SOURCE_RULES` constant injected into every AI system_message (article gen, dashboard, weekly brief, RSS evaluator). `_sanitize_editorial()` post-processes every AI output as a safety net. RSS feeds carry `is_regime_source` flag that propagates to items and triggers per-prompt attribution hints.
+
 ## What's Been Implemented
 - ✅ Full-stack application (React + FastAPI + MongoDB)
 - ✅ Official Iran Observatory branding (logo, colors, taglines)
@@ -52,6 +65,8 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 ## Prioritized Backlog
 
 ### P0 (Completed)
+- **Editorial Source Lockdown (May 21, 2026)**: Hard guardrails on source citations across ALL AI prompts (article generation, dashboard indexes ×2, weekly brief, RSS evaluator). Banned: MEK/Mojahedin/NCRI/Rajavi/Iran International. Regime sources (Tasnim/Fars/IRNA/Press TV/Mehr/ISNA/Tabnak/Kayhan) require automatic attribution ("selon les médias d'État iraniens X"). Implementation: `EDITORIAL_SOURCE_RULES` constant injected in every system_message + `_sanitize_editorial()` post-processor (sentence-level scrub + attribution prefix; idempotent). RSS feeds carry `is_regime_source` flag propagated to items and shown as ambré "RÉGIME" badge in admin. Tasnim + Fars seeded as monitored regime feeds via Google News RSS (globally reliable). Old `NCRI reports 2,201` hardcoded text removed from Dashboard. Test coverage: 17 new tests (11 sanitizer + 4 RSS API + 1 dashboard scan + 1 signals regression) all pass; legacy 24 tests still pass.
+- **Strategic Signals module (May 2026)**: backend CRUD `/api/admin/signals` + public `/api/signals` + Dashboard public UI section. Admin UI for signals still pending (P0 carry-over).
 - **GridFS file persistence (May 2026)**: All admin uploads (study images, PDFs, founder photos) now stored in MongoDB GridFS instead of local disk → survives container redeploys
 - **Unsubscribe link fixed (May 2026)**: All newsletter templates (welcome, custom, auto) now point to `/api/unsubscribe` (was broken `/unsubscribe` frontend route)
 - RSS image sync: Articles use original RSS source images
