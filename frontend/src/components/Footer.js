@@ -1,8 +1,36 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Instagram, Linkedin } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png";
+
+// Social profiles. X handle is language-aware (FR vs EN/FA).
+// Edit these once if any URL changes — they're the single source of truth.
+const SOCIAL_LINKS = {
+  xFr: { url: "https://x.com/ObservatoireIR", handle: "@ObservatoireIR" },
+  xEn: { url: "https://x.com/IrObservatory", handle: "@IrObservatory" },
+  instagram: { url: "https://instagram.com/iranobservatory", handle: "@iranobservatory" },
+  linkedin: { url: "https://www.linkedin.com/company/iran-observatory/", handle: "Iran Observatory" },
+  substack: { url: "https://iranobservatory.substack.com", handle: "iranobservatory.substack.com" },
+};
+
+// Inline glyphs for platforms not covered by lucide-react (X, Substack).
+function XIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function SubstackIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812zM22.54 0H1.46v2.836h21.08z" />
+    </svg>
+  );
+}
 
 const FOOTER_COPY = {
   fr: {
@@ -131,7 +159,35 @@ export function Footer() {
               {c.contactEmail}
             </a>
 
-            <div className="mt-5 flex gap-2">
+            {/* Social icons row */}
+            <div className="mt-5 flex items-center gap-3" data-testid="footer-social-row">
+              {(() => {
+                const x = language === 'fr' ? SOCIAL_LINKS.xFr : SOCIAL_LINKS.xEn;
+                const items = [
+                  { key: 'x', href: x.url, label: `X — ${x.handle}`, icon: <XIcon className="w-4 h-4" /> },
+                  { key: 'instagram', href: SOCIAL_LINKS.instagram.url, label: `Instagram — ${SOCIAL_LINKS.instagram.handle}`, icon: <Instagram className="w-4 h-4" strokeWidth={1.5} /> },
+                  { key: 'linkedin', href: SOCIAL_LINKS.linkedin.url, label: `LinkedIn — ${SOCIAL_LINKS.linkedin.handle}`, icon: <Linkedin className="w-4 h-4" strokeWidth={1.5} /> },
+                  { key: 'substack', href: SOCIAL_LINKS.substack.url, label: `Substack — ${SOCIAL_LINKS.substack.handle}`, icon: <SubstackIcon className="w-4 h-4" /> },
+                ];
+                return items.map((it) => (
+                  <a
+                    key={it.key}
+                    href={it.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={it.label}
+                    title={it.label}
+                    className="w-9 h-9 inline-flex items-center justify-center border border-[#2A4A73] text-zinc-300 hover:text-[#3DB883] hover:border-[#3DB883] transition-colors"
+                    data-testid={`footer-social-${it.key}`}
+                  >
+                    {it.icon}
+                  </a>
+                ));
+              })()}
+            </div>
+
+            {/* Language switcher */}
+            <div className="mt-4 flex gap-2">
               {[{ c: 'fr', l: 'FR' }, { c: 'en', l: 'EN' }, { c: 'fa', l: 'FA' }].map(({ c: code, l }) => (
                 <button
                   key={code}
