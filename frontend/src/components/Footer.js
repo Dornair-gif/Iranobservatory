@@ -15,9 +15,7 @@ const FOOTER_COPY = {
     articles: "Articles",
     studies: "Études & Briefs",
     contactLabel: "Contact",
-    pressEmail: "presse@iranobservatory.org",
-    editorialEmail: "contact@iranobservatory.org",
-    partnershipsEmail: "partenariats@iranobservatory.org",
+    contactEmail: "contact@iranobservatory.org",
     independenceNote:
       "Iran Observatory est strictement indépendant. Ses sources de financement sont publiées et auditables. Aucun État, parti ou organisation d'opposition ne dirige sa ligne éditoriale.",
     rights: "Tous droits réservés.",
@@ -32,9 +30,7 @@ const FOOTER_COPY = {
     articles: "Articles",
     studies: "Studies & Briefs",
     contactLabel: "Contact",
-    pressEmail: "press@iranobservatory.org",
-    editorialEmail: "contact@iranobservatory.org",
-    partnershipsEmail: "partnerships@iranobservatory.org",
+    contactEmail: "contact@iranobservatory.org",
     independenceNote:
       "Iran Observatory is strictly independent. Its funding sources are published and auditable. No state, party or opposition organisation directs its editorial line.",
     rights: "All rights reserved.",
@@ -49,9 +45,7 @@ const FOOTER_COPY = {
     articles: "مقالات",
     studies: "مطالعات و گزارش‌ها",
     contactLabel: "تماس",
-    pressEmail: "press@iranobservatory.org",
-    editorialEmail: "contact@iranobservatory.org",
-    partnershipsEmail: "partnerships@iranobservatory.org",
+    contactEmail: "contact@iranobservatory.org",
     independenceNote:
       "رصدخانه ایران کاملاً مستقل است. منابع تأمین مالی آن منتشر و قابل بررسی است. هیچ دولت، حزب یا سازمان اپوزیسیونی خط مشی تحریریه آن را هدایت نمی‌کند.",
     rights: "تمامی حقوق محفوظ است.",
@@ -129,35 +123,13 @@ export function Footer() {
             <h4 className="font-mono text-[10px] uppercase tracking-widest text-[#3DB883] mb-4">
               {c.contactLabel}
             </h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a
-                  href={`mailto:${c.editorialEmail}`}
-                  className="text-zinc-300 hover:text-white transition-colors font-mono text-xs"
-                  data-testid="footer-email-editorial"
-                >
-                  {c.editorialEmail}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`mailto:${c.pressEmail}`}
-                  className="text-zinc-300 hover:text-white transition-colors font-mono text-xs"
-                  data-testid="footer-email-press"
-                >
-                  {c.pressEmail}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`mailto:${c.partnershipsEmail}`}
-                  className="text-zinc-300 hover:text-white transition-colors font-mono text-xs"
-                  data-testid="footer-email-partnerships"
-                >
-                  {c.partnershipsEmail}
-                </a>
-              </li>
-            </ul>
+            <a
+              href={`mailto:${c.contactEmail}`}
+              className="text-zinc-300 hover:text-white transition-colors font-mono text-xs"
+              data-testid="footer-email-contact"
+            >
+              {c.contactEmail}
+            </a>
 
             <div className="mt-5 flex gap-2">
               {[{ c: 'fr', l: 'FR' }, { c: 'en', l: 'EN' }, { c: 'fa', l: 'FA' }].map(({ c: code, l }) => (

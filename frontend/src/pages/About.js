@@ -65,12 +65,12 @@ const COPY = {
         </ul>
 
         <h2>Contact</h2>
-        <ul>
-          <li>Rédaction : <a href="mailto:contact@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">contact@iranobservatory.org</a></li>
-          <li>Presse : <a href="mailto:presse@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">presse@iranobservatory.org</a></li>
-          <li>Partenariats et fondations : <a href="mailto:partenariats@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">partenariats@iranobservatory.org</a></li>
-          <li>Réseaux : X (FR @ObservatoireIR · EN @IrObservatory), Instagram (@iranobservatory), LinkedIn, Substack.</li>
-        </ul>
+        <p>
+          <a href="mailto:contact@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">contact@iranobservatory.org</a>
+        </p>
+        <p>
+          Réseaux : X (FR @ObservatoireIR · EN @IrObservatory), Instagram (@iranobservatory), LinkedIn, Substack.
+        </p>
       </>
     ),
   },
@@ -130,12 +130,12 @@ const COPY = {
         </ul>
 
         <h2>Contact</h2>
-        <ul>
-          <li>Editorial: <a href="mailto:contact@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">contact@iranobservatory.org</a></li>
-          <li>Press: <a href="mailto:press@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">press@iranobservatory.org</a></li>
-          <li>Partnerships &amp; foundations: <a href="mailto:partnerships@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">partnerships@iranobservatory.org</a></li>
-          <li>Social: X (FR @ObservatoireIR · EN @IrObservatory), Instagram (@iranobservatory), LinkedIn, Substack.</li>
-        </ul>
+        <p>
+          <a href="mailto:contact@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">contact@iranobservatory.org</a>
+        </p>
+        <p>
+          Social: X (FR @ObservatoireIR · EN @IrObservatory), Instagram (@iranobservatory), LinkedIn, Substack.
+        </p>
       </>
     ),
   },
@@ -193,11 +193,9 @@ const COPY = {
         </ul>
 
         <h2>تماس</h2>
-        <ul>
-          <li>تحریریه: <a href="mailto:contact@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">contact@iranobservatory.org</a></li>
-          <li>روابط رسانه: <a href="mailto:press@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">press@iranobservatory.org</a></li>
-          <li>مشارکت‌ها: <a href="mailto:partnerships@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">partnerships@iranobservatory.org</a></li>
-        </ul>
+        <p>
+          <a href="mailto:contact@iranobservatory.org" className="underline decoration-[#3DB883] decoration-2 underline-offset-4">contact@iranobservatory.org</a>
+        </p>
       </>
     ),
   },
