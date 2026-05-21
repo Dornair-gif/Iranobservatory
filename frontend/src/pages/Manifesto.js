@@ -43,9 +43,8 @@ const COPY = {
         </p>
         <blockquote>Iran Observatory existe pour combler ce vide.</blockquote>
 
-        <h2>Notre engagement est triple</h2>
         <p>
-          <strong>Le premier est analytique.</strong> Décrypter la République islamique comme une
+          Notre engagement est triple. <strong>Le premier est analytique.</strong> Décrypter la République islamique comme une
           architecture, pas comme une scène. Lire le régime à travers ses doctrines, ses factions, ses
           leviers rentiers, son économie de la répression. Distinguer ce qui relève de la tactique de ce
           qui relève du structurel. Refuser le confort des grilles morales pour adopter celui, plus
@@ -65,10 +64,8 @@ const COPY = {
           un luxe. C'est la condition d'une politique européenne. Iran Observatory existe pour outiller
           cette autonomie.
         </p>
-
-        <h2>Nos lignes rouges sont publiques</h2>
         <p>
-          Iran Observatory ne publiera jamais une rumeur invérifiée pour gagner cinq minutes sur ses
+          Nos lignes rouges sont publiques. Iran Observatory ne publiera jamais une rumeur invérifiée pour gagner cinq minutes sur ses
           concurrents. Ne désignera jamais un chef de l'opposition iranienne — c'est aux Iraniens d'en
           décider, pas à un observatoire occidental. N'acceptera jamais un financement avec droit de
           regard éditorial, quel qu'en soit le montant. Ne participera à aucune entreprise de glorification
@@ -76,8 +73,6 @@ const COPY = {
           objet, mais toujours comme un sujet historique. Ne sacrifiera jamais la lecture à long terme
           aux exigences de l'engagement court.
         </p>
-
-        <h2>Pourquoi maintenant</h2>
         <p>
           À ceux qui me demandent pourquoi un tel observatoire mérite d'exister à un moment où
           l'attention médiatique sur l'Iran s'effrite, je réponds que c'est précisément maintenant qu'il
@@ -87,8 +82,6 @@ const COPY = {
           ne sauront pas lire son effondrement, sa résilience, ou sa mutation lorsque ces moments
           viendront.
         </p>
-
-        <h2>Une ouverture</h2>
         <p>
           Iran Observatory est ouvert. À ses lecteurs, dont les abonnements et les donations garantissent
           l'indépendance. À ses fellows, chercheurs et journalistes invités à contribuer dans un cadre
@@ -141,9 +134,8 @@ const COPY = {
         </p>
         <blockquote>Iran Observatory exists to fill this void.</blockquote>
 
-        <h2>Our commitment is threefold</h2>
         <p>
-          <strong>The first is analytical.</strong> To decode the Islamic Republic as an architecture, not
+          Our commitment is threefold. <strong>The first is analytical.</strong> To decode the Islamic Republic as an architecture, not
           as a stage. To read the regime through its doctrines, its factions, its rentier levers, its
           economy of repression. To distinguish tactical from structural. To refuse the comfort of moral
           grids for the more demanding work of political-science grids.
@@ -161,18 +153,14 @@ const COPY = {
           of strategic intelligence independent of Washington and Tel Aviv. This is not a luxury. It is
           the condition of a European policy. Iran Observatory exists to equip that autonomy.
         </p>
-
-        <h2>Our red lines are public</h2>
         <p>
-          Iran Observatory will never publish an unverified rumor to gain five minutes on its competitors.
+          Our red lines are public. Iran Observatory will never publish an unverified rumor to gain five minutes on its competitors.
           Will never anoint an Iranian opposition leader — that is for Iranians to decide, not for a
           Western observatory. Will never accept funding with editorial veto, at any amount. Will never
           take part in glorifying violence or calling for revenge. Will never treat the Iranian people as
           object, always as historical subject. Will never sacrifice long-term reading to the demands of
           short-term engagement.
         </p>
-
-        <h2>Why now</h2>
         <p>
           To those who ask me why such an observatory deserves to exist at a moment when media attention
           on Iran is fraying, I answer: precisely now is when it must be built. Not during crises.
@@ -181,8 +169,6 @@ const COPY = {
           understand the architecture of the regime in 2026 will not know how to read its collapse, its
           resilience, or its mutation when those moments arrive.
         </p>
-
-        <h2>An opening</h2>
         <p>
           Iran Observatory is open. To its readers, whose subscriptions and donations guarantee
           independence. To its fellows, researchers and journalists invited to contribute within a shared
@@ -230,9 +216,8 @@ const COPY = {
         </p>
         <blockquote>رصدخانه ایران برای پر کردن این خلأ وجود دارد.</blockquote>
 
-        <h2>تعهد ما سه‌گانه است</h2>
         <p>
-          <strong>اول، تحلیلی.</strong> رمزگشایی جمهوری اسلامی به‌مثابه یک معماری، نه یک صحنه. خواندن نظام
+          تعهد ما سه‌گانه است. <strong>اول، تحلیلی.</strong> رمزگشایی جمهوری اسلامی به‌مثابه یک معماری، نه یک صحنه. خواندن نظام
           از دل دکترین‌ها، جناح‌ها، اهرم‌های رانتی و اقتصاد سرکوب. تمایز تاکتیک از ساختار.
         </p>
         <p>
@@ -246,22 +231,16 @@ const COPY = {
           ایران فکر نمی‌کنند. سفارت‌خانه‌های پاریس، بروکسل، برلین و رم باید از یک هوش استراتژیک مستقل از
           واشینگتن و تل‌آویو برخوردار باشند.
         </p>
-
-        <h2>خط‌قرمزهای ما عمومی است</h2>
         <p>
-          رصدخانه ایران هرگز شایعه راستی‌آزمایی‌نشده‌ای را برای پنج دقیقه سبقت بر رقبا منتشر نخواهد کرد.
+          خط‌قرمزهای ما عمومی است. رصدخانه ایران هرگز شایعه راستی‌آزمایی‌نشده‌ای را برای پنج دقیقه سبقت بر رقبا منتشر نخواهد کرد.
           هرگز رهبری اپوزیسیون ایران را برنخواهد گزید — این انتخاب با ایرانیان است، نه با یک رصدخانه غربی.
           هرگز تأمین مالی با حق وتوی تحریری را نخواهد پذیرفت. در هیچ بزرگ‌نمایی خشونت یا فراخوان انتقام
           شرکت نخواهد کرد. ملت ایران را هرگز همچون شیء نخواهد دید، بلکه همواره همچون سوژه تاریخی.
         </p>
-
-        <h2>چرا حالا</h2>
         <p>
           به کسانی که می‌پرسند چرا چنین رصدخانه‌ای در زمانی که توجه رسانه‌ای به ایران فرسوده شده شایسته
           وجود است، پاسخ می‌دهم: دقیقاً همین حالا باید آن را ساخت. نه در بحران‌ها. <strong>در سکوت‌ها.</strong>
         </p>
-
-        <h2>یک گشایش</h2>
         <p>
           رصدخانه ایران گشوده است. بر روی خوانندگانش که اشتراک و کمک‌هایشان استقلال را تضمین می‌کند. بر
           فلوهایش، پژوهشگران و روزنامه‌نگاران مدعو در چارچوبی تحریری مشترک. بر شرکای نهادی‌اش، بنیادها و
