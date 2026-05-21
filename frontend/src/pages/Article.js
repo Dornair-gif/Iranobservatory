@@ -10,6 +10,7 @@ import { Input } from '../components/ui/input';
 import SEO from '../components/SEO';
 import { API } from '../config/api';
 import { normalizeFileUrl } from '../lib/imageUrl';
+import { renderHtml } from '../lib/sanitize';
 
 export default function Article() {
   const { id } = useParams();
@@ -232,7 +233,7 @@ export default function Article() {
           <div 
             className="study-content w-full"
             data-testid="article-content"
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={renderHtml(content)}
           />
         ) : (
           <div 
@@ -240,7 +241,7 @@ export default function Article() {
             data-testid="article-content"
           >
             {isHtml ? (
-              <div dangerouslySetInnerHTML={{ __html: content }} />
+              <div dangerouslySetInnerHTML={renderHtml(content)} />
             ) : (
               content.split('\n\n').map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>

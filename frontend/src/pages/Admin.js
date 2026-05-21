@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { renderHtml } from '../lib/sanitize';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
@@ -1443,7 +1444,7 @@ export default function Admin() {
                   </div>
                   <div className="p-4 max-h-[500px] overflow-y-auto">
                     {newsletterPreview ? (
-                      <div dangerouslySetInnerHTML={{ __html: newsletterPreview.html_content }} />
+                      <div dangerouslySetInnerHTML={renderHtml(newsletterPreview.html_content)} />
                     ) : (
                       <p className="text-zinc-400 text-sm text-center py-10">Click "Generate Preview" or pick a language tab</p>
                     )}
@@ -1497,7 +1498,7 @@ export default function Admin() {
                   <div className="bg-zinc-100 p-2 border-b border-zinc-200"><span className="text-xs font-mono text-zinc-500">PREVIEW</span></div>
                   <div className="p-4 max-h-[400px] overflow-y-auto prose prose-sm max-w-none">
                     {customContent ? (
-                      <div dangerouslySetInnerHTML={{ __html: customContent }} />
+                      <div dangerouslySetInnerHTML={renderHtml(customContent)} />
                     ) : (
                       <p className="text-zinc-400 text-sm text-center py-10">Your message preview will appear here</p>
                     )}
@@ -1732,7 +1733,7 @@ export default function Admin() {
                     {previewLang === lang ? (
                       <div 
                         className="border border-zinc-200 rounded-none p-4 min-h-[200px] max-h-[400px] overflow-y-auto prose prose-sm max-w-none prose-headings:font-heading prose-a:text-[#1E3A5F] prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-2 prose-th:border prose-th:border-zinc-200 prose-th:p-2 prose-th:bg-zinc-50"
-                        dangerouslySetInnerHTML={{ __html: newArticle[`content_${lang}`] || '<p class="text-zinc-400">No content yet</p>' }}
+                        dangerouslySetInnerHTML={renderHtml(newArticle[`content_${lang}`] || '<p class="text-zinc-400">No content yet</p>')}
                       />
                     ) : (
                       <Textarea
@@ -1875,7 +1876,7 @@ export default function Admin() {
                       {previewLang === lang ? (
                         <div 
                           className="border border-zinc-200 rounded-none p-4 min-h-[200px] max-h-[400px] overflow-y-auto prose prose-sm max-w-none prose-headings:font-heading prose-a:text-[#1E3A5F] prose-table:border-collapse prose-td:border prose-td:border-zinc-200 prose-td:p-2 prose-th:border prose-th:border-zinc-200 prose-th:p-2 prose-th:bg-zinc-50"
-                          dangerouslySetInnerHTML={{ __html: editArticle[`content_${lang}`] || '<p class="text-zinc-400">No content yet</p>' }}
+                          dangerouslySetInnerHTML={renderHtml(editArticle[`content_${lang}`] || '<p class="text-zinc-400">No content yet</p>')}
                         />
                       ) : (
                         <Textarea

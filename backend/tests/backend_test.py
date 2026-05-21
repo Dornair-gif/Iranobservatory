@@ -22,8 +22,10 @@ if not BASE_URL:
     # frontend/.env value used as the public URL in this environment
     BASE_URL = "https://iran-events-live.preview.emergentagent.com"
 
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@iranobservatory.org")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "IranObs2024!")
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL") or os.environ.get("ADMIN_EMAIL", "admin@iranobservatory.org")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD") or os.environ.get("ADMIN_PASSWORD", "")
+if not ADMIN_PASSWORD:
+    raise RuntimeError("TEST_ADMIN_PASSWORD env var is required. See /app/memory/test_credentials.md")
 
 
 # ----------------------------- helpers / fixtures ----------------------------

@@ -30,8 +30,13 @@ BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 if not BASE_URL:
     BASE_URL = "https://iran-events-live.preview.emergentagent.com"
 
-ADMIN_EMAIL = "admin@iranobservatory.org"
-ADMIN_PASSWORD = "IranObs2024!"
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", "admin@iranobservatory.org")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD", "")
+if not ADMIN_PASSWORD:
+    raise RuntimeError(
+        "TEST_ADMIN_PASSWORD env var is required. Read /app/memory/test_credentials.md "
+        "and export it before running tests."
+    )
 
 TEST_TITLE_PREFIX = "TEST SEO"
 
