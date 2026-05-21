@@ -167,7 +167,6 @@ export function Footer() {
                   { key: 'x', href: x.url, label: `X — ${x.handle}`, icon: <XIcon className="w-4 h-4" /> },
                   { key: 'instagram', href: SOCIAL_LINKS.instagram.url, label: `Instagram — ${SOCIAL_LINKS.instagram.handle}`, icon: <Instagram className="w-4 h-4" strokeWidth={1.5} /> },
                   { key: 'linkedin', href: SOCIAL_LINKS.linkedin.url, label: `LinkedIn — ${SOCIAL_LINKS.linkedin.handle}`, icon: <Linkedin className="w-4 h-4" strokeWidth={1.5} /> },
-                  { key: 'substack', href: SOCIAL_LINKS.substack.url, label: `Substack — ${SOCIAL_LINKS.substack.handle}`, icon: <SubstackIcon className="w-4 h-4" /> },
                 ];
                 return items.map((it) => (
                   <a
