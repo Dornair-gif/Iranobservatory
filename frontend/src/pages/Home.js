@@ -324,35 +324,60 @@ export default function Home() {
             <div className="relative">
               <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {studies.map((study, index) => (
-                  <Link 
+                  <Link
                     key={study.id}
                     to={`/article/${study.slug || study.id}`}
-                    className="flex-shrink-0 w-80 sm:w-96 bg-white border border-zinc-200 p-6 hover:shadow-lg transition-shadow group snap-start"
+                    className="flex-shrink-0 w-80 sm:w-96 bg-white border border-zinc-200 hover:shadow-lg transition-shadow group snap-start overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className={`px-2 py-1 text-xs font-mono uppercase tracking-wider ${
-                        study.content_type === 'study' 
-                          ? 'bg-indigo-100 text-indigo-700' 
-                          : 'bg-purple-100 text-purple-700'
-                      }`}>
-                        {study.content_type === 'study' 
-                          ? (language === 'fr' ? 'Étude' : language === 'fa' ? 'مطالعه' : 'Study')
-                          : (language === 'fr' ? 'Analyse' : language === 'fa' ? 'تحلیل' : 'Analysis')
-                        }
-                      </span>
-                      <span className="text-xs text-zinc-400 font-mono">
+                    {study.image_url && (
+                      <div className="w-full aspect-[16/9] overflow-hidden bg-zinc-100 relative">
+                        <img
+                          src={normalizeFileUrl(study.image_url)}
+                          alt={study[`title_${language}`] || study.title_en || ''}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                          onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                        />
+                        <span className={`absolute top-3 left-3 px-2 py-1 text-[10px] font-mono uppercase tracking-wider ${
+                          study.content_type === 'study'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-purple-600 text-white'
+                        }`}>
+                          {study.content_type === 'study'
+                            ? (language === 'fr' ? 'Étude' : language === 'fa' ? 'مطالعه' : 'Study')
+                            : (language === 'fr' ? 'Analyse' : language === 'fa' ? 'تحلیل' : 'Analysis')
+                          }
+                        </span>
+                      </div>
+                    )}
+                    <div className="p-6">
+                      {!study.image_url && (
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`px-2 py-1 text-xs font-mono uppercase tracking-wider ${
+                            study.content_type === 'study'
+                              ? 'bg-indigo-100 text-indigo-700'
+                              : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {study.content_type === 'study'
+                              ? (language === 'fr' ? 'Étude' : language === 'fa' ? 'مطالعه' : 'Study')
+                              : (language === 'fr' ? 'Analyse' : language === 'fa' ? 'تحلیل' : 'Analysis')
+                            }
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-xs text-zinc-400 font-mono mb-2">
                         {new Date(study.published_at || study.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <h3 className="font-heading font-bold text-lg mb-2 group-hover:text-[#1E3A5F] transition-colors line-clamp-2">
-                      {study[`title_${language}`] || study.title_en || study.title_fr}
-                    </h3>
-                    <p className="text-sm text-zinc-600 line-clamp-3">
-                      {study[`summary_${language}`] || study.summary_en || study.summary_fr}
-                    </p>
-                    <div className="flex items-center gap-1 mt-4 text-xs font-mono uppercase tracking-wider text-[#3DB883]">
-                      {t('readMore')}
-                      <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                      </p>
+                      <h3 className="font-heading font-bold text-lg mb-2 group-hover:text-[#1E3A5F] transition-colors line-clamp-2">
+                        {study[`title_${language}`] || study.title_en || study.title_fr}
+                      </h3>
+                      <p className="text-sm text-zinc-600 line-clamp-3">
+                        {study[`summary_${language}`] || study.summary_en || study.summary_fr}
+                      </p>
+                      <div className="flex items-center gap-1 mt-4 text-xs font-mono uppercase tracking-wider text-[#3DB883]">
+                        {t('readMore')}
+                        <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                      </div>
                     </div>
                   </Link>
                 ))}
