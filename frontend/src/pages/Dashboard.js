@@ -123,14 +123,9 @@ export default function Dashboard() {
   const { language } = useLanguage();
   const [data, setData] = useState(null);
   const [sources, setSources] = useState({});
-  const [signals, setSignals] = useState([]);
-  const [audience, setAudience] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshTick, setRefreshTick] = useState(0);
-  const [unlockingSignalId, setUnlockingSignalId] = useState(null);
-  const [unlockEmail, setUnlockEmail] = useState('');
-  const [unlockedSignals, setUnlockedSignals] = useState({}); // id -> full signal
 
   // Fetch dashboard + sources once
   useEffect(() => {
@@ -143,13 +138,6 @@ export default function Dashboard() {
     }).catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [refreshTick]);
-
-  // Fetch signals when audience changes
-  useEffect(() => {
-    axios.get(`${API}/signals`, { params: { audience } })
-      .then(r => setSignals(r.data || []))
-      .catch(() => setSignals([]));
-  }, [audience]);
 
   // Auto-refresh "last updated X min ago" pill every minute (no API call)
   useEffect(() => {
@@ -164,20 +152,6 @@ export default function Dashboard() {
     }, 600_000);
     return () => clearInterval(t);
   }, []);
-
-  const handleUnlock = async (signalId) => {
-    if (!unlockEmail || !unlockEmail.includes('@')) return;
-    try {
-      const res = await axios.post(`${API}/signals/${signalId}/unlock`, {
-        email: unlockEmail, language
-      });
-      setUnlockedSignals(prev => ({ ...prev, [signalId]: res.data }));
-      setUnlockingSignalId(null);
-      setUnlockEmail('');
-    } catch (e) {
-      alert('Erreur — merci de réessayer');
-    }
-  };
 
   if (loading) {
     return (
@@ -270,181 +244,6 @@ export default function Dashboard() {
             </div>
           </section>
         )}
-
-        {/* ===== STRATEGIC SIGNALS (Signaux Stratégiques) ===== */}
-        <section data-testid="strategic-signals">
-          <div className="flex items-start justify-between gap-4 mb-2 flex-wrap">
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#3DB883] font-bold mb-1">
-                {language === 'fr' ? 'Veille stratégique · non-partisan · francophone' : language === 'fa' ? 'هشدار راهبردی' : 'Strategic Watch'}
-              </p>
-              <h2 className="font-heading font-black text-3xl tracking-tight">
-                {language === 'fr' ? 'Signaux à surveiller' : language === 'fa' ? 'سیگنال‌های قابل پیگیری' : 'Signals to Watch'}
-              </h2>
-              <p className="text-sm text-zinc-400 mt-1 max-w-2xl">
-                {language === 'fr'
-                  ? 'Notre lecture éditoriale des signaux faibles, dérives possibles et points de bascule. Pour décideurs, diplomates, journalistes et ONG.'
-                  : language === 'fa'
-                    ? 'تحلیل سردبیری ما از سیگنال‌های ضعیف، روندهای احتمالی و نقاط عطف.'
-                    : 'Our editorial read on weak signals, possible drifts and tipping points. For executives, diplomats, journalists & NGOs.'}
-              </p>
-            </div>
-            {/* Audience filter */}
-            <div className="flex gap-1 flex-wrap">
-              {[
-                { value: 'all', label_fr: 'Tous', label_en: 'All', label_fa: 'همه' },
-                { value: 'business', label_fr: 'Entreprises', label_en: 'Business', label_fa: 'کسب‌وکار' },
-                { value: 'diplomatic', label_fr: 'Diplomatie', label_en: 'Diplomatic', label_fa: 'دیپلماسی' },
-                { value: 'media', label_fr: 'Médias', label_en: 'Media', label_fa: 'رسانه' },
-                { value: 'ngo', label_fr: 'ONG', label_en: 'NGO', label_fa: 'سازمان‌های مردم‌نهاد' },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setAudience(opt.value)}
-                  className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider rounded-md transition-colors ${audience === opt.value ? 'bg-[#3DB883] text-[#0a1628]' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}
-                  data-testid={`audience-${opt.value}`}
-                >
-                  {opt[`label_${language}`] || opt.label_en}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {signals.length === 0 ? (
-            <div className="bg-[#162640] border border-white/10 rounded-xl p-8 text-center">
-              <p className="text-zinc-400 text-sm">
-                {language === 'fr' ? 'Aucun signal actif pour cette audience.' : language === 'fa' ? 'سیگنال فعالی وجود ندارد.' : 'No active signals for this audience.'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-              {signals.map(s => {
-                const full = unlockedSignals[s.id] || s;
-                const t = full[`title_${language}`] || full.title_fr || full.title_en;
-                const ctx = full[`context_${language}`] || full.context_fr || full.context_en;
-                const isLocked = s.locked && !unlockedSignals[s.id];
-                
-                const impactColor = {
-                  critical: 'bg-red-500/20 text-red-300 border-red-500/40',
-                  high: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-                  medium: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
-                  low: 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                }[full.impact] || 'bg-white/10 text-zinc-300 border-white/20';
-                
-                const likelihoodLabel = {
-                  fr: { low: 'faible', medium: 'modérée', high: 'élevée', critical: 'très élevée' },
-                  en: { low: 'low', medium: 'medium', high: 'high', critical: 'very high' },
-                  fa: { low: 'کم', medium: 'متوسط', high: 'بالا', critical: 'بسیار بالا' }
-                }[language] || {};
-                
-                const timeframeLabel = {
-                  fr: { this_week: 'cette semaine', next_30_days: '30 jours', ongoing: 'continu', next_quarter: 'trimestre' },
-                  en: { this_week: 'this week', next_30_days: '30 days', ongoing: 'ongoing', next_quarter: 'next quarter' },
-                  fa: { this_week: 'این هفته', next_30_days: '۳۰ روز', ongoing: 'پیوسته', next_quarter: 'سه ماه آینده' }
-                }[language] || {};
-                
-                return (
-                  <div key={s.id} className="bg-[#162640] border border-white/10 rounded-xl p-5 hover:border-[#3DB883]/40 transition-colors" data-testid={`signal-${s.id}`}>
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
-                      <span className={`px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider border rounded ${impactColor}`}>
-                        {language === 'fr' ? 'Impact' : language === 'fa' ? 'تأثیر' : 'Impact'} · {full.impact}
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-400">
-                        {language === 'fr' ? 'Proba' : language === 'fa' ? 'احتمال' : 'Likelihood'}: <span className="text-white">{likelihoodLabel[full.likelihood] || full.likelihood}</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-400">·</span>
-                      <span className="text-[10px] font-mono text-zinc-400">
-                        {timeframeLabel[full.timeframe] || full.timeframe}
-                      </span>
-                      {s.premium && (
-                        <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-[#3DB883] flex items-center gap-1">
-                          <span className="text-[10px]">★</span>
-                          {language === 'fr' ? 'Premium' : 'Premium'}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <h3 className="font-heading font-bold text-lg leading-tight mb-2 text-white" dir={language === 'fa' ? 'rtl' : 'ltr'}>
-                      {t}
-                    </h3>
-                    
-                    {isLocked ? (
-                      <>
-                        <div className="bg-gradient-to-b from-zinc-700/20 to-transparent rounded-lg p-3 mb-3 relative overflow-hidden">
-                          <p className="text-sm text-zinc-500 blur-sm select-none" dir={language === 'fa' ? 'rtl' : 'ltr'}>
-                            Lorem ipsum dolor sit amet consectetur adipiscing elit. Cette analyse stratégique est réservée aux lecteurs inscrits. Nos sources confirment plusieurs signaux faibles convergents sur ce dossier sensible. Le rapport complet inclut...
-                          </p>
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#162640] via-[#162640]/60 to-transparent" />
-                        </div>
-                        {unlockingSignalId === s.id ? (
-                          <div className="space-y-2">
-                            <input
-                              type="email"
-                              value={unlockEmail}
-                              onChange={(e) => setUnlockEmail(e.target.value)}
-                              placeholder={language === 'fr' ? 'votre@email.com' : 'your@email.com'}
-                              className="w-full bg-[#0a1628] border border-white/10 text-white px-3 py-2 rounded text-sm focus:outline-none focus:border-[#3DB883]"
-                              autoFocus
-                              data-testid={`signal-unlock-email-${s.id}`}
-                            />
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleUnlock(s.id)}
-                                className="flex-1 bg-[#3DB883] text-[#0a1628] py-2 rounded text-xs font-mono uppercase tracking-wider font-bold hover:bg-[#2d9e6e]"
-                                data-testid={`signal-unlock-confirm-${s.id}`}
-                              >
-                                {language === 'fr' ? 'Débloquer' : language === 'fa' ? 'باز کردن' : 'Unlock'}
-                              </button>
-                              <button
-                                onClick={() => { setUnlockingSignalId(null); setUnlockEmail(''); }}
-                                className="px-3 py-2 text-xs font-mono text-zinc-500 hover:text-white"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                            <p className="text-[10px] text-zinc-500">
-                              {language === 'fr' ? 'Inclus l\'inscription à notre newsletter hebdomadaire. Désinscription à tout moment.' : 'Includes our weekly newsletter. Unsubscribe anytime.'}
-                            </p>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setUnlockingSignalId(s.id)}
-                            className="w-full bg-[#3DB883]/10 border border-[#3DB883]/30 text-[#3DB883] py-2 rounded text-xs font-mono uppercase tracking-wider font-bold hover:bg-[#3DB883]/20 transition-colors"
-                            data-testid={`signal-unlock-btn-${s.id}`}
-                          >
-                            {language === 'fr' ? '✦ Débloquer avec mon email' : language === 'fa' ? '✦ با ایمیل باز کنید' : '✦ Unlock with email'}
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm text-zinc-300 leading-relaxed mb-3 whitespace-pre-line" dir={language === 'fa' ? 'rtl' : 'ltr'}>
-                          {ctx}
-                        </p>
-                        {(full.sources || []).length > 0 && (
-                          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
-                            {full.sources.map((src, i) => (
-                              <a
-                                key={i}
-                                href={src.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] font-mono text-[#3DB883] hover:underline"
-                              >
-                                {src.name} ↗
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
 
         {/* ===== ECONOMIC INDICATORS ===== */}
         <section>
