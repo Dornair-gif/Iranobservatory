@@ -12,6 +12,7 @@ import { API } from '../config/api';
 import { normalizeFileUrl } from '../lib/imageUrl';
 import { renderHtml } from '../lib/sanitize';
 import { Footer } from '../components/Footer';
+import StudyHtmlFrame from '../components/StudyHtmlFrame';
 
 export default function Article() {
   const { id } = useParams();
@@ -107,6 +108,9 @@ export default function Article() {
   const summary = getArticleField(article, 'summary');
   const isStudy = article.content_type === 'analysis' || article.content_type === 'study';
   const isHtml = content && content.includes('<') && (content.includes('</') || content.includes('/>'));
+  // A "full document" study is HTML that ships its own <html>/<style> shell.
+  // We render those in a sandboxed iframe so the author's CSS survives intact.
+  const isFullHtmlDoc = isStudy && isHtml && /<\s*(html|!doctype|style)\b/i.test(content);
 
   // SEO: prefer AI-generated SEO meta if available, fall back to title/summary
   const seoField = (base) => article?.[`${base}_${language}`] || article?.[`${base}_en`] || article?.[`${base}_fr`] || '';
@@ -229,8 +233,13 @@ export default function Article() {
         )}
 
         {/* Content */}
-        {isStudy && isHtml ? (
-          /* Study/Analysis with HTML — render raw without prose constraints */
+        {isFullHtmlDoc ? (
+          /* Self-contained HTML document (custom <style>) → iframe to preserve layout */
+          <div className="study-html w-full" data-testid="article-content">
+            <StudyHtmlFrame html={content} ariaLabel={title} />
+          </div>
+        ) : isStudy && isHtml ? (
+          /* Study/Analysis with inline HTML — render through sanitizer */
           <div 
             className="study-content w-full"
             data-testid="article-content"
