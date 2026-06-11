@@ -1,0 +1,27 @@
+{
+  "name": "iran-observatory-next",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Iran Observatory — Next.js frontend (SSR/ISR) deployed on Vercel. Backend stays on Emergent.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "15.0.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "lucide-react": "^0.460.0",
+    "isomorphic-dompurify": "^2.16.0",
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "eslint": "^9.15.0",
+    "eslint-config-next": "15.0.3"
+  }
+}
