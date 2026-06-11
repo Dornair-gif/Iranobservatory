@@ -282,8 +282,15 @@ export default function Home() {
           </div>
           
           <div className="bg-white/5 backdrop-blur border border-white/10 p-6 sm:p-8">
-            <iframe 
-              src="https://rss.app/embed/v1/wall/cPvRWpMkf81Tx8nr"
+            <iframe
+              src={
+                language === 'fa'
+                  ? 'https://rss.app/r/feed/MxRGXqHK1g7F9S8S/embed?tab=wall'
+                  : language === 'fr'
+                  ? 'https://rss.app/r/feed/0aYtpxYInp9pe8Vz/embed?tab=wall'
+                  : 'https://rss.app/r/feed/FEE7VHvtL1clR9Vl/embed?tab=wall'
+              }
+              key={language}
               style={{ width: '100%', height: '900px', border: 'none' }}
               title="Iran Observatory Live News Feed"
               data-testid="rss-widget"
