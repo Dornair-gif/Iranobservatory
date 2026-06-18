@@ -47,27 +47,41 @@ export default async function HomePage({ params }) {
   if (!isValidLang(lang)) notFound();
   const t = T[lang];
 
-  // Fetch latest articles + studies in parallel — both ISR-cached.
-  const [articles, studies] = await Promise.all([
-    api.listArticles({ limit: 9 }).catch(() => []),
+  // Fetch latest NEWS articles and studies separately so they don't overlap.
+  const [news, studies] = await Promise.all([
+    api.listArticles({ limit: 9, content_type: "news" }).catch(() => []),
     api.listStudies({ limit: 6 }).catch(() => []),
   ]);
+  // Fallback: if backend doesn't filter by content_type on the news query,
+  // de-duplicate locally so the same article doesn't show in both sections.
+  const studyIds = new Set(studies.map((s) => s.id));
+  const articles = news.filter((a) => !studyIds.has(a.id));
 
   return (
     <>
       <Header lang={lang} />
 
-      {/* Hero */}
-      <section className="bg-[#1E3A5F] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#3DB883] mb-4">
-            {t.independent}
-          </p>
-          <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight max-w-4xl">
-            {t.siteName}
-          </h1>
-          <p className="mt-6 text-lg sm:text-xl text-zinc-300 max-w-2xl leading-relaxed">{t.tagline}</p>
-          <p className="mt-4 text-sm text-[#3DB883] italic">{t.motto}</p>
+      {/* Hero with background image */}
+      <section className="relative bg-[#0a1628] text-white overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/hero-tehran-milad-night.jpg')" }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-[#1E3A5F]/70" aria-hidden="true" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="max-w-3xl">
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#3DB883] mb-4">
+              {t.independent}
+            </p>
+            <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
+              {t.siteName}
+            </h1>
+            <p className="mt-6 text-xl sm:text-2xl text-white font-heading font-bold leading-tight">
+              {t.tagline}
+            </p>
+            <p className="mt-4 text-base sm:text-lg text-[#3DB883] italic">"{t.motto}"</p>
+          </div>
         </div>
       </section>
 
