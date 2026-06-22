@@ -2,6 +2,7 @@
   "name": "iran-observatory-next",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "description": "Iran Observatory — Next.js frontend (SSR/ISR) deployed on Vercel. Backend stays on Emergent.",
   "scripts": {
     "dev": "next dev",
