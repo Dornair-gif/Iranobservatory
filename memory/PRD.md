@@ -103,6 +103,14 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - **Chantier 2 — RSS to Buffer + Telegram FA pipeline** (blocked on Buffer API + Telegram Bot token from user).
 
 ### P1 (Completed)
+- **Editorial Core Pages refresh (Feb 2026)**:
+  - Applied verbatim content from `IranObservatory_CorePages_FR_EN_FA.docx` to `lib/editorial/{manifesto,about,methodology}.jsx`.
+  - Manifesto signed by "La direction éditoriale" (anonymized, collective voice) in all 3 languages.
+  - About: restructured into two formats — **Intel** (veille/monitoring) and **Decrypt** (analyse) — and now publishes in FR/EN/FA (Persian added).
+  - DORNA link updated `dorna.eu` → `dornairan.com` across all 3 languages.
+  - Methodology: full 8-section trilingual standard with last-revision date Feb 2026.
+  - Build verified: 162 static pages generated, no regressions.
+  - **Pending**: user to push commits to `Dornair-gif/Iranobservatory` via "Save to GitHub" (Vercel auto-deploys).
 - **Full SEO Overhaul (May 2026)**:
   - **AI auto-SEO per article**: New endpoint `POST /api/articles/{id}/seo/generate` calls GPT-5.2 to produce `seo_title_{fr,en,fa}` (≤60 chars), `meta_description_{fr,en,fa}` (≤160 chars) and `focus_keywords[]`. Server-side hard-capped. Admin button "✨ Générer SEO (IA)" in the article edit panel.
   - **SEO score endpoint** `GET /api/articles/{id}/seo/score`: 0-100 with 12 checks (slug, per-lang title/desc, image, focus keywords, long-form, tags, published). Live checklist in admin.
