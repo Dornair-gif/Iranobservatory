@@ -5,7 +5,7 @@ import { LANGUAGES, T } from "@/lib/i18n";
 // Logo is intentionally large (h-36 / h-40) so the brand reads from a distance.
 
 const LOGO_URL =
-  "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/tkhn3g6l_Iran%20Observatory%20Logo%20transparent%20%281%29.png";
+  "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png";
 
 const DONATE_URL = "https://www.helloasso.com/associations/dorna/formulaires/2";
 
@@ -21,17 +21,17 @@ export function Header({ lang }) {
       data-testid="main-header"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 sm:h-24">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo — back to big size */}
           <Link
             href={`/${lang}`}
-            className="flex items-center gap-3 group -my-4"
+            className="flex items-center gap-3 group"
             data-testid="logo-link"
           >
             <img
               src={LOGO_URL}
               alt="Iran Observatory"
-              className="h-28 sm:h-32 lg:h-36 w-auto"
+              className="h-12 sm:h-14 lg:h-16 w-auto"
             />
           </Link>
 

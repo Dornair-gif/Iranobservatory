@@ -935,14 +935,38 @@ async def create_article(data: ArticleCreate, request: Request):
     }
 
 @api_router.get("/articles", response_model=List[ArticleResponse])
-async def get_articles(status: Optional[str] = None, content_type: Optional[str] = None, lang: str = "en", limit: int = 50):
+async def get_articles(
+    status: Optional[str] = None,
+    content_type: Optional[str] = None,
+    content_types: Optional[str] = None,  # comma-separated list, e.g. "study,analysis,brief"
+    lang: str = "en",
+    limit: int = 50,
+):
     query = {}
     if status:
         query["status"] = status
     else:
         query["status"] = "published"
-    if content_type:
-        query["content_type"] = content_type
+
+    # Resolve the requested content types. Plural (`content_types`) takes
+    # precedence; singular (`content_type`) is kept for legacy callers.
+    requested_types: list[str] = []
+    if content_types:
+        requested_types = [t.strip() for t in content_types.split(",") if t.strip()]
+    elif content_type:
+        requested_types = [content_type]
+
+    if requested_types:
+        # Legacy docs may have content_type missing/null and be implicitly "news".
+        # If the caller asks for "news", include them via $or.
+        if "news" in requested_types:
+            query["$or"] = [
+                {"content_type": {"$in": requested_types}},
+                {"content_type": {"$exists": False}},
+                {"content_type": None},
+            ]
+        else:
+            query["content_type"] = {"$in": requested_types}
     
     # Use projection for public API to exclude full content and improve performance
     projection = {
