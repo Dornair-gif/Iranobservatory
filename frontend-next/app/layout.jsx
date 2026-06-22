@@ -28,7 +28,7 @@ export const metadata = {
     "sanctions Iran",
     "Maneli Mirkhan",
     "Iran observatoire",
-    "rصدخانه ایران",
+    "رصدخانه ایران",
   ],
   applicationName: "Iran Observatory · Decrypt & Intel",
   authors: [{ name: "Maneli Mirkhan", url: "https://iranobservatory.org/fr/manifeste" }],
@@ -58,9 +58,14 @@ export const metadata = {
     },
   },
   verification: {
-    // Placeholder — replace with the real Search Console verification token
-    // once added (vercel domain has its own; do this when DNS switches).
-    // google: "xxxxxxx",
+    // GSC verification token — set NEXT_PUBLIC_GSC_TOKEN in Vercel env to
+    // enable. No redeploy needed because the value is rendered at request
+    // time (in metadata) for the root layout.
+    google: process.env.NEXT_PUBLIC_GSC_TOKEN || undefined,
+    // Bing Webmaster Tools (optional)
+    other: process.env.NEXT_PUBLIC_BING_TOKEN
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_TOKEN }
+      : undefined,
   },
 };
 
@@ -90,7 +95,20 @@ const ORG_JSON_LD = {
     "@type": "Person",
     name: "Maneli Mirkhan",
     jobTitle: "Founder & Editor-in-Chief",
-    sameAs: ["https://manelimirkhan.com"],
+    url: "https://manelimirkhan.com",
+    sameAs: [
+      "https://manelimirkhan.com",
+      "https://x.com/IrObservatory",
+      "https://www.linkedin.com/in/manelimirkhan/",
+    ],
+  },
+  // Authority inheritance: Iran Observatory is research-affiliated with DORNA
+  // (advocacy) and built by the founder of manelimirkhan.com. Listing these
+  // teaches Google that the brand inherits trust from established sites.
+  parentOrganization: {
+    "@type": "Organization",
+    name: "DORNA",
+    url: "https://dorna.eu",
   },
   knowsAbout: [
     "Iran politics",

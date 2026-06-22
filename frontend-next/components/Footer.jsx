@@ -138,8 +138,34 @@ export function Footer({ lang }) {
           </div>
         </div>
 
-        <div className="border-t border-[#2A4A73] mt-10 pt-6">
+        <div className="border-t border-[#2A4A73] mt-10 pt-6 space-y-3">
           <p className="text-[11px] text-zinc-400 leading-relaxed max-w-3xl">{c.independence}</p>
+          {/* Affiliation note — inherits authority from DORNA (advocacy) and
+              manelimirkhan.com (founder's personal site that already ranks). */}
+          <p className="text-[11px] text-zinc-400 leading-relaxed max-w-3xl">
+            {lang === "fr" ? (
+              <>
+                Recherche affiliée à{" "}
+                <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">DORNA</a>.
+                Fondé par{" "}
+                <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">Maneli Mirkhan</a>.
+              </>
+            ) : lang === "fa" ? (
+              <>
+                پژوهش وابسته به{" "}
+                <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">دورنا</a>.
+                بنیان‌گذار:{" "}
+                <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">مانلی میرخان</a>.
+              </>
+            ) : (
+              <>
+                Research affiliated with{" "}
+                <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">DORNA</a>.
+                Founded by{" "}
+                <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">Maneli Mirkhan</a>.
+              </>
+            )}
+          </p>
         </div>
         <div className="mt-6 flex flex-col md:flex-row gap-2 md:justify-between md:items-center">
           <p className="text-[11px] text-zinc-500 font-mono">
