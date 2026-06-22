@@ -21,7 +21,7 @@ export const T = {
     siteName: "Iran Observatory",
     siteNameLong: "Iran Observatory · Decrypt & Intel",
     tagline: "Intelligence et décryptage de l'Iran — analyse indépendante, OSINT vérifié, prospective pour décideurs",
-    motto: "Iran Observatory — Decrypt the regime. Intel for decision-makers.",
+    motto: "Iran's future matters, far beyond its borders.",
     latestNews: "Dernières Actualités",
     breakingNews: "À la Une",
     readMore: "Lire la suite",
@@ -52,7 +52,7 @@ export const T = {
     siteName: "Iran Observatory",
     siteNameLong: "Iran Observatory · Decrypt & Intel",
     tagline: "Intelligence and decryption of Iran — independent analysis, verified OSINT, forecasts for decision-makers",
-    motto: "Iran Observatory — Decrypt the regime. Intel for decision-makers.",
+    motto: "Iran's future matters, far beyond its borders.",
     latestNews: "Latest News",
     breakingNews: "Top Stories",
     readMore: "Read more",
@@ -70,8 +70,8 @@ export const T = {
     feedDesc: "Aggregated posts from X, Instagram and LinkedIn",
     seo: {
       home: {
-        title: "Iran Observatory · Decrypt & Intel — Strategic Iran Analysis",
-        description: "Iran Observatory · Decrypt & Intel: independent strategic intelligence platform on Iran. Verified OSINT, signed analyses, long-horizon forecasts for European chancelleries, newsrooms and foundations.",
+        title: "Iran Observatory · Decrypt & Intel",
+        description: "Iran's future matters, far beyond its borders. Independent OSINT-verified analysis, decryption and forecasts on Iran for European decision-makers.",
       },
       articles: {
         title: "Iran Decryption & Analysis — Articles | Iran Observatory",
@@ -83,7 +83,7 @@ export const T = {
     siteName: "رصدخانه ایران",
     siteNameLong: "رصدخانه ایران · رمزگشایی و اطلاعات",
     tagline: "اطلاعات و رمزگشایی ایران — تحلیل مستقل، OSINT راستی‌آزمایی‌شده، چشم‌انداز برای تصمیم‌گیران",
-    motto: "رمزگشایی نظام. اطلاعات برای تصمیم‌گیران.",
+    motto: "آینده ایران مهم است، فراتر از مرزهای آن.",
     latestNews: "آخرین اخبار",
     breakingNews: "مهم‌ترین خبرها",
     readMore: "ادامه مطلب",

@@ -10,7 +10,7 @@ import Link from "next/link";
 // Sections are split visually so visitors (and Google) understand the
 // difference between flash news, structural studies and weekly briefs.
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export async function generateMetadata({ params }) {
   const { lang } = await params;

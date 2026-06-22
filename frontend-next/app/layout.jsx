@@ -7,11 +7,11 @@ import "./globals.css";
 export const metadata = {
   metadataBase: new URL("https://iranobservatory.org"),
   title: {
-    default: "Iran Observatory · Decrypt & Intel — Strategic Iran Analysis",
+    default: "Iran Observatory · Decrypt & Intel",
     template: "%s · Iran Observatory · Decrypt & Intel",
   },
   description:
-    "Iran Observatory · Decrypt & Intel — Plateforme indépendante de décryptage et d'intelligence stratégique sur l'Iran : OSINT vérifié, analyses signées, anticipations longues pour décideurs européens.",
+    "Iran's future matters, far beyond its borders. Independent OSINT-verified analysis, decryption and forecasts on Iran.",
   // Keywords are weakly used by Google but help Bing, DuckDuckGo and some
   // social networks. We list every long-tail combination we want to own.
   keywords: [
@@ -36,7 +36,7 @@ export const metadata = {
     type: "website",
     title: "Iran Observatory · Decrypt & Intel",
     description:
-      "Independent strategic intelligence and decryption of Iran. OSINT verified. For European decision-makers.",
+      "Iran's future matters, far beyond its borders.",
   },
   twitter: {
     card: "summary_large_image",

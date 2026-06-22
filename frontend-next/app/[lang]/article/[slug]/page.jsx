@@ -10,7 +10,7 @@ import { format } from "date-fns";
 
 // ISR — single articles revalidated every 5 min, on-demand triggers via
 // /api/revalidate when admin clicks Publish.
-export const revalidate = 300;
+export const revalidate = 60;
 
 // Pre-render the most recent articles at build time. Stale articles render
 // on first request and cache for 5 min.

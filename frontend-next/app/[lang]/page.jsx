@@ -9,7 +9,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 
 // ISR — refresh every 5 minutes from the backend.
-export const revalidate = 300;
+export const revalidate = 60;
 
 const RSS_FEED = {
   fr: "https://rss.app/embed/v1/wall/0aYtpxYInp9pe8Vz",
