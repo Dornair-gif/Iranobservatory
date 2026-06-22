@@ -26,13 +26,10 @@ export const metadata = {
     "analyse Iran",
     "IRGC analyse",
     "sanctions Iran",
-    "Maneli Mirkhan",
     "Iran observatoire",
     "رصدخانه ایران",
   ],
   applicationName: "Iran Observatory · Decrypt & Intel",
-  authors: [{ name: "Maneli Mirkhan", url: "https://iranobservatory.org/fr/manifeste" }],
-  creator: "Maneli Mirkhan",
   publisher: "Iran Observatory",
   openGraph: {
     siteName: "Iran Observatory · Decrypt & Intel",
@@ -44,7 +41,6 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     site: "@IrObservatory",
-    creator: "@ManeliMirkhan",
   },
   robots: {
     index: true,
@@ -76,9 +72,9 @@ export const metadata = {
 };
 
 // Organization-level JSON-LD injected once at the root. Lists every name
-// variant we want Google to associate with Maneli Mirkhan's project so that
-// searches for "Iran Decrypt", "Iran Intel", "Iran Observatory by Maneli",
-// etc. all resolve to this site, not to the astronomy facility.
+// variant we want Google to associate with the platform so that searches for
+// "Iran Decrypt", "Iran Intel", "Iran Observatory", etc. all resolve to this
+// site, not to the astronomy facility.
 const ORG_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "NewsMediaOrganization",
@@ -90,7 +86,6 @@ const ORG_JSON_LD = {
     "Iran Intel",
     "Observatoire de l'Iran",
     "رصدخانه ایران",
-    "Iran Observatory by Maneli Mirkhan",
   ],
   url: "https://iranobservatory.org",
   logo: "https://customer-assets.emergentagent.com/job_iran-events-live/artifacts/fw3i5dcu_Iran%20Observatory%20Logo.png",
@@ -98,19 +93,13 @@ const ORG_JSON_LD = {
     "Independent strategic intelligence and decryption platform on Iran. Verified OSINT, signed analyses, long-horizon forecasts.",
   foundingDate: "2025",
   founder: {
-    "@type": "Person",
-    name: "Maneli Mirkhan",
-    jobTitle: "Founder & Editor-in-Chief",
-    url: "https://manelimirkhan.com",
-    sameAs: [
-      "https://manelimirkhan.com",
-      "https://x.com/IrObservatory",
-      "https://www.linkedin.com/in/manelimirkhan/",
-    ],
+    "@type": "Organization",
+    name: "DORNA",
+    url: "https://dorna.eu",
   },
   // Authority inheritance: Iran Observatory is research-affiliated with DORNA
-  // (advocacy) and built by the founder of manelimirkhan.com. Listing these
-  // teaches Google that the brand inherits trust from established sites.
+  // (advocacy). Listing the parent organisation teaches Google that the brand
+  // inherits trust from established sites.
   parentOrganization: {
     "@type": "Organization",
     name: "DORNA",

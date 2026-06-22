@@ -147,22 +147,16 @@ export function Footer({ lang }) {
               <>
                 Recherche affiliée à{" "}
                 <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">DORNA</a>.
-                Fondé par{" "}
-                <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">Maneli Mirkhan</a>.
               </>
             ) : lang === "fa" ? (
               <>
                 پژوهش وابسته به{" "}
                 <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">دورنا</a>.
-                بنیان‌گذار:{" "}
-                <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">مانلی میرخان</a>.
               </>
             ) : (
               <>
                 Research affiliated with{" "}
                 <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">DORNA</a>.
-                Founded by{" "}
-                <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer" className="text-[#3DB883] hover:text-white underline underline-offset-2">Maneli Mirkhan</a>.
               </>
             )}
           </p>

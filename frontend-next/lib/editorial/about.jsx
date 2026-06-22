@@ -33,11 +33,9 @@ export const ABOUT = {
 
         <h2>Fondation et direction</h2>
         <p>
-          Iran Observatory a été fondé par <strong>Maneli Mirkhan</strong>, stratège franco-iranienne,
-          conseillère sur l'Iran et la politique européenne, fondatrice également de <strong>DORNA</strong>.
-          L'Observatoire s'appuie sur un réseau de contributeurs experts — chercheurs, journalistes
-          diaspora, anciens fonctionnaires, économistes des sanctions, juristes des droits humains —
-          réunis dans un programme de fellowship éditorial.
+          Iran Observatory est dirigé par une équipe éditoriale indépendante composée de chercheurs,
+          journalistes diaspora, anciens fonctionnaires, économistes des sanctions et juristes des
+          droits humains. Le projet s'appuie sur un programme de fellowship éditorial.
         </p>
 
         <h2>Indépendance</h2>
@@ -59,9 +57,8 @@ export const ABOUT = {
         <p>
           Iran Observatory est une recherche affiliée à <strong>DORNA</strong> (
           <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer">dorna.eu</a>),
-          plateforme de plaidoyer pour la transition démocratique iranienne fondée par
-          <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer"> Maneli Mirkhan</a>.
-          Bien que la direction soit commune, la ligne éditoriale est strictement séparée.
+          plateforme de plaidoyer pour la transition démocratique iranienne. Bien que les deux organisations
+          partagent des valeurs communes, la ligne éditoriale d'Iran Observatory est strictement séparée.
         </p>
 
         <h2>Contact</h2>
@@ -102,10 +99,9 @@ export const ABOUT = {
 
         <h2>Founder &amp; direction</h2>
         <p>
-          Iran Observatory was founded by <strong>Maneli Mirkhan</strong>, Franco-Iranian strategist,
-          advisor on Iran and European policy, and founder of <strong>DORNA</strong>. The Observatory is
-          supported by a network of expert contributors — researchers, diaspora journalists, former civil
-          servants, sanctions economists, human-rights jurists — gathered in an editorial fellowship.
+          Iran Observatory is led by an independent editorial board including researchers, diaspora
+          journalists, former civil servants, sanctions economists, and human-rights jurists — gathered
+          in an editorial fellowship.
         </p>
 
         <h2>Independence</h2>
@@ -126,9 +122,8 @@ export const ABOUT = {
         <p>
           Iran Observatory is research affiliated with <strong>DORNA</strong> (
           <a href="https://dorna.eu" target="_blank" rel="noopener noreferrer">dorna.eu</a>), the
-          democratic-transition advocacy platform founded by{" "}
-          <a href="https://manelimirkhan.com" target="_blank" rel="noopener noreferrer">Maneli Mirkhan</a>.
-          Leadership is shared; editorial lines are strictly separated.
+          democratic-transition advocacy platform. While both organisations share common values, Iran
+          Observatory's editorial line is strictly separated.
         </p>
 
         <h2>Contact</h2>
@@ -167,8 +162,8 @@ export const ABOUT = {
 
         <h2>بنیان‌گذار و مدیریت</h2>
         <p>
-          رصدخانه ایران توسط <strong>مانلی میرخان</strong>، استراتژیست فرانسوی-ایرانی و بنیان‌گذار
-          <strong> دورنا</strong> تأسیس شده است.
+          رصدخانه ایران توسط یک هیئت تحریریه مستقل متشکل از پژوهشگران، روزنامه‌نگاران دیاسپورا،
+          کارشناسان تحریم‌ها و حقوقدانان حقوق بشر اداره می‌شود.
         </p>
 
         <h2>استقلال</h2>

@@ -6,14 +6,14 @@ export const MANIFESTO = {
     title: "Pourquoi Iran Observatory existe",
     subtitle:
       "Il n'existe pas, en français, de lecture stratégique de l'Iran qui ne soit ni partisane, ni officielle, ni inféodée. C'est ce constat — et lui seul — qui a fait naître Iran Observatory.",
-    seoTitle: "Manifeste d'Iran Observatory — Maneli Mirkhan",
+    seoTitle: "Manifeste d'Iran Observatory",
     seoDescription:
-      "Manifeste fondateur d'Iran Observatory · Decrypt & Intel, signé par Maneli Mirkhan. Une lecture stratégique de l'Iran, indépendante, exigeante, non partisane, pour les décideurs européens.",
+      "Manifeste fondateur d'Iran Observatory · Decrypt & Intel. Une lecture stratégique de l'Iran, indépendante, exigeante, non partisane, pour les décideurs européens.",
     breadcrumbName: "Manifeste",
     signature: (
       <>
-        <p className="italic text-zinc-700 text-lg">— Maneli Mirkhan</p>
-        <p className="text-sm text-zinc-500">Fondatrice, Iran Observatory · Mai 2026</p>
+        <p className="italic text-zinc-700 text-lg">— La direction éditoriale</p>
+        <p className="text-sm text-zinc-500">Iran Observatory · Mai 2026</p>
       </>
     ),
     body: () => (
@@ -77,14 +77,14 @@ export const MANIFESTO = {
     title: "Why Iran Observatory exists",
     subtitle:
       "There is no strategic reading of Iran in French that is neither partisan, official, nor subservient. That fact — and that fact alone — gave birth to Iran Observatory.",
-    seoTitle: "Iran Observatory Manifesto — by Maneli Mirkhan",
+    seoTitle: "Iran Observatory Manifesto",
     seoDescription:
-      "Founding manifesto of Iran Observatory · Decrypt & Intel, signed by Maneli Mirkhan. A strategic, independent, non-partisan reading of Iran for European decision-makers.",
+      "Founding manifesto of Iran Observatory · Decrypt & Intel. A strategic, independent, non-partisan reading of Iran for European decision-makers.",
     breadcrumbName: "Manifesto",
     signature: (
       <>
-        <p className="italic text-zinc-700 text-lg">— Maneli Mirkhan</p>
-        <p className="text-sm text-zinc-500">Founder, Iran Observatory · May 2026</p>
+        <p className="italic text-zinc-700 text-lg">— The editorial direction</p>
+        <p className="text-sm text-zinc-500">Iran Observatory · May 2026</p>
       </>
     ),
     body: () => (
@@ -138,14 +138,14 @@ export const MANIFESTO = {
     title: "چرا رصدخانه ایران وجود دارد",
     subtitle:
       "در زبان فرانسوی، قرائت استراتژیکی از ایران که نه جناحی، نه رسمی و نه وابسته باشد، وجود ندارد. همین واقعیت — و فقط همین — رصدخانه ایران را به وجود آورده است.",
-    seoTitle: "بیانیه رصدخانه ایران — مانلی میرخان",
+    seoTitle: "بیانیه رصدخانه ایران",
     seoDescription:
-      "بیانیه بنیان‌گذار رصدخانه ایران، با امضای مانلی میرخان. قرائتی استراتژیک، مستقل و غیرجناحی از ایران برای تصمیم‌گیران اروپایی.",
+      "بیانیه بنیان‌گذار رصدخانه ایران. قرائتی استراتژیک، مستقل و غیرجناحی از ایران برای تصمیم‌گیران اروپایی.",
     breadcrumbName: "بیانیه",
     signature: (
       <>
-        <p className="italic text-zinc-700 text-lg">— مانلی میرخان</p>
-        <p className="text-sm text-zinc-500">بنیان‌گذار، رصدخانه ایران · مه ۲۰۲۶</p>
+        <p className="italic text-zinc-700 text-lg">— هیئت تحریریه</p>
+        <p className="text-sm text-zinc-500">رصدخانه ایران · مه ۲۰۲۶</p>
       </>
     ),
     body: () => (

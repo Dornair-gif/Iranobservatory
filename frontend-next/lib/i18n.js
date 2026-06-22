@@ -20,7 +20,7 @@ export const T = {
   fr: {
     siteName: "Iran Observatory",
     siteNameLong: "Iran Observatory · Decrypt & Intel",
-    tagline: "Décryptage et intelligence stratégique sur l'Iran — analyses indépendantes, OSINT vérifié, anticipations pour décideurs européens",
+    tagline: "Intelligence et décryptage de l'Iran — analyse indépendante, OSINT vérifié, prospective pour décideurs",
     motto: "Iran Observatory — Decrypt the regime. Intel for decision-makers.",
     latestNews: "Dernières Actualités",
     breakingNews: "À la Une",
@@ -51,7 +51,7 @@ export const T = {
   en: {
     siteName: "Iran Observatory",
     siteNameLong: "Iran Observatory · Decrypt & Intel",
-    tagline: "Strategic intelligence and decryption of Iran — independent analysis, verified OSINT, long-horizon forecasts for European decision-makers",
+    tagline: "Intelligence and decryption of Iran — independent analysis, verified OSINT, forecasts for decision-makers",
     motto: "Iran Observatory — Decrypt the regime. Intel for decision-makers.",
     latestNews: "Latest News",
     breakingNews: "Top Stories",
@@ -82,7 +82,7 @@ export const T = {
   fa: {
     siteName: "رصدخانه ایران",
     siteNameLong: "رصدخانه ایران · رمزگشایی و اطلاعات",
-    tagline: "رمزگشایی و تحلیل استراتژیک ایران — تحلیل مستقل، OSINT راستی‌آزمایی‌شده، چشم‌انداز بلندمدت برای تصمیم‌گیران اروپایی",
+    tagline: "اطلاعات و رمزگشایی ایران — تحلیل مستقل، OSINT راستی‌آزمایی‌شده، چشم‌انداز برای تصمیم‌گیران",
     motto: "رمزگشایی نظام. اطلاعات برای تصمیم‌گیران.",
     latestNews: "آخرین اخبار",
     breakingNews: "مهم‌ترین خبرها",

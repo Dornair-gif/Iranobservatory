@@ -1417,6 +1417,48 @@ async def backfill_slugs(request: Request):
     return {"updated_count": updated}
 
 
+# ---------------------------------------------------------------------------
+# Vercel ISR revalidation
+# ---------------------------------------------------------------------------
+# When admin publishes/edits/deletes an article, ping the Next.js front-end on
+# Vercel so it busts its static cache for the affected paths immediately
+# (otherwise readers see stale content for up to 5 minutes — the ISR window).
+#
+# Set VERCEL_REVALIDATE_URL=https://iranobservatory.org/api/revalidate
+#     VERCEL_REVALIDATE_SECRET=<same value as REVALIDATE_SECRET on Vercel>
+# Both must match for the call to succeed. Non-blocking, best-effort:
+# if Vercel is unreachable the admin action still completes.
+
+VERCEL_REVALIDATE_URL = os.environ.get("VERCEL_REVALIDATE_URL", "")
+VERCEL_REVALIDATE_SECRET = os.environ.get("VERCEL_REVALIDATE_SECRET", "")
+
+
+async def trigger_vercel_revalidate(slug: Optional[str] = None) -> None:
+    """Fire-and-forget cache bust on Vercel. Failures are logged, never raised."""
+    if not VERCEL_REVALIDATE_URL or not VERCEL_REVALIDATE_SECRET:
+        return  # Feature not configured — no-op (safe default)
+
+    # Paths to revalidate: home + listings + article detail (× 3 languages)
+    paths = ["/fr", "/en", "/fa", "/fr/articles", "/en/articles", "/fa/articles",
+             "/fr/studies", "/en/studies", "/fa/studies"]
+    if slug:
+        paths.extend([f"/fr/article/{slug}", f"/en/article/{slug}", f"/fa/article/{slug}"])
+
+    async def _ping(path: str):
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
+                params = {"secret": VERCEL_REVALIDATE_SECRET, "path": path}
+                async with session.post(VERCEL_REVALIDATE_URL, params=params) as r:
+                    if r.status >= 400:
+                        logging.warning(f"Vercel revalidate {path} -> {r.status}")
+        except Exception as e:
+            logging.warning(f"Vercel revalidate {path} failed: {e}")
+
+    # Run all in parallel without awaiting (truly fire-and-forget)
+    for p in paths:
+        asyncio.create_task(_ping(p))
+
+
 @api_router.put("/articles/{article_id}")
 async def update_article(article_id: str, data: ArticleUpdate, request: Request):
     await get_current_user(request)
@@ -1454,14 +1496,21 @@ async def update_article(article_id: str, data: ArticleUpdate, request: Request)
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Article not found")
     
+    # Bust Vercel ISR cache so the change is live within seconds
+    article = await db.articles.find_one({"_id": ObjectId(article_id)}, {"slug": 1})
+    await trigger_vercel_revalidate(slug=(article or {}).get("slug"))
+    
     return {"message": "Article updated"}
 
 @api_router.delete("/articles/{article_id}")
 async def delete_article(article_id: str, request: Request):
     await get_current_user(request)
+    # Capture slug before deletion so we can revalidate the right path
+    pre = await db.articles.find_one({"_id": ObjectId(article_id)}, {"slug": 1})
     result = await db.articles.delete_one({"_id": ObjectId(article_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Article not found")
+    await trigger_vercel_revalidate(slug=(pre or {}).get("slug"))
     return {"message": "Article deleted"}
 
 # SEO: Pre-render meta tags for social sharing and crawlers
@@ -1514,6 +1563,9 @@ async def publish_article(article_id: str, request: Request):
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Article not found")
+    
+    article = await db.articles.find_one({"_id": ObjectId(article_id)}, {"slug": 1})
+    await trigger_vercel_revalidate(slug=(article or {}).get("slug"))
     
     return {"message": "Article published"}
 

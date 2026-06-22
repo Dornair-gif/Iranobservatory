@@ -28,7 +28,6 @@ export async function generateMetadata({ params }) {
       url: `https://iranobservatory.org/${lang}/manifeste`,
       type: "article",
       locale: LANG_META[lang].htmlLang,
-      authors: ["Maneli Mirkhan"],
       publishedTime: "2026-05-01",
     },
   };
@@ -44,7 +43,8 @@ export default async function ManifestoPage({ params }) {
     { name: c.breadcrumbName, path: `/${lang}/manifeste` },
   ];
 
-  // OpinionNewsArticle + Person JSON-LD for founder voice and E-E-A-T.
+  // OpinionNewsArticle JSON-LD — authored by the Organization itself
+  // (editorial board) since the founder name is not publicly attributed.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "OpinionNewsArticle",
@@ -54,27 +54,9 @@ export default async function ManifestoPage({ params }) {
     url: `https://iranobservatory.org/${lang}/manifeste`,
     datePublished: "2026-05-01",
     author: {
-      "@type": "Person",
-      name: "Maneli Mirkhan",
-      jobTitle: "Founder, Iran Observatory",
-      url: "https://manelimirkhan.com",
-      sameAs: [
-        "https://manelimirkhan.com",
-        "https://x.com/IrObservatory",
-        "https://www.linkedin.com/in/manelimirkhan/",
-      ],
-      affiliation: [
-        {
-          "@type": "Organization",
-          name: "Iran Observatory · Decrypt & Intel",
-          url: "https://iranobservatory.org",
-        },
-        {
-          "@type": "Organization",
-          name: "DORNA",
-          url: "https://dorna.eu",
-        },
-      ],
+      "@type": "Organization",
+      name: "Iran Observatory · Decrypt & Intel",
+      url: "https://iranobservatory.org",
     },
     publisher: {
       "@type": "Organization",
