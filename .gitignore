@@ -83,3 +83,9 @@ android-sdk/frontend/node_modules/.cache/default-development/0.pack
 frontend/node_modules/.cache/default-development/0.pack
 frontend-next/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
 frontend-next/node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.node
+.env
+.env.*
+*.env
+credentials.json
+*.key
+.credentials
