@@ -21,7 +21,7 @@ export function Header({ lang }) {
       data-testid="main-header"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-24 sm:h-28 lg:h-32">
+        <div className="flex items-center justify-between h-28 sm:h-32 lg:h-36">
           {/* Logo — back to big size */}
           <Link
             href={`/${lang}`}
@@ -31,7 +31,7 @@ export function Header({ lang }) {
             <img
               src={LOGO_URL}
               alt="Iran Observatory"
-              className="h-24 sm:h-28 lg:h-32 w-auto"
+              className="h-28 sm:h-32 lg:h-36 w-auto"
             />
           </Link>
 
