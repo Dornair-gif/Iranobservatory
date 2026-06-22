@@ -51,9 +51,9 @@ export default async function ArticlesPage({ params }) {
   );
 
   const headings = {
-    fr: { news: "Actualités & Analyses", studies: "Études & Analyses", briefs: "Briefs Hebdo" },
-    en: { news: "News & Analysis", studies: "Studies & Analysis", briefs: "Weekly Briefs" },
-    fa: { news: "اخبار و تحلیل", studies: "مطالعات و تحلیل‌ها", briefs: "گزارش‌های هفتگی" },
+    fr: { news: "Actualités", studies: "Decrypt — Études & Analyses", briefs: "Briefs Hebdo" },
+    en: { news: "News", studies: "Decrypt — Studies & Analysis", briefs: "Weekly Briefs" },
+    fa: { news: "اخبار", studies: "رمزگشایی — مطالعات و تحلیل‌ها", briefs: "گزارش‌های هفتگی" },
   }[lang];
 
   const Section = ({ title, items, kind }) => (

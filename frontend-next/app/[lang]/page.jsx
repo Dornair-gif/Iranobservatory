@@ -51,18 +51,25 @@ export default async function HomePage({ params }) {
   if (!isValidLang(lang)) notFound();
   const t = T[lang];
 
-  // Fetch articles, studies, briefing in parallel.
-  const [allNews, studies, briefing] = await Promise.all([
+  // Fetch articles + studies/analyses + briefs + briefing in parallel.
+  // listStudies returns content_type IN (study,analysis,brief); we then split
+  // briefs out so they get their own visual treatment on the home page.
+  const [allNews, studiesAndBriefs, briefs, briefing] = await Promise.all([
     api.listArticles({ limit: 20, lang }).catch(() => []),
-    api.listStudies({ limit: 8, lang }).catch(() => []),
+    api.listStudies({ limit: 12, lang }).catch(() => []),
+    api.listArticles({ limit: 6, lang, content_types: "brief" }).catch(() => []),
     api.monitorIndexes(),
   ]);
 
-  // De-dup: keep only news that aren't in the studies list
-  const studyIds = new Set(studies.map((s) => s.id));
+  // Studies & analyses (the "Decrypt" section) — exclude briefs which get
+  // their own section below.
+  const studies = studiesAndBriefs.filter((a) => a.content_type !== "brief");
+
+  // De-dup: keep only news that aren't in studies or briefs
+  const featuredIds = new Set([...studies, ...briefs].map((a) => a.id));
   const newsArticles = allNews.filter(
     (a) =>
-      !studyIds.has(a.id) &&
+      !featuredIds.has(a.id) &&
       (!a.content_type || a.content_type === "news")
   );
 
@@ -91,7 +98,10 @@ export default async function HomePage({ params }) {
     fa: { situation: "بریفینگ", briefs: "گزارش‌های هفتگی", briefsBlurb: "هر دوشنبه، خلاصه تحلیلی هفته درباره ایران.", viewBriefs: "مشاهده گزارش‌ها", monitor: "رصد ایران" },
   }[lang];
 
-  const studiesHeading = lang === "fr" ? "Études & Analyses" : lang === "fa" ? "مطالعات و تحلیل‌ها" : "Studies & Analysis";
+  const studiesHeading = lang === "fr" ? "Decrypt" : lang === "fa" ? "رمزگشایی" : "Decrypt";
+  const studiesSubhead = lang === "fr" ? "Études & analyses signées" : lang === "fa" ? "مطالعات و تحلیل‌های امضاءشده" : "Signed studies & analyses";
+  const briefsHeading = lang === "fr" ? "Briefs Hebdo" : lang === "fa" ? "گزارش‌های هفتگی" : "Weekly Briefs";
+  const briefsSubhead = lang === "fr" ? "Chaque lundi : un résumé analytique de la semaine sur l'Iran" : lang === "fa" ? "هر دوشنبه: خلاصه تحلیلی هفته درباره ایران" : "Every Monday: an analytical summary of the week on Iran";
   const viewAll = lang === "fr" ? "Tous les articles" : lang === "fa" ? "همه مقالات" : "All Articles";
   const viewAllStudies = lang === "fr" ? "Voir tout" : lang === "fa" ? "مشاهده همه" : "View All";
   const swipeHint = lang === "fr" ? "← Glissez pour voir plus →" : lang === "fa" ? "← برای دیدن بیشتر بکشید →" : "← Swipe to see more →";
@@ -308,17 +318,20 @@ export default async function HomePage({ params }) {
         </div>
       </section>
 
-      {/* Studies & Analysis */}
+      {/* Decrypt — signed studies & analyses */}
       {studies.length > 0 && (
         <section className="bg-[#f8fafc] border-t border-zinc-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-[#1E3A5F]">
-                {studiesHeading}
-              </h2>
+            <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-indigo-600 mb-1">{studiesSubhead}</p>
+                <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-[#1E3A5F]">
+                  {studiesHeading}
+                </h2>
+              </div>
               <Link
                 href={`/${lang}/studies`}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 text-xs font-mono uppercase tracking-wider hover:bg-purple-200 transition-colors rounded"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 text-xs font-mono uppercase tracking-wider hover:bg-indigo-200 transition-colors rounded"
               >
                 {viewAllStudies} →
               </Link>
@@ -343,15 +356,11 @@ export default async function HomePage({ params }) {
                         className={`absolute top-3 left-3 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-white ${
                           study.content_type === "study"
                             ? "bg-indigo-600"
-                            : study.content_type === "brief"
-                            ? "bg-amber-600"
                             : "bg-purple-600"
                         }`}
                       >
                         {study.content_type === "study"
                           ? lang === "fr" ? "Étude" : lang === "fa" ? "مطالعه" : "Study"
-                          : study.content_type === "brief"
-                          ? lang === "fr" ? "Brief" : lang === "fa" ? "گزارش" : "Brief"
                           : lang === "fr" ? "Analyse" : lang === "fa" ? "تحلیل" : "Analysis"}
                       </span>
                     </div>
@@ -368,7 +377,7 @@ export default async function HomePage({ params }) {
                     <p className="text-sm text-zinc-600 line-clamp-3">
                       {study[`summary_${lang}`] || study.summary_en || study.summary_fr}
                     </p>
-                    <div className="flex items-center gap-1 mt-4 text-xs font-mono uppercase tracking-wider text-[#3DB883]">
+                    <div className="flex items-center gap-1 mt-4 text-xs font-mono uppercase tracking-wider text-indigo-600">
                       {t.readMore} →
                     </div>
                   </div>
@@ -376,6 +385,84 @@ export default async function HomePage({ params }) {
               ))}
             </div>
             <p className="text-center text-zinc-500 text-sm mt-4">{swipeHint}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Briefs — weekly digests, parchment / amber theme to distinguish */}
+      {briefs.length > 0 && (
+        <section className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border-t border-amber-200 overflow-hidden">
+          {/* subtle paper texture */}
+          <div
+            className="absolute inset-0 opacity-30 pointer-events-none"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 1px 1px, rgba(180,83,9,0.15) 1px, transparent 0)",
+              backgroundSize: "16px 16px",
+            }}
+            aria-hidden="true"
+          />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-amber-700">
+                    {lang === "fr" ? "Hebdomadaire · Lundi" : lang === "fa" ? "هفتگی · دوشنبه" : "Weekly · Monday"}
+                  </span>
+                  <span className="px-2 py-0.5 bg-amber-700 text-amber-50 font-mono text-[9px] uppercase tracking-wider rounded">
+                    Brief
+                  </span>
+                </div>
+                <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-amber-900">
+                  {briefsHeading}
+                </h2>
+                <p className="mt-2 text-sm text-amber-800/80 italic max-w-2xl">{briefsSubhead}</p>
+              </div>
+              <Link
+                href={`/${lang}/articles?type=brief`}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-700 text-amber-50 text-xs font-mono uppercase tracking-wider hover:bg-amber-800 transition-colors rounded"
+              >
+                {lang === "fr" ? "Tous les briefs" : lang === "fa" ? "همه گزارش‌ها" : "All briefs"} →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {briefs.map((brief) => (
+                <Link
+                  key={brief.id}
+                  href={`/${lang}/article/${brief.slug || brief.id}`}
+                  className="group relative bg-[#fdf8ed] border-2 border-amber-200 hover:border-amber-400 hover:shadow-xl hover:-translate-y-0.5 transition-all rounded-lg overflow-hidden"
+                  style={{ boxShadow: "0 1px 0 rgba(180,83,9,0.08), 0 4px 12px rgba(180,83,9,0.06)" }}
+                >
+                  {/* corner ribbon */}
+                  <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
+                    <div className="absolute top-3 -right-7 w-24 bg-amber-700 text-amber-50 text-center font-mono text-[9px] uppercase tracking-widest py-0.5 rotate-45">
+                      Brief
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-2 h-2 rounded-full bg-amber-600" />
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-amber-700">
+                        {new Date(brief.published_at || brief.created_at).toLocaleDateString(
+                          lang === "fr" ? "fr-FR" : lang === "fa" ? "fa-IR" : "en-US",
+                          { day: "numeric", month: "long", year: "numeric" }
+                        )}
+                      </p>
+                    </div>
+                    <h3 className="font-heading font-bold text-xl mb-3 leading-tight text-amber-950 group-hover:text-amber-900 transition-colors">
+                      {brief[`title_${lang}`] || brief.title_en || brief.title_fr}
+                    </h3>
+                    <p className="text-sm text-amber-900/75 line-clamp-3 leading-relaxed mb-4">
+                      {brief[`summary_${lang}`] || brief.summary_en || brief.summary_fr}
+                    </p>
+                    <div className="flex items-center gap-1 pt-3 border-t border-amber-200 text-xs font-mono uppercase tracking-wider text-amber-700">
+                      {lang === "fr" ? "Lire le brief" : lang === "fa" ? "خواندن گزارش" : "Read brief"} →
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}

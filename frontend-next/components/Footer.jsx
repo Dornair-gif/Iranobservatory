@@ -60,7 +60,7 @@ export function Footer({ lang }) {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
           {/* Brand */}
           <div className="md:col-span-4">
-            <img src={LOGO_URL} alt="Iran Observatory" className="h-14 w-auto mb-4" />
+            <img src={LOGO_URL} alt="Iran Observatory" className="h-28 sm:h-32 lg:h-36 w-auto mb-4" />
             <p className="text-sm text-zinc-300 leading-relaxed mb-3">{t.tagline}</p>
             <p className="text-xs text-[#3DB883] italic">{t.motto}</p>
           </div>
