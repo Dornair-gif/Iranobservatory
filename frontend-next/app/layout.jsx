@@ -57,16 +57,22 @@ export const metadata = {
       "max-video-preview": -1,
     },
   },
-  verification: {
-    // GSC verification token — set NEXT_PUBLIC_GSC_TOKEN in Vercel env to
-    // enable. No redeploy needed because the value is rendered at request
-    // time (in metadata) for the root layout.
-    google: process.env.NEXT_PUBLIC_GSC_TOKEN || undefined,
-    // Bing Webmaster Tools (optional)
-    other: process.env.NEXT_PUBLIC_BING_TOKEN
-      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_TOKEN }
-      : undefined,
-  },
+  // Search engine verification — set NEXT_PUBLIC_GSC_TOKEN / NEXT_PUBLIC_BING_TOKEN
+  // in Vercel env to enable. Values are read at build/request time so no code
+  // change is needed when adding tokens. Omitted entirely if neither is set
+  // so the rendered <head> stays clean.
+  ...(process.env.NEXT_PUBLIC_GSC_TOKEN || process.env.NEXT_PUBLIC_BING_TOKEN
+    ? {
+        verification: {
+          ...(process.env.NEXT_PUBLIC_GSC_TOKEN && {
+            google: process.env.NEXT_PUBLIC_GSC_TOKEN,
+          }),
+          ...(process.env.NEXT_PUBLIC_BING_TOKEN && {
+            other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_TOKEN },
+          }),
+        },
+      }
+    : {}),
 };
 
 // Organization-level JSON-LD injected once at the root. Lists every name

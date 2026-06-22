@@ -27,6 +27,32 @@ const nextConfig = {
     ];
   },
 
+  // Legacy SPA paths → trilingual Next equivalents (preserves external backlinks)
+  async redirects() {
+    return [
+      { source: "/about", destination: "/fr/a-propos", permanent: true },
+      { source: "/methodology", destination: "/fr/methodologie", permanent: true },
+      { source: "/methodologie", destination: "/fr/methodologie", permanent: true },
+      { source: "/manifesto", destination: "/fr/manifeste", permanent: true },
+      { source: "/manifeste", destination: "/fr/manifeste", permanent: true },
+      { source: "/a-propos", destination: "/fr/a-propos", permanent: true },
+    ];
+  },
+
+  // Security headers — applied to every response
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
+
   // Image optimization: allow Emergent + GridFS image hosts
   images: {
     remotePatterns: [
