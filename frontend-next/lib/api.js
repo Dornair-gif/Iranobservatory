@@ -44,6 +44,21 @@ export const api = {
     return fetchJson(`/api/articles?${qs}`);
   },
 
+  // Articles by category — used by /[lang]/articles/category/[slug]
+  listByCategory: (slug) =>
+    fetchJson(`/api/articles/by-category/${encodeURIComponent(slug)}`),
+
+  // Articles by tag — used by /[lang]/articles/tag/[slug]
+  listByTag: (slug) =>
+    fetchJson(`/api/articles/by-tag/${encodeURIComponent(slug)}`),
+
+  // All tags (for generateStaticParams + display).
+  listTags: () => fetchJson(`/api/tags`).catch(() => []),
+
+  // Monitor indexes (live indicators) — used by /[lang]/monitor SSR.
+  monitorIndexes: () =>
+    fetchJson(`/api/dashboard/indexes`, { revalidate: 600 }).catch(() => null),
+
   // Sitemap — used both by app/sitemap.ts and as a sanity check.
   sitemap: () => fetchJson(`/api/sitemap/data`).catch(() => null),
 };

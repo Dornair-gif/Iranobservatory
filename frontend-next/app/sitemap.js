@@ -10,6 +10,11 @@ export const revalidate = 3600;
 
 const SITE = "https://iranobservatory.org";
 
+const KNOWN_CATEGORIES = [
+  "news", "politics", "economy", "society", "military",
+  "diplomacy", "sanctions", "rights", "analysis", "study", "brief",
+];
+
 export default async function sitemap() {
   const entries = [];
   const now = new Date();
@@ -21,7 +26,7 @@ export default async function sitemap() {
       entries.push({
         url: `${SITE}/${lang}${path}`,
         lastModified: now,
-        changeFrequency: path === "" ? "daily" : "weekly",
+        changeFrequency: path === "" ? "daily" : "monthly",
         priority: path === "" ? 1.0 : 0.7,
         alternates: {
           languages: Object.fromEntries(
@@ -30,6 +35,41 @@ export default async function sitemap() {
         },
       });
     }
+  }
+
+  // Category hubs (one of the strongest SEO levers — topic clusters)
+  for (const cat of KNOWN_CATEGORIES) {
+    for (const lang of LANGUAGES) {
+      entries.push({
+        url: `${SITE}/${lang}/articles/category/${cat}`,
+        lastModified: now,
+        changeFrequency: "daily",
+        priority: 0.7,
+        alternates: {
+          languages: Object.fromEntries(
+            LANGUAGES.map((l) => [l, `${SITE}/${l}/articles/category/${cat}`])
+          ),
+        },
+      });
+    }
+  }
+
+  // Tags
+  try {
+    const tags = await api.listTags();
+    for (const tag of (tags || []).slice(0, 200)) {
+      if (!tag.slug) continue;
+      for (const lang of LANGUAGES) {
+        entries.push({
+          url: `${SITE}/${lang}/articles/tag/${tag.slug}`,
+          lastModified: now,
+          changeFrequency: "weekly",
+          priority: 0.5,
+        });
+      }
+    }
+  } catch (e) {
+    console.error("sitemap: tags fetch failed", e);
   }
 
   // Articles
