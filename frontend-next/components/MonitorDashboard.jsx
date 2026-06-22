@@ -12,19 +12,56 @@ import {
 // hand-tuned Hormuz / sanctions / human-rights cards keep working.
 // All metric data comes from /api/dashboard/indexes (refreshed every 10min).
 
-function MiniSparkline({ data, color = "#3DB883", height = 40, width = 160 }) {
+function MiniSparkline({ data, color = "#3DB883", height = 80, width = 280 }) {
   if (!data || data.length < 2) return null;
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
+  const stepX = width / (data.length - 1);
   const points = data
-    .map((v, i) => `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * (height - 4) - 2}`)
+    .map((v, i) => `${i * stepX},${height - ((v - min) / range) * (height - 8) - 4}`)
     .join(" ");
   const area = `0,${height} ${points} ${width},${height}`;
   return (
-    <svg width={width} height={height} className="overflow-visible">
-      <polygon fill={color + "15"} points={area} />
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-20 overflow-visible">
+      {/* Grid lines */}
+      {[0.25, 0.5, 0.75].map((t) => (
+        <line
+          key={t}
+          x1={0}
+          y1={height * t}
+          x2={width}
+          y2={height * t}
+          stroke="#ffffff"
+          strokeOpacity="0.06"
+          strokeDasharray="3 3"
+        />
+      ))}
+      <polygon fill={color + "22"} points={area} />
       <polyline fill="none" stroke={color} strokeWidth="2.5" points={points} />
+      {/* Data points */}
+      {data.map((v, i) => {
+        const cx = i * stepX;
+        const cy = height - ((v - min) / range) * (height - 8) - 4;
+        return (
+          <g key={i}>
+            <circle cx={cx} cy={cy} r="3" fill={color} />
+            {(i === 0 || i === data.length - 1) && (
+              <text
+                x={i === 0 ? cx + 6 : cx - 6}
+                y={cy - 8}
+                textAnchor={i === 0 ? "start" : "end"}
+                fill={color}
+                fontSize="10"
+                fontFamily="ui-monospace, monospace"
+                fontWeight="bold"
+              >
+                {typeof v === "number" ? v.toLocaleString() : v}
+              </text>
+            )}
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -251,7 +288,7 @@ export function MonitorDashboard({ lang }) {
                       </div>
                     </div>
                     {m.trend_data && m.trend_data.length > 1 && (
-                      <MiniSparkline data={m.trend_data} color={cc} height={36} width={200} />
+                      <MiniSparkline data={m.trend_data} color={cc} height={80} width={400} />
                     )}
                     <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{m.context}</p>
                   </div>
@@ -303,9 +340,37 @@ export function MonitorDashboard({ lang }) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
             <div className="bg-[#162640] border border-red-500/20 rounded-xl p-5 text-center" data-testid="hr-blackout">
               <WifiOff className="w-8 h-8 text-red-500 mx-auto mb-2" strokeWidth={1.5} />
-              <p className="text-4xl font-heading font-black text-red-500">{hri.internet_blackout_days || blackoutDays || "—"}</p>
-              <p className="text-sm text-zinc-400 mt-1">{lang === "fr" ? "Jours de coupure internet" : "Internet Blackout Days"}</p>
+              {(() => {
+                const connStatus = (hri.internet_connectivity || "").toLowerCase();
+                const restored = ["restored", "rétabli", "rétablie", "back online", "full", "online", "normal"].some((k) => connStatus.includes(k));
+                if (restored) {
+                  return (
+                    <>
+                      <p className="text-2xl font-heading font-black text-emerald-400">
+                        {lang === "fr" ? "Rétablie" : lang === "fa" ? "بازگشت" : "Restored"}
+                      </p>
+                      <p className="text-sm text-zinc-400 mt-1">
+                        {lang === "fr" ? "Connexion internet" : "Internet connection"}
+                      </p>
+                      <p className="text-[10px] font-mono text-zinc-500 mt-1">
+                        {lang === "fr"
+                          ? `Pic historique : ${hri.internet_blackout_days || blackoutDays || 0} j`
+                          : `Historic peak: ${hri.internet_blackout_days || blackoutDays || 0}d`}
+                      </p>
+                    </>
+                  );
+                }
+                return (
+                  <>
+                    <p className="text-4xl font-heading font-black text-red-500">{hri.internet_blackout_days || blackoutDays || "—"}</p>
+                    <p className="text-sm text-zinc-400 mt-1">
+                      {lang === "fr" ? "Jours de coupure internet" : "Internet Blackout Days"}
+                    </p>
+                  </>
+                );
+              })()}
               <p className="text-[9px] font-mono text-zinc-600 mt-1">{hri.internet_source || "NetBlocks"}</p>
+              {hri.internet_detail && <p className="text-[8px] text-zinc-600 mt-1 leading-tight">{hri.internet_detail}</p>}
             </div>
             <div className="bg-[#162640] border border-amber-500/20 rounded-xl p-5 text-center" data-testid="hr-protests">
               <Megaphone className="w-8 h-8 text-amber-400 mx-auto mb-2" strokeWidth={1.5} />
