@@ -8,22 +8,56 @@ const BACKEND_URL =
 
 // `revalidate` defaults to 5 minutes — articles refresh that often. Override
 // per-call when needed (e.g. revalidate=60 for the homepage).
-async function fetchJson(path, { revalidate = 300, tags = [], ...opts } = {}) {
+// Retries on transient errors (5xx, timeouts) so cold-starts don't poison the
+// ISR cache with an empty payload.
+async function fetchJson(
+  path,
+  { revalidate = 300, tags = [], retries = 2, retryDelay = 800, ...opts } = {}
+) {
   const url = `${BACKEND_URL}${path}`;
-  const r = await fetch(url, {
-    ...opts,
-    next: { revalidate, tags },
-    headers: { Accept: "application/json", ...(opts.headers || {}) },
-  });
-  if (!r.ok) {
-    // Critical: throw on bad response so Next.js does NOT cache a poisoned
-    // response. ISR retries on the next request.
-    throw new Error(`Backend ${path} → ${r.status}`);
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s per attempt
+      const r = await fetch(url, {
+        ...opts,
+        signal: controller.signal,
+        next: { revalidate, tags },
+        headers: { Accept: "application/json", ...(opts.headers || {}) },
+      });
+      clearTimeout(timeout);
+
+      // Retry on 5xx (backend issue), keep 4xx as-is (real error).
+      if (!r.ok) {
+        if (r.status >= 500 && attempt < retries) {
+          lastError = new Error(`Backend ${path} → ${r.status}`);
+          await new Promise((res) => setTimeout(res, retryDelay * (attempt + 1)));
+          continue;
+        }
+        throw new Error(`Backend ${path} → ${r.status}`);
+      }
+      return r.json();
+    } catch (err) {
+      lastError = err;
+      // Network / abort / timeout → retry
+      if (attempt < retries) {
+        await new Promise((res) => setTimeout(res, retryDelay * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
   }
-  return r.json();
+  throw lastError || new Error(`Backend ${path} failed`);
 }
 
-// Public endpoints used by the SSR pages
+// Public endpoints used by the SSR pages.
+// IMPORTANT: most list endpoints DO NOT swallow errors with `.catch(() => [])`.
+// If we did, an empty array would be cached by Next.js ISR for the whole
+// revalidate window — leaving the public site looking empty after the backend
+// briefly hiccups. Letting the error propagate forces Next.js to retry the
+// build on the next request, which is what we want.
 export const api = {
   // Articles list (paginated). Optional filters: content_type, category, tag, lang.
   listArticles: (params = {}) => {
@@ -53,13 +87,15 @@ export const api = {
     fetchJson(`/api/articles/by-tag/${encodeURIComponent(slug)}`),
 
   // All tags (for generateStaticParams + display).
+  // Tags failing is non-blocking (the nav still works), so we keep the fallback.
   listTags: () => fetchJson(`/api/tags`).catch(() => []),
 
-  // Monitor indexes (live indicators) — used by /[lang]/monitor SSR.
+  // Monitor indexes (live indicators) — non-fatal: home keeps rendering even
+  // if the monitor briefly fails, but we no longer cache `null` for 10 min.
   monitorIndexes: () =>
     fetchJson(`/api/dashboard/indexes`, { revalidate: 600 }).catch(() => null),
 
-  // Sitemap — used both by app/sitemap.ts and as a sanity check.
+  // Sitemap — also non-fatal (the sitemap page handles null).
   sitemap: () => fetchJson(`/api/sitemap/data`).catch(() => null),
 };
 

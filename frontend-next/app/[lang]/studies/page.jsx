@@ -35,9 +35,11 @@ export default async function StudiesPage({ params }) {
   const t = T[lang];
 
   // Fetch in parallel: deep studies/analyses on one side, weekly briefs on the other.
+  // No `.catch(() => [])` here — see lib/api.js: errors bubble so the ISR
+  // cache won't pin an empty render for 60s after a backend hiccup.
   const [studiesAndAnalyses, briefs] = await Promise.all([
-    api.listArticles({ limit: 50, content_types: "study,analysis", lang }).catch(() => []),
-    api.listArticles({ limit: 12, content_types: "brief", lang }).catch(() => []),
+    api.listArticles({ limit: 50, content_types: "study,analysis", lang }),
+    api.listArticles({ limit: 12, content_types: "brief", lang }),
   ]);
 
   const studiesHeading =

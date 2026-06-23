@@ -36,12 +36,13 @@ export default async function ArticlesPage({ params }) {
   const t = T[lang];
 
   // Fetch in parallel; backend filters by content_type.
+  // No `.catch(() => [])` here — see lib/api.js. If the backend hiccups we
+  // want the error to bubble (handled by app/[lang]/error.jsx) so that the
+  // ISR cache does NOT keep serving an empty page for 60s.
   const [all, studies, briefs] = await Promise.all([
-    api.listArticles({ limit: 100, lang }).catch(() => []),
-    api
-      .listArticles({ limit: 30, lang, content_types: "study,analysis" })
-      .catch(() => []),
-    api.listArticles({ limit: 20, lang, content_types: "brief" }).catch(() => []),
+    api.listArticles({ limit: 100, lang }),
+    api.listArticles({ limit: 30, lang, content_types: "study,analysis" }),
+    api.listArticles({ limit: 20, lang, content_types: "brief" }),
   ]);
 
   // Separate news from the rest so the same article doesn't appear twice

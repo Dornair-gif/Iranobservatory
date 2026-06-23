@@ -54,10 +54,11 @@ export default async function HomePage({ params }) {
   // Fetch articles + studies/analyses + briefs + briefing in parallel.
   // Homepage shows only the 4 latest news; we fetch 12 to leave room for
   // de-duplication against studies/briefs that may also appear in the feed.
+  // No `.catch(() => [])` on the article lists: see lib/api.js.
   const [allNews, studiesAndBriefs, briefs, briefing] = await Promise.all([
-    api.listArticles({ limit: 12, lang }).catch(() => []),
-    api.listStudies({ limit: 12, lang }).catch(() => []),
-    api.listArticles({ limit: 3, lang, content_types: "brief" }).catch(() => []),
+    api.listArticles({ limit: 12, lang }),
+    api.listStudies({ limit: 12, lang }),
+    api.listArticles({ limit: 3, lang, content_types: "brief" }),
     api.monitorIndexes(),
   ]);
 
@@ -290,7 +291,6 @@ export default async function HomePage({ params }) {
               <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-white">
                 {t.liveFeed}
               </h2>
-              <p className="text-zinc-400 text-base mt-1">{t.feedDesc}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 bg-[#3DB883] rounded-full animate-pulse" />
