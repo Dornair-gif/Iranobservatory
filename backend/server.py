@@ -760,18 +760,44 @@ Title: {rss_item['title']}
 Summary: {rss_item.get('summary', '')}
 Source: {rss_item.get('link', '')}
 {regime_hint_en}
-REQUIREMENTS:
-1. Write 4-6 paragraphs of genuine analysis, not news recap
-2. Open with the key fact in 1-2 sentences, then immediately analyze WHY it matters
-3. Every paragraph must contain specific insights: names, dates, figures, policy details
-4. Do NOT include generic background filler about Iran. Only mention context that directly explains THIS event
-5. Answer these questions: Why now? What changes? Who gains/loses? What are the strategic implications?
-6. If referencing precedent, cite the specific event and approximate date
-7. End with a forward-looking assessment: what to watch next, what this signals
-8. Mention the source
-9. Write ONLY in {lang_names.get(lang, lang)}
+=== OUTPUT FORMAT (CRITICAL) ===
+Return ONLY valid HTML. NO markdown, NO backticks, NO ```html fences.
+Use ONLY these tags: <p>, <h2>, <h3>, <strong>, <em>, <blockquote>, <ul>, <li>.
 
-Write the article body only, no title."""
+REQUIRED STRUCTURE (in this exact order):
+1. ONE opening <p> — the lede: 2-3 short sentences. State the key fact, then the strategic stake. NO scene-setting.
+2. ONE <h2> — a sharp, declarative subhead that frames the next section (NOT a question, NOT a label like "Context").
+3. TWO to THREE <p> paragraphs of analysis under that <h2>. Each paragraph 60-110 words. Each carries ONE distinct idea.
+4. ONE <h2> — second declarative subhead reframing the angle (consequences, actors, what shifts).
+5. TWO <p> paragraphs under it. Same density rule.
+6. ONE final <p> — a forward-looking close: what to watch, what this signals. 2-3 sentences. No summary, no recap.
+
+OPTIONAL (use sparingly, only when it serves the analysis):
+- ONE <blockquote> for a pivotal quote or a hard-hitting analytical line.
+- ONE <ul> with 3-4 <li> ONLY if listing distinct actors/consequences/dates. Never for filler.
+- <strong> on 1-2 high-stakes phrases per article (a number, a name, a turning point). Not more.
+- <em> for foreign terms (IRGC, MOIS, basij, velayat-e faqih) or titles on first use.
+
+=== HUMAN VOICE (CRITICAL — avoid AI tells) ===
+- Vary sentence length aggressively: mix 6-word punch sentences with 25-word analytical ones.
+- Use journalistic French/English/Persian, not academic register. Concrete verbs. Active voice.
+- BAN these AI tics: "It is important to note", "Moreover", "Furthermore", "In conclusion",
+  "navigate", "delve", "landscape", "robust", "underscore", "tapestry", "multifaceted",
+  "complex situation", "geopolitical chessboard", "It remains to be seen".
+- Open paragraphs with concrete subjects (people, institutions, numbers), not abstract phrases.
+- Cite specific data: names, dates (with day or month), figures, exact policy numbers, specific sanctions.
+- One concrete image or metaphor per article — earned, not decorative.
+- No hedging ("could potentially", "may possibly"). State or attribute, never both.
+
+=== CONTENT RULES ===
+- Total length: 450-650 words of body text (excluding HTML).
+- NO generic background filler about Iran's history, population, or "long suffering economy".
+- Answer: Why now? What changes? Who gains/loses? What signals does this send?
+- Reference precedents with the exact event + month/year — never "historically" or "in the past".
+- Mention the source naturally inside a sentence, not as a footer.
+- Write ONLY in {lang_names.get(lang, lang)}.
+
+Return ONLY the HTML body. No <html>, no <body>, no <head>, no preamble."""
             
             content_msg = UserMessage(text=content_prompt)
             content_response = await chat.send_message(content_msg)
@@ -1152,6 +1178,115 @@ async def get_related_articles(article_id_or_slug: str, limit: int = 4):
             "published_at": c.get("published_at").isoformat() if c.get("published_at") else None
         })
     return out
+
+@api_router.post("/articles/{article_id}/humanize")
+async def humanize_article(article_id: str, request: Request):
+    """Reformat an existing article's plain-text content into properly structured,
+    human-sounding HTML (paragraphs, h2, blockquote, strong) across all 3 languages.
+    Idempotent: if content is already HTML-tagged, it is still rewritten for quality."""
+    await get_current_user(request)
+
+    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"humanize-{article_id}-{uuid.uuid4()}",
+            system_message=EDITORIAL_SOURCE_RULES + """
+
+You are a senior editor for Iran Observatory. Your job is to reformat raw AI-generated
+text into editorial-grade HTML while preserving every fact and analytical claim.
+
+You do NOT add new analysis. You do NOT remove substance. You DO restructure for clarity,
+add proper HTML tags, break the wall of text into scannable paragraphs, and tighten the
+language to remove AI tells.
+
+Return ONLY the reformatted HTML body. No <html>, no <body>, no markdown fences."""
+        ).with_model("openai", "gpt-5.2")
+
+        lang_names = {"en": "English", "fr": "French", "fa": "Persian (Farsi)"}
+        updates = {}
+
+        for lang in ("fr", "en", "fa"):
+            raw = article.get(f"content_{lang}") or ""
+            if not raw or len(raw.strip()) < 100:
+                continue
+
+            prompt = f"""Reformat the article below into editorial HTML in {lang_names[lang]}.
+
+=== OUTPUT FORMAT (CRITICAL) ===
+Return ONLY valid HTML. NO markdown, NO backticks, NO ```html fences, no preamble.
+Use ONLY these tags: <p>, <h2>, <h3>, <strong>, <em>, <blockquote>, <ul>, <li>.
+
+REQUIRED STRUCTURE (in this exact order):
+1. ONE opening <p> — the lede: 2-3 short sentences taken from the article's strongest opening idea.
+2. ONE <h2> — declarative subhead framing the first analytical block (NOT a question, NOT "Context").
+3. TWO to THREE <p> paragraphs (60-110 words each, ONE distinct idea per paragraph) covering the article's first half.
+4. ONE <h2> — second declarative subhead reframing the angle (consequences, actors, what shifts).
+5. TWO <p> paragraphs covering the second half.
+6. ONE final <p> — the forward-looking close: 2-3 sentences on what to watch, what this signals.
+
+OPTIONAL (use sparingly):
+- ONE <blockquote> for a pivotal quote or hard-hitting analytical line.
+- ONE <ul> with 3-4 <li> ONLY if listing distinct actors/consequences/dates.
+- <strong> on 1-2 high-stakes phrases (a number, a name, a turning point). Never more.
+- <em> for foreign terms or titles on first use.
+
+=== HUMAN VOICE (CRITICAL — strip AI tells) ===
+- Vary sentence length aggressively: mix short punch sentences (6-12 words) with longer analytical ones (20-30 words).
+- BAN these AI tics: "It is important to note", "Moreover", "Furthermore", "In conclusion",
+  "navigate", "delve", "landscape", "robust", "underscore", "tapestry", "multifaceted",
+  "complex situation", "geopolitical chessboard", "It remains to be seen".
+- Open paragraphs with concrete subjects (people, institutions, numbers), not abstract phrases.
+- Active voice, concrete verbs.
+- No hedging ("could potentially", "may possibly"). State or attribute, never both.
+
+=== FIDELITY RULES ===
+- Preserve EVERY named fact, date, figure, and source attribution from the original.
+- Do NOT invent new facts, quotes, or sources.
+- Do NOT add a title — the article already has one.
+- Total body length stays within ±20% of the original word count.
+- Write ONLY in {lang_names[lang]}.
+
+=== ORIGINAL ARTICLE TO REFORMAT ===
+{raw}
+
+Return ONLY the reformatted HTML body."""
+
+            msg = UserMessage(text=prompt)
+            response = await chat.send_message(msg)
+            cleaned = response.strip()
+            # Strip code fences if the model adds them
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("```", 2)[1]
+                if cleaned.lstrip().lower().startswith("html"):
+                    cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[4:]
+                cleaned = cleaned.rsplit("```", 1)[0].strip()
+            updates[f"content_{lang}"] = _sanitize_editorial(cleaned.strip())
+
+        if not updates:
+            raise HTTPException(status_code=400, detail="Article has no content to reformat")
+
+        updates["updated_at"] = datetime.now(timezone.utc)
+        await db.articles.update_one({"_id": article["_id"]}, {"$set": updates})
+
+        # Trigger Vercel revalidation so the public page reflects the new HTML immediately
+        try:
+            await trigger_vercel_revalidate(article.get("slug"))
+        except Exception as _e:
+            logger.warning(f"humanize: revalidate failed (non-fatal): {_e}")
+
+        return {"ok": True, "languages_updated": [k.split("_")[1] for k in updates if k.startswith("content_")]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"humanize_article failed for {article_id}")
+        raise HTTPException(status_code=500, detail=f"Failed to humanize article: {str(e)}")
+
 
 @api_router.post("/articles/{article_id}/seo/generate")
 async def generate_article_seo(article_id: str, request: Request):

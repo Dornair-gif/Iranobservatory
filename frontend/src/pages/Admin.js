@@ -57,6 +57,7 @@ export default function Admin() {
   // Modals
   const [editArticle, setEditArticle] = useState(null);
   const [seoGenerating, setSeoGenerating] = useState(false);
+  const [humanizing, setHumanizing] = useState(false);
   const [seoScore, setSeoScore] = useState(null);
   const [seoScoreLoading, setSeoScoreLoading] = useState(false);
   const [angles, setAngles] = useState(null);
@@ -400,6 +401,23 @@ export default function Admin() {
       fetchArticles();
     } catch (e) {
       toast.error('Failed to update article');
+    }
+  };
+
+  const handleHumanize = async () => {
+    if (!editArticle?.id) return;
+    if (!window.confirm('Reformater le contenu de cet article en HTML propre (paragraphes, h2, etc.) ? Cela écrasera le contenu actuel dans les 3 langues.')) return;
+    setHumanizing(true);
+    try {
+      const res = await axios.post(`${API}/articles/${editArticle.id}/humanize`, {}, axiosConfig);
+      // Re-fetch the article so the editor shows the new HTML
+      const fresh = await axios.get(`${API}/articles/${editArticle.id}`);
+      setEditArticle(prev => ({ ...prev, ...fresh.data }));
+      toast.success(`Article reformaté (${(res.data.languages_updated || []).join(', ')})`);
+    } catch (e) {
+      toast.error('Échec du reformatage : ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setHumanizing(false);
     }
   };
 
@@ -1871,6 +1889,22 @@ export default function Admin() {
           </DialogHeader>
           {editArticle && (
             <div className="space-y-6 py-4">
+              <div className="flex items-center justify-between gap-3 border border-zinc-200 bg-zinc-50 p-3">
+                <div className="flex-1">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-0.5">Mise en forme</p>
+                  <p className="text-xs text-zinc-700">Reformate le contenu IA en HTML structuré (paragraphes, sous-titres, voix humaine) dans les 3 langues.</p>
+                </div>
+                <Button
+                  size="sm"
+                  className="rounded-none bg-amber-600 hover:bg-amber-700 text-xs whitespace-nowrap"
+                  disabled={humanizing}
+                  onClick={handleHumanize}
+                  data-testid="humanize-article-btn"
+                >
+                  {humanizing ? 'Reformatage…' : '✍️ Humaniser & formater'}
+                </Button>
+              </div>
+
               <Tabs defaultValue="en" className="space-y-4">
                 <TabsList className="rounded-none">
                   <TabsTrigger value="en" className="rounded-none font-mono text-xs">English</TabsTrigger>

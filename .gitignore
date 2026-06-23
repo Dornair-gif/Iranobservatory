@@ -89,3 +89,4 @@ frontend-next/node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.
 credentials.json
 *.key
 .credentials
+frontend/node_modules/.cache/default-development/10.pack

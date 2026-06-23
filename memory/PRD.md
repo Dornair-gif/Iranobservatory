@@ -103,6 +103,11 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - **Chantier 2 — RSS to Buffer + Telegram FA pipeline** (blocked on Buffer API + Telegram Bot token from user).
 
 ### P1 (Completed)
+- **Article Humanization (Feb 2026)**:
+  - New article generation prompt explicitly demands HTML structure: lede `<p>`, declarative `<h2>` subheads, 5-6 analytical `<p>` paragraphs (60-110 words each), forward-looking close, optional `<blockquote>`/`<ul>`/`<strong>`. Ban-list of AI tics enforced (no "moreover", "navigate", "landscape", "underscore", etc.). Aggressive sentence-length variation.
+  - New endpoint `POST /api/articles/{id}/humanize` reformats existing plain-text articles into editorial HTML across FR/EN/FA in one call (~40s for 3 languages via GPT-5.2). Idempotent and fidelity-preserving (no fact invention).
+  - Admin UI: amber "✍️ Humaniser & formater" button at top of article edit modal triggers the reformat with confirmation prompt; auto-refreshes the editor with the new HTML.
+  - Live test on article `6a39b007cebe27176cbfe188`: raw 5243-char wall of text → 4298-char HTML with 7 `<p>` + 2 `<h2>` + `<strong>`/`<em>` highlights.
 - **Editorial Core Pages refresh (Feb 2026)**:
   - Applied verbatim content from `IranObservatory_CorePages_FR_EN_FA.docx` to `lib/editorial/{manifesto,about,methodology}.jsx`.
   - Manifesto signed by "La direction éditoriale" (anonymized, collective voice) in all 3 languages.
