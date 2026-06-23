@@ -103,6 +103,13 @@ Build a best-in-class website for Iran Observatory with real-time monitoring of 
 - **Chantier 2 — RSS to Buffer + Telegram FA pipeline** (blocked on Buffer API + Telegram Bot token from user).
 
 ### P1 (Completed)
+- **Brief Generation v2 (Feb 2026)**:
+  - **Prompt** rewritten with explicit 5-section structure: Executive Summary, Geopolitics & Security, Economy & Sanctions, Human Rights & Society, Outlook. French headers localized. Ban-list of AI tics, demand for concrete subjects and 500-800 words per language.
+  - **Iran Monitor snapshot block** auto-appended at the end of every brief — read-only HTML aside showing: Tension Index score+level, Human Rights, Internet Blackout days, Sanctions Tracker active lists, plus a "View live Monitor" CTA. Trilingual labels (FR/EN/FA). Generation date stamped.
+  - **`.article-prose` editorial CSS** added to `globals.css` to replace missing `@tailwindcss/typography`: bold H2 with emerald dot + navy border accent, varied font sizes, blockquote with emerald left bar, RTL-aware.
+  - **Sanitizer extended** to allow `<aside>`, `<section>`, `<header>`, inline `style` attribute (required for the snapshot block to render).
+  - **Idempotence on `/api/briefs/generate`**: returns existing brief in 88ms if one was created in the past 6 days; `?force=true` to override.
+  - **Frontend admin**: loading state, confirmation modal, 180s axios timeout, `🧹 Cleanup duplicates` button. 6 draft duplicates + 1 published duplicate purged from DB.
 - **Article Humanization (Feb 2026)**:
   - New article generation prompt explicitly demands HTML structure: lede `<p>`, declarative `<h2>` subheads, 5-6 analytical `<p>` paragraphs (60-110 words each), forward-looking close, optional `<blockquote>`/`<ul>`/`<strong>`. Ban-list of AI tics enforced (no "moreover", "navigate", "landscape", "underscore", etc.). Aggressive sentence-length variation.
   - New endpoint `POST /api/articles/{id}/humanize` reformats existing plain-text articles into editorial HTML across FR/EN/FA in one call (~40s for 3 languages via GPT-5.2). Idempotent and fidelity-preserving (no fact invention).

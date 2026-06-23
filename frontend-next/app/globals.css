@@ -34,3 +34,101 @@
     overflow: hidden;
   }
 }
+
+/* --- Editorial article body — replaces @tailwindcss/typography ---------- */
+.article-prose {
+  color: #18181b;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.article-prose p {
+  margin: 0 0 1.1em 0;
+}
+.article-prose h2 {
+  font-family: "Cabinet Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+  font-weight: 800;
+  color: #0f1e2e;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 2.4rem 0 0.9rem 0;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid #1E3A5F;
+  display: inline-block;
+  position: relative;
+}
+.article-prose h2::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: #3DB883;
+  border-radius: 9999px;
+  margin-right: 0.6rem;
+  vertical-align: middle;
+  transform: translateY(-0.18em);
+}
+.article-prose h3 {
+  font-family: "Cabinet Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+  font-weight: 700;
+  color: #1E3A5F;
+  font-size: 1.2rem;
+  line-height: 1.3;
+  margin: 1.6rem 0 0.6rem 0;
+}
+.article-prose ul, .article-prose ol {
+  margin: 0 0 1.1em 0;
+  padding-left: 1.4rem;
+}
+.article-prose ul { list-style: disc; }
+.article-prose ol { list-style: decimal; }
+.article-prose li {
+  margin: 0.35em 0;
+  padding-left: 0.2rem;
+}
+.article-prose blockquote {
+  margin: 1.6rem 0;
+  padding: 0.6rem 1.2rem;
+  border-left: 3px solid #3DB883;
+  background: #f8fafc;
+  font-style: italic;
+  color: #334155;
+}
+.article-prose strong {
+  color: #0f1e2e;
+  font-weight: 700;
+}
+.article-prose em {
+  font-style: italic;
+}
+.article-prose a {
+  color: #1E3A5F;
+  text-decoration: underline;
+  text-decoration-color: #3DB883;
+  text-underline-offset: 0.18em;
+}
+.article-prose a:hover { color: #0f1e2e; }
+.article-prose hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid #e4e4e7;
+}
+
+/* RTL: flip H2 dot accent and list padding */
+[dir="rtl"] .article-prose h2::before {
+  margin-right: 0;
+  margin-left: 0.6rem;
+}
+[dir="rtl"] .article-prose ul,
+[dir="rtl"] .article-prose ol {
+  padding-left: 0;
+  padding-right: 1.4rem;
+}
+[dir="rtl"] .article-prose blockquote {
+  border-left: 0;
+  border-right: 3px solid #3DB883;
+}
+
+/* Iran Monitor snapshot block — guard against prose overrides */
+.article-prose .monitor-snapshot p { margin: 0; }
+.article-prose .monitor-snapshot a { text-decoration: none; }

@@ -147,7 +147,7 @@ export default async function ArticlePage({ params }) {
           <StudyHtmlFrame html={content} ariaLabel={title} />
         ) : (
           <div
-            className="prose prose-zinc max-w-none prose-headings:font-heading prose-headings:text-[#0f1e2e] prose-a:text-[#1E3A5F]"
+            className="article-prose max-w-none"
             dangerouslySetInnerHTML={renderHtml(content)}
           />
         )}

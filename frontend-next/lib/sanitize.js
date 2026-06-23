@@ -12,9 +12,9 @@ const ALLOWED_TAGS = [
   "blockquote","cite",
   "code","pre",
   "table","thead","tbody","tr","th","td",
-  "span","div",
+  "span","div","aside","section","header","small",
 ];
-const ALLOWED_ATTRS = ["href","target","rel","src","alt","title","class","colspan","rowspan"];
+const ALLOWED_ATTRS = ["href","target","rel","src","alt","title","class","colspan","rowspan","style","lang","dir"];
 
 export function sanitizeHtml(html) {
   if (!html) return "";

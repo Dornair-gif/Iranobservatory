@@ -2854,6 +2854,148 @@ async def news_sitemap():
 
 
 # ============ WEEKLY BRIEF GENERATION ============
+def _build_monitor_snapshot_html(indexes: dict, lang: str, gen_date: datetime) -> str:
+    """Produce a self-contained HTML block summarizing the Iran Monitor metrics
+    at the moment the brief was generated. Appended at the end of every brief.
+
+    Numbers stay precise (no LLM rewriting). Read-only snapshot."""
+    if not indexes:
+        return ""
+
+    # Localised labels
+    L = {
+        "fr": {
+            "title": "Iran Monitor — Instantané à la publication",
+            "as_of": "Au",
+            "tension": "Indice de tension",
+            "human_rights": "Droits humains",
+            "blackout": "Coupures Internet (jours actifs)",
+            "protests": "Mobilisations rapportées",
+            "execs": "Exécutions documentées",
+            "econ": "Indicateurs économiques",
+            "sanctions": "Tracker sanctions",
+            "active_lists": "listes actives",
+            "see_more": "Voir l'Iran Monitor en direct →",
+        },
+        "en": {
+            "title": "Iran Monitor — Snapshot at publication",
+            "as_of": "As of",
+            "tension": "Tension Index",
+            "human_rights": "Human Rights",
+            "blackout": "Internet Blackout (active days)",
+            "protests": "Reported Mobilizations",
+            "execs": "Documented Executions",
+            "econ": "Economic Indicators",
+            "sanctions": "Sanctions Tracker",
+            "active_lists": "active lists",
+            "see_more": "View live Iran Monitor →",
+        },
+        "fa": {
+            "title": "رصدخانه ایران — تصویرِ لحظه‌ی انتشار",
+            "as_of": "در تاریخ",
+            "tension": "شاخصِ تنش",
+            "human_rights": "حقوق بشر",
+            "blackout": "قطعی اینترنت (روزهای فعال)",
+            "protests": "اعتراضات گزارش‌شده",
+            "execs": "اعدام‌های مستند",
+            "econ": "شاخص‌های اقتصادی",
+            "sanctions": "ردیاب تحریم‌ها",
+            "active_lists": "فهرست فعال",
+            "see_more": "مشاهده‌ی زنده‌ی Iran Monitor ←",
+        },
+    }.get(lang, None)
+    if not L:
+        L = {
+            "fr": "fr", "en": "en"
+        }
+        return ""
+
+    ti = indexes.get("tension_index") or {}
+    hri = indexes.get("human_rights_index") or {}
+    econ_list = indexes.get("economic_indicators") or []
+    sanctions = indexes.get("sanctions_tracker") or {}
+    blackout = indexes.get("internet_blackout_days") or {}
+    protests = indexes.get("protests_reported") or {}
+
+    # Tension
+    ti_score = ti.get("score")
+    ti_level = ti.get("level", "")
+    # Human rights metrics
+    hr_score = hri.get("score") if isinstance(hri, dict) else None
+    hr_level = hri.get("level", "") if isinstance(hri, dict) else ""
+    # Sanctions: count active lists
+    sanctions_count = 0
+    if isinstance(sanctions, dict):
+        for v in sanctions.values():
+            if isinstance(v, (list, tuple)):
+                sanctions_count += len(v)
+            elif isinstance(v, dict) and v.get("count"):
+                sanctions_count += int(v.get("count") or 0)
+    # Blackout
+    blackout_days = blackout.get("count") if isinstance(blackout, dict) else blackout
+    # Protests
+    protests_count = protests.get("count") if isinstance(protests, dict) else protests
+    # Executions (in hr_timeline maybe) — best-effort
+    hr_timeline = indexes.get("hr_timeline") or []
+    executions_n = sum(1 for ev in hr_timeline if isinstance(ev, dict) and "exec" in (ev.get("type") or "").lower())
+
+    # Build economic rows (max 4 metrics)
+    econ_rows_html = ""
+    if isinstance(econ_list, list):
+        for it in econ_list[:4]:
+            if not isinstance(it, dict): continue
+            label = it.get("label") or it.get("name") or ""
+            value = it.get("value") or it.get("current") or ""
+            change = it.get("change") or it.get("delta") or ""
+            change_color = "text-emerald-700" if str(change).startswith(("-", "↓", "▼")) else "text-rose-700"
+            econ_rows_html += (
+                f'<tr>'
+                f'<td style="padding:6px 8px;font-family:ui-monospace,monospace;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.04em;">{label}</td>'
+                f'<td style="padding:6px 8px;font-weight:700;color:#0f172a;text-align:right;">{value}</td>'
+                f'<td style="padding:6px 8px;font-family:ui-monospace,monospace;font-size:11px;text-align:right;" class="{change_color}">{change}</td>'
+                f'</tr>'
+            )
+
+    date_fmt = gen_date.strftime("%d %b %Y · %H:%M UTC")
+
+    # Final HTML — self-contained, scoped via inline styles so it survives DOMPurify
+    return f"""<aside class="monitor-snapshot" style="margin-top:2.5rem;padding:1.25rem 1.5rem;border:1px solid #047857;border-left:4px solid #047857;background:linear-gradient(180deg,#ecfdf5,#f0fdfa);border-radius:8px;">
+  <p style="margin:0 0 .25rem 0;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#047857;">{L['title']}</p>
+  <p style="margin:0 0 1rem 0;font-family:ui-monospace,monospace;font-size:11px;color:#475569;">{L['as_of']} {date_fmt}</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1rem;">
+    <div style="background:#fff;border:1px solid #d1fae5;border-radius:6px;padding:.75rem .9rem;">
+      <p style="margin:0;font-family:ui-monospace,monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#475569;">{L['tension']}</p>
+      <p style="margin:.15rem 0 0 0;font-size:1.75rem;font-weight:800;color:#0f172a;line-height:1;">{ti_score if ti_score is not None else '—'}<span style="font-size:.8rem;color:#64748b;font-weight:500;"> /10</span></p>
+      <p style="margin:.25rem 0 0 0;font-family:ui-monospace,monospace;font-size:10px;color:#047857;text-transform:uppercase;letter-spacing:.04em;">{ti_level}</p>
+    </div>
+
+    <div style="background:#fff;border:1px solid #d1fae5;border-radius:6px;padding:.75rem .9rem;">
+      <p style="margin:0;font-family:ui-monospace,monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#475569;">{L['human_rights']}</p>
+      <p style="margin:.15rem 0 0 0;font-size:1.75rem;font-weight:800;color:#0f172a;line-height:1;">{hr_score if hr_score is not None else '—'}<span style="font-size:.8rem;color:#64748b;font-weight:500;"> /10</span></p>
+      <p style="margin:.25rem 0 0 0;font-family:ui-monospace,monospace;font-size:10px;color:#047857;text-transform:uppercase;letter-spacing:.04em;">{hr_level}</p>
+    </div>
+
+    <div style="background:#fff;border:1px solid #d1fae5;border-radius:6px;padding:.75rem .9rem;">
+      <p style="margin:0;font-family:ui-monospace,monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#475569;">{L['blackout']}</p>
+      <p style="margin:.15rem 0 0 0;font-size:1.75rem;font-weight:800;color:#0f172a;line-height:1;">{blackout_days if blackout_days is not None else '—'}</p>
+    </div>
+
+    <div style="background:#fff;border:1px solid #d1fae5;border-radius:6px;padding:.75rem .9rem;">
+      <p style="margin:0;font-family:ui-monospace,monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#475569;">{L['sanctions']}</p>
+      <p style="margin:.15rem 0 0 0;font-size:1.75rem;font-weight:800;color:#0f172a;line-height:1;">{sanctions_count}</p>
+      <p style="margin:.25rem 0 0 0;font-family:ui-monospace,monospace;font-size:10px;color:#64748b;">{L['active_lists']}</p>
+    </div>
+  </div>
+
+  {f'<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #d1fae5;border-radius:6px;overflow:hidden;margin-bottom:1rem;">{econ_rows_html}</table>' if econ_rows_html else ''}
+
+  <p style="margin:0;text-align:right;">
+    <a href="/{lang}/monitor" style="font-family:ui-monospace,monospace;font-size:11px;color:#047857;text-transform:uppercase;letter-spacing:.08em;text-decoration:none;border-bottom:1px solid #047857;">{L['see_more']}</a>
+  </p>
+</aside>"""
+
+
 async def generate_weekly_brief():
     """Generate a weekly intelligence brief from the past week's RSS items. Runs every Monday."""
     import json
@@ -2912,11 +3054,53 @@ Write the brief in BOTH English and French. Return ONLY this JSON:
   "title_fr": "Brief Hebdomadaire: {week_start} – {week_end}",
   "summary_en": "<2-3 sentence executive summary of the week's key developments>",
   "summary_fr": "<same in French>",
-  "content_en": "<HTML formatted brief with sections: Executive Summary, Geopolitics & Security, Economy & Sanctions, Human Rights & Society, Outlook. Use <h2>, <h3>, <p>, <ul>, <li>, <strong> tags. Make it 500-800 words. Be direct, analytical, no hedging.>",
+  "content_en": "<HTML brief>",
   "content_fr": "<same structure in French>"
 }}
 
-IMPORTANT: Return valid JSON only. Content must be HTML-formatted for direct rendering."""
+=== HTML STRUCTURE FOR content_en AND content_fr (CRITICAL) ===
+Each `content` field MUST follow this EXACT structure with these EXACT 5 section headers (translated for French):
+
+<h2>Executive Summary</h2>
+<p>2-3 sentences. The week's strategic verdict. Concrete. No throat-clearing.</p>
+
+<h2>Geopolitics &amp; Security</h2>
+<p>...</p>
+<p>...</p>
+<ul><li>Bullet of a specific event/actor</li><li>Another</li><li>Another</li></ul>
+
+<h2>Economy &amp; Sanctions</h2>
+<p>...</p>
+<p>...</p>
+
+<h2>Human Rights &amp; Society</h2>
+<p>...</p>
+<p>...</p>
+
+<h2>Outlook — What to watch next week</h2>
+<p>...</p>
+<ul><li>3-5 concrete signals to watch</li></ul>
+
+French headers MUST be:
+"Résumé exécutif", "Géopolitique & Sécurité", "Économie & Sanctions", "Droits humains & Société", "Perspectives — À surveiller la semaine prochaine"
+
+=== FORMATTING RULES ===
+- Use ONLY these tags: <h2>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>
+- 5-6 paragraphs minimum per language, 500-800 words total per language
+- <strong> on 2-3 high-stakes items per brief (a name, a number, a turning point)
+- One <blockquote> allowed for a pivotal analytical line — never more
+- Vary sentence length aggressively: mix 8-word punch sentences with 25-word analytical ones
+- BAN these AI tics: "It is important to note", "Moreover", "Furthermore", "In conclusion",
+  "navigate", "delve", "landscape", "robust", "underscore", "tapestry", "geopolitical chessboard"
+- Concrete subjects to open paragraphs (a person, an institution, a number)
+- State or attribute, never hedge ("could potentially", "may possibly" → banned)
+
+=== CONTENT RULES ===
+- Be direct, analytical, no filler
+- Cite the actors by name. Reference specific dates (day or week).
+- The Outlook section MUST contain 3-5 explicit signals/events to monitor, not vague predictions
+
+IMPORTANT: Return valid JSON only. Content must be HTML-formatted for direct rendering. NO markdown fences."""
         
         msg = UserMessage(text=prompt)
         response = await chat.send_message(msg)
@@ -2947,14 +3131,28 @@ IMPORTANT: Return valid JSON only. Content must be HTML-formatted for direct ren
                         break
         
         brief_data = json.loads(r)
-        
+
+        # Iran Monitor snapshot — appended at the end of every brief.
+        # Use the CURRENT computed indexes (no extra LLM call: read from cache via DB).
+        monitor_indexes = {}
+        try:
+            doc = await db.dashboard_cache.find_one({}, {"_id": 0})
+            if doc:
+                monitor_indexes = doc
+        except Exception as _e:
+            logger.warning(f"weekly brief: could not load monitor indexes: {_e}")
+
+        gen_date = datetime.now(timezone.utc)
+        snap_en = _build_monitor_snapshot_html(monitor_indexes, "en", gen_date) if monitor_indexes else ""
+        snap_fr = _build_monitor_snapshot_html(monitor_indexes, "fr", gen_date) if monitor_indexes else ""
+
         # Save as draft article
         brief_doc = {
             "title_en": _sanitize_editorial(brief_data.get("title_en", f"Weekly Brief: {week_start} – {week_end}")),
             "title_fr": _sanitize_editorial(brief_data.get("title_fr", f"Brief Hebdomadaire: {week_start} – {week_end}")),
             "title_fa": "",
-            "content_en": _sanitize_editorial(brief_data.get("content_en", "")),
-            "content_fr": _sanitize_editorial(brief_data.get("content_fr", "")),
+            "content_en": _sanitize_editorial(brief_data.get("content_en", "") + snap_en),
+            "content_fr": _sanitize_editorial(brief_data.get("content_fr", "") + snap_fr),
             "content_fa": "",
             "summary_en": _sanitize_editorial(brief_data.get("summary_en", "")),
             "summary_fr": _sanitize_editorial(brief_data.get("summary_fr", "")),
