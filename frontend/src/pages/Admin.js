@@ -58,6 +58,7 @@ export default function Admin() {
   const [editArticle, setEditArticle] = useState(null);
   const [seoGenerating, setSeoGenerating] = useState(false);
   const [humanizing, setHumanizing] = useState(false);
+  const [generatingBrief, setGeneratingBrief] = useState(false);
   const [seoScore, setSeoScore] = useState(null);
   const [seoScoreLoading, setSeoScoreLoading] = useState(false);
   const [angles, setAngles] = useState(null);
@@ -1410,19 +1411,50 @@ export default function Admin() {
                     Generate Preview ({newsletterPreviewLang.toUpperCase()})
                   </Button>
                   <Button 
-                    className="w-full rounded-none bg-[#3DB883] hover:bg-[#2D9E6E]"
+                    className="w-full rounded-none bg-[#3DB883] hover:bg-[#2D9E6E] disabled:opacity-60"
+                    disabled={generatingBrief}
                     onClick={async () => {
+                      if (generatingBrief) return;
+                      if (!window.confirm("Générer un nouveau Weekly Brief ? Cette opération prend ~60s. Ne cliquez pas plusieurs fois.")) return;
+                      setGeneratingBrief(true);
                       try {
-                        const res = await axios.post(`${API}/briefs/generate`, {}, axiosConfig);
-                        toast.success(`Weekly brief generated (ID: ${res.data.article_id})`);
+                        const res = await axios.post(
+                          `${API}/briefs/generate`,
+                          {},
+                          { ...axiosConfig, timeout: 180000 } // 3 min — LLM call is slow
+                        );
+                        if (res.data.status === "already_exists") {
+                          toast.info(`Brief de cette semaine déjà généré (ID ${res.data.article_id.slice(0,8)}). Retrouvez-le dans l'onglet Articles.`, { duration: 6000 });
+                        } else {
+                          toast.success(`Weekly brief généré (ID: ${res.data.article_id})`);
+                        }
                         fetchArticles();
                       } catch (e) {
                         toast.error('Failed: ' + (e.response?.data?.detail || e.message));
+                      } finally {
+                        setGeneratingBrief(false);
                       }
                     }}
                     data-testid="generate-brief-btn"
                   >
-                    Generate Weekly Brief Now
+                    {generatingBrief ? '⏳ Generating brief (≈60s)…' : 'Generate Weekly Brief Now'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-none text-xs text-zinc-600 hover:text-red-600 border-zinc-300"
+                    onClick={async () => {
+                      if (!window.confirm("Supprimer les briefs en double (même titre) ? On garde le plus récent par titre.")) return;
+                      try {
+                        const res = await axios.post(`${API}/briefs/cleanup-duplicates`, {}, axiosConfig);
+                        toast.success(`Cleanup: ${res.data.deleted} supprimés, ${res.data.kept} conservés.`);
+                        fetchArticles();
+                      } catch (e) {
+                        toast.error('Cleanup failed: ' + (e.response?.data?.detail || e.message));
+                      }
+                    }}
+                    data-testid="cleanup-briefs-btn"
+                  >
+                    🧹 Nettoyer les briefs en double
                   </Button>
                   {(() => {
                     const fr = subscribers.filter(s => s.newsletter && (s.language || 'fr') === 'fr').length;

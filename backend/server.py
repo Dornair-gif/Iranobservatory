@@ -3736,13 +3736,63 @@ async def send_newsletter_multilingual(request: Request):
 
 # Admin endpoint to manually trigger brief generation
 @api_router.post("/briefs/generate")
-async def trigger_brief_generation(request: Request):
-    """Admin: Manually trigger weekly brief generation."""
+async def trigger_brief_generation(request: Request, force: bool = False):
+    """Admin: Manually trigger weekly brief generation.
+    Idempotent by default: if a brief draft for the current ISO week already
+    exists, returns its id without calling the LLM. Pass ?force=true to bypass."""
     await get_current_user(request)
+
+    if not force:
+        # Look up briefs created in the last 6 days, oldest first.
+        # We want to surface the most recent brief draft for THIS week.
+        six_days_ago = datetime.now(timezone.utc) - timedelta(days=6)
+        existing = await db.articles.find_one(
+            {
+                "content_type": "brief",
+                "created_at": {"$gte": six_days_ago},
+            },
+            sort=[("created_at", -1)],
+        )
+        if existing:
+            return {
+                "status": "already_exists",
+                "article_id": str(existing["_id"]),
+                "title": existing.get("title_en") or existing.get("title_fr"),
+                "created_at": existing.get("created_at").isoformat() if existing.get("created_at") else None,
+                "message": "A brief was already generated this week. Use ?force=true to regenerate.",
+            }
+
     result = await generate_weekly_brief()
     if result:
         return {"status": "success", "article_id": result}
     raise HTTPException(status_code=500, detail="Brief generation failed")
+
+
+@api_router.post("/briefs/cleanup-duplicates")
+async def cleanup_duplicate_briefs(request: Request):
+    """Admin: Delete duplicate brief drafts that have the same title.
+    Keeps the most recently created one for each unique title."""
+    await get_current_user(request)
+    # Group all brief drafts by title, keep the newest per title
+    drafts = await db.articles.find(
+        {"content_type": "brief", "status": "draft"}
+    ).sort("created_at", -1).to_list(500)
+
+    by_title = {}
+    to_delete_ids = []
+    for d in drafts:
+        title = d.get("title_en") or d.get("title_fr") or ""
+        if title not in by_title:
+            by_title[title] = d["_id"]
+        else:
+            to_delete_ids.append(d["_id"])
+
+    if not to_delete_ids:
+        return {"deleted": 0, "kept": len(by_title)}
+
+    res = await db.articles.delete_many({"_id": {"$in": to_delete_ids}})
+    return {"deleted": res.deleted_count, "kept": len(by_title)}
+
 
 # Include the router
 app.include_router(api_router)
