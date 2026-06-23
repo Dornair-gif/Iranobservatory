@@ -232,18 +232,24 @@ export function MonitorDashboard({ lang }) {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         {/* ===== SITUATION BRIEFING ===== */}
-        {data.situation_summary && (
+        {(data[`situation_summary_${lang}`] || data.situation_summary) && (
           <section className="relative bg-[#162640] border border-[#3DB883]/30 rounded-xl p-6 lg:p-8 shadow-lg shadow-[#3DB883]/5">
             <div className="absolute top-4 right-4 w-3 h-3 bg-[#3DB883] rounded-full animate-pulse" />
             <h2 className="text-base font-mono text-[#3DB883] uppercase tracking-[0.2em] mb-5 font-black">
               {lang === "fr" ? "Briefing de Situation" : lang === "fa" ? "بریفینگ موقعیت" : "Situation Briefing"}
             </h2>
             <ul className="space-y-4">
-              {(Array.isArray(data.situation_summary) ? data.situation_summary : [data.situation_summary]).map((b, i) => (
-                <li key={i} className="flex items-start gap-3 text-[17px] text-white/90 leading-relaxed font-medium">
-                  <span className="text-[#3DB883] mt-0.5 flex-shrink-0 text-xl font-black">•</span>{b}
-                </li>
-              ))}
+              {(() => {
+                const localized = data[`situation_summary_${lang}`];
+                const fallback = data.situation_summary;
+                const raw = localized || fallback;
+                const arr = Array.isArray(raw) ? raw : [raw];
+                return arr.map((b, i) => (
+                  <li key={i} className="flex items-start gap-3 text-[17px] text-white/90 leading-relaxed font-medium">
+                    <span className="text-[#3DB883] mt-0.5 flex-shrink-0 text-xl font-black">•</span>{b}
+                  </li>
+                ));
+              })()}
             </ul>
             <div className="mt-6 pt-4 border-t border-white/10">
               <SourceFavicons sources={sources.tension_index} lang={lang} />

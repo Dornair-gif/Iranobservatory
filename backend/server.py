@@ -2392,8 +2392,12 @@ TELEGRAM — VahidOnline:
 {vahid_texts[:1500]}
 
 Return ONLY this JSON:
-{{"situation_summary": ["<bullet 1>","<bullet 2>","<bullet 3>"],
-"updated_context": "<1 paragraph: what changed this week, what to watch>",
+{{"situation_summary": ["<bullet 1 in ENGLISH>","<bullet 2 in ENGLISH>","<bullet 3 in ENGLISH>"],
+"situation_summary_fr": ["<bullet 1 in FRENCH>","<bullet 2 in FRENCH>","<bullet 3 in FRENCH>"],
+"situation_summary_fa": ["<bullet 1 in PERSIAN/Farsi>","<bullet 2 in PERSIAN/Farsi>","<bullet 3 in PERSIAN/Farsi>"],
+"updated_context": "<1 paragraph in ENGLISH: what changed this week, what to watch>",
+"updated_context_fr": "<same paragraph in FRENCH>",
+"updated_context_fa": "<same paragraph in PERSIAN/Farsi>",
 "tension_index": {{"score": <float 1-10>, "level": "<LOW|MODERATE|ELEVATED|CRITICAL>", "summary": "<1 sentence>", "key_drivers": ["<driver1>","<driver2>","<driver3>","<driver4>"]}},
 "tension_history": [<30 floats 1-10, daily tension estimate, ending with today>],
 "human_rights_index": {{"summary": "<1 sentence>", "key_factors": ["<factor1>","<factor2>","<factor3>"]}},
@@ -2401,7 +2405,8 @@ Return ONLY this JSON:
 "protests_reported": <int>,
 "hr_timeline": [{{"date":"<YYYY-MM-DD>","event":"<what happened>","source":"<HRA News/VahidOnline>"}}],
 "hr_key_issues": ["<issue 1>","<issue 2>","<issue 3>"]}}
-Max 10 HR timeline events. Based ONLY on provided sources."""
+Max 10 HR timeline events. Based ONLY on provided sources.
+The three bullets in situation_summary / situation_summary_fr / situation_summary_fa MUST convey the SAME 3 ideas in each language — not different ideas. Same for updated_context across languages."""
 
         msg1 = UserMessage(text=prompt1)
         response1 = await chat.send_message(msg1)

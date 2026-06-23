@@ -232,7 +232,7 @@ export default async function HomePage({ params }) {
           {/* Sidebar (1/3) */}
           <aside className="space-y-6">
             {/* Situation Briefing */}
-            {briefing?.situation_summary && (
+            {(briefing?.[`situation_summary_${lang}`] || briefing?.situation_summary) && (
               <div className="bg-[#1E3A5F] text-white rounded-xl p-6 sticky top-28" data-testid="home-briefing">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-[#3DB883] text-lg">●</span>
@@ -242,17 +242,18 @@ export default async function HomePage({ params }) {
                   <span className="w-2 h-2 ml-auto bg-[#3DB883] rounded-full animate-pulse" />
                 </div>
                 <ul className="space-y-3 mb-5">
-                  {(Array.isArray(briefing.situation_summary)
-                    ? briefing.situation_summary
-                    : [briefing.situation_summary]
-                  )
-                    .slice(0, 4)
-                    .map((b, i) => (
+                  {(() => {
+                    const localized = briefing?.[`situation_summary_${lang}`];
+                    const fallback = briefing?.situation_summary;
+                    const raw = localized || fallback || [];
+                    const arr = Array.isArray(raw) ? raw : [raw];
+                    return arr.slice(0, 4).map((b, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-zinc-200 leading-relaxed">
                         <span className="text-[#3DB883] mt-0.5 flex-shrink-0 font-bold">•</span>
                         <span className="line-clamp-3">{b}</span>
                       </li>
-                    ))}
+                    ));
+                  })()}
                 </ul>
                 <Link
                   href={`/${lang}/monitor`}
