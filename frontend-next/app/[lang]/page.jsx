@@ -52,10 +52,10 @@ export default async function HomePage({ params }) {
   const t = T[lang];
 
   // Fetch articles + studies/analyses + briefs + briefing in parallel.
-  // listStudies returns content_type IN (study,analysis,brief); we then split
-  // briefs out so they get their own visual treatment on the home page.
+  // Homepage shows only the 4 latest news; we fetch 12 to leave room for
+  // de-duplication against studies/briefs that may also appear in the feed.
   const [allNews, studiesAndBriefs, briefs, briefing] = await Promise.all([
-    api.listArticles({ limit: 20, lang }).catch(() => []),
+    api.listArticles({ limit: 12, lang }).catch(() => []),
     api.listStudies({ limit: 12, lang }).catch(() => []),
     api.listArticles({ limit: 6, lang, content_types: "brief" }).catch(() => []),
     api.monitorIndexes(),
@@ -75,7 +75,6 @@ export default async function HomePage({ params }) {
 
   const featured = newsArticles[0];
   const side = newsArticles.slice(1, 4);
-  const more = newsArticles.slice(4, 10);
 
   const supportCopy = {
     fr: {
@@ -219,17 +218,10 @@ export default async function HomePage({ params }) {
                   </Link>
                 ))}
 
-                {more.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    {more.map((a) => (
-                      <ArticleCard key={a.id} article={a} lang={lang} />
-                    ))}
-                  </div>
-                )}
-
                 <Link
                   href={`/${lang}/articles`}
                   className="flex items-center justify-center gap-2 py-3 border border-[#1E3A5F] text-[#1E3A5F] font-mono text-xs uppercase tracking-wider hover:bg-[#1E3A5F] hover:text-white transition-colors rounded-lg"
+                  data-testid="home-all-articles-cta"
                 >
                   {viewAll} →
                 </Link>
