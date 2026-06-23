@@ -57,7 +57,7 @@ export default async function HomePage({ params }) {
   const [allNews, studiesAndBriefs, briefs, briefing] = await Promise.all([
     api.listArticles({ limit: 12, lang }).catch(() => []),
     api.listStudies({ limit: 12, lang }).catch(() => []),
-    api.listArticles({ limit: 6, lang, content_types: "brief" }).catch(() => []),
+    api.listArticles({ limit: 3, lang, content_types: "brief" }).catch(() => []),
     api.monitorIndexes(),
   ]);
 
@@ -265,14 +265,14 @@ export default async function HomePage({ params }) {
             )}
 
             {/* Weekly Briefs */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-              <h3 className="font-heading font-bold text-lg text-[#1E3A5F] mb-2">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
+              <h3 className="font-heading font-bold text-lg text-emerald-900 mb-2">
                 {sidebarCopy.briefs}
               </h3>
               <p className="text-sm text-zinc-600 mb-4 leading-relaxed">{sidebarCopy.briefsBlurb}</p>
               <Link
                 href={`/${lang}/studies`}
-                className="flex items-center gap-2 text-amber-700 font-mono text-xs uppercase tracking-wider hover:text-amber-900 transition-colors"
+                className="flex items-center gap-2 text-emerald-700 font-mono text-xs uppercase tracking-wider hover:text-emerald-900 transition-colors"
               >
                 {sidebarCopy.viewBriefs} →
               </Link>
@@ -381,15 +381,15 @@ export default async function HomePage({ params }) {
         </section>
       )}
 
-      {/* Briefs — weekly digests, parchment / amber theme to distinguish */}
+      {/* Briefs — weekly digests, emerald theme to match brand and distinguish from Decrypt (indigo) */}
       {briefs.length > 0 && (
-        <section className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border-t border-amber-200 overflow-hidden">
+        <section className="relative bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 border-t border-emerald-200 overflow-hidden">
           {/* subtle paper texture */}
           <div
             className="absolute inset-0 opacity-30 pointer-events-none"
             style={{
               backgroundImage:
-                "radial-gradient(circle at 1px 1px, rgba(180,83,9,0.15) 1px, transparent 0)",
+                "radial-gradient(circle at 1px 1px, rgba(4,120,87,0.15) 1px, transparent 0)",
               backgroundSize: "16px 16px",
             }}
             aria-hidden="true"
@@ -398,21 +398,21 @@ export default async function HomePage({ params }) {
             <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-amber-700">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-emerald-700">
                     {lang === "fr" ? "Hebdomadaire · Lundi" : lang === "fa" ? "هفتگی · دوشنبه" : "Weekly · Monday"}
                   </span>
-                  <span className="px-2 py-0.5 bg-amber-700 text-amber-50 font-mono text-[9px] uppercase tracking-wider rounded">
+                  <span className="px-2 py-0.5 bg-emerald-700 text-emerald-50 font-mono text-[9px] uppercase tracking-wider rounded">
                     Brief
                   </span>
                 </div>
-                <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-amber-900">
+                <h2 className="font-heading font-black text-3xl sm:text-4xl tracking-tighter text-emerald-900">
                   {briefsHeading}
                 </h2>
-                <p className="mt-2 text-sm text-amber-800/80 italic max-w-2xl">{briefsSubhead}</p>
+                <p className="mt-2 text-sm text-emerald-800/80 italic max-w-2xl">{briefsSubhead}</p>
               </div>
               <Link
                 href={`/${lang}/articles?type=brief`}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-700 text-amber-50 text-xs font-mono uppercase tracking-wider hover:bg-amber-800 transition-colors rounded"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-700 text-emerald-50 text-xs font-mono uppercase tracking-wider hover:bg-emerald-800 transition-colors rounded"
               >
                 {lang === "fr" ? "Tous les briefs" : lang === "fa" ? "همه گزارش‌ها" : "All briefs"} →
               </Link>
@@ -423,32 +423,32 @@ export default async function HomePage({ params }) {
                 <Link
                   key={brief.id}
                   href={`/${lang}/article/${brief.slug || brief.id}`}
-                  className="group relative bg-[#fdf8ed] border-2 border-amber-200 hover:border-amber-400 hover:shadow-xl hover:-translate-y-0.5 transition-all rounded-lg overflow-hidden"
-                  style={{ boxShadow: "0 1px 0 rgba(180,83,9,0.08), 0 4px 12px rgba(180,83,9,0.06)" }}
+                  className="group relative bg-white border-2 border-emerald-200 hover:border-emerald-400 hover:shadow-xl hover:-translate-y-0.5 transition-all rounded-lg overflow-hidden"
+                  style={{ boxShadow: "0 1px 0 rgba(4,120,87,0.08), 0 4px 12px rgba(4,120,87,0.06)" }}
                 >
                   {/* corner ribbon */}
                   <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
-                    <div className="absolute top-3 -right-7 w-24 bg-amber-700 text-amber-50 text-center font-mono text-[9px] uppercase tracking-widest py-0.5 rotate-45">
+                    <div className="absolute top-3 -right-7 w-24 bg-emerald-700 text-emerald-50 text-center font-mono text-[9px] uppercase tracking-widest py-0.5 rotate-45">
                       Brief
                     </div>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="w-2 h-2 rounded-full bg-amber-600" />
-                      <p className="font-mono text-[10px] uppercase tracking-widest text-amber-700">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-700">
                         {new Date(brief.published_at || brief.created_at).toLocaleDateString(
                           lang === "fr" ? "fr-FR" : lang === "fa" ? "fa-IR" : "en-US",
                           { day: "numeric", month: "long", year: "numeric" }
                         )}
                       </p>
                     </div>
-                    <h3 className="font-heading font-bold text-xl mb-3 leading-tight text-amber-950 group-hover:text-amber-900 transition-colors">
+                    <h3 className="font-heading font-bold text-xl mb-3 leading-tight text-emerald-950 group-hover:text-emerald-900 transition-colors">
                       {brief[`title_${lang}`] || brief.title_en || brief.title_fr}
                     </h3>
-                    <p className="text-sm text-amber-900/75 line-clamp-3 leading-relaxed mb-4">
+                    <p className="text-sm text-emerald-900/75 line-clamp-3 leading-relaxed mb-4">
                       {brief[`summary_${lang}`] || brief.summary_en || brief.summary_fr}
                     </p>
-                    <div className="flex items-center gap-1 pt-3 border-t border-amber-200 text-xs font-mono uppercase tracking-wider text-amber-700">
+                    <div className="flex items-center gap-1 pt-3 border-t border-emerald-200 text-xs font-mono uppercase tracking-wider text-emerald-700">
                       {lang === "fr" ? "Lire le brief" : lang === "fa" ? "خواندن گزارش" : "Read brief"} →
                     </div>
                   </div>
