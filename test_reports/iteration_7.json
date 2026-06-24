@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only verification of image URL normalizer fix for Decrypt/study card images. Tested local Next.js build at http://localhost:3100. All 4 study card images on the homepage /fr and on /fr/studies render successfully with complete=true and naturalWidth>0. All /api/files/ src attributes are RELATIVE (no https://*.emergentagent.com host on /api/files/ URLs). Same-origin proxy fetch through Vercel-style rewrite returns 200 image/png. Fix is in effect on localhost build.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Deploy/push to Vercel so iranobservatory.org gets the fix (user does this manually via 'Save to GitHub')."
+  ],
+  "critical_code_review_comments": [
+    "imageUrl.js: normalizer correctly rewrites *.emergentagent.com/api/* absolute URLs to relative /api/* paths and leaves other external URLs (customer-assets.emergentagent.com/job_*, pbs.twimg.com, etc.) untouched. Logic looks correct.",
+    "Article detail pages currently store external CDN URLs (pbs.twimg.com) as the hero image, so the relative /api/files/ rewrite is not exercised on those particular articles. That is expected — the normalizer still leaves them as-is and they load fine (naturalWidth=1200 verified). If business logic later requires those to be proxied/cached via Vercel, the normalizer would need an additional rule.",
+    "Console warns about preload of https://pbs.twimg.com/media/HLgcnNmWcAA0ALI.jpg not being used promptly — minor performance hint, not a bug."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (all assertions on the bug fix passed)"},
+  "seed_data_creation": "None — used existing studies/articles from backend.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Local Next.js server started on port 3100 via `cd /app/frontend-next && yarn start -p 3100`. Public URL iranobservatory.org has NOT received this fix until user pushes to GitHub. Image normalizer: /app/frontend-next/lib/imageUrl.js. Verified /api/files/ proxy returns 200 image/png via direct fetch from localhost:3100. Homepage /fr loads 4 /api/files/ study images (naturalWidths 1003, 800, 1240, 984). /fr/studies loads same 4 images. Article detail heroes use external pbs.twimg.com URLs which are intentionally not rewritten and they render OK.",
+  "test_evidence": {
+    "homepage_fr": {"api_files_imgs": 4, "loaded_ok": 4, "broken": 0, "non_relative_srcs": 0, "naturalWidths": [1003, 800, 1240, 984]},
+    "studies_fr": {"api_files_imgs": 4, "loaded_ok": 4, "broken": 0, "non_relative_srcs": 0},
+    "direct_proxy_fetch": {"url": "/api/files/7c443fdd-df9d-43dc-986f-2a444927300a.png", "status": 200, "content_type": "image/png"},
+    "article_detail": {"note": "Tested 3 articles. All hero images use pbs.twimg.com (external). Loaded OK (nw=1200). No /api/files/ images encountered on these article detail pages — expected, since those articles don't store backend-uploaded hero images."}
+  }
+}
